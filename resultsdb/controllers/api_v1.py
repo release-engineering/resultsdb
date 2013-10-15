@@ -160,7 +160,7 @@ def select_jobs(since_start = None, since_end = None, status = None, name = None
     if name is not None:
         q = q.filter(Job.name.like('%%%s%%' % name))
 
-    q = q.order_by(db.desc(Job.start_time))
+    q = q.order_by(db.desc(Job.start_time == None), db.desc(Job.start_time))
 
     return q
 
