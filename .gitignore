@@ -1,0 +1,12 @@
+*.pyc
+*.pyo
+*.swp
+*__pycache__*
+.ropeproject/
+conf/settings.py
+*.sqlite
+*.sass-cache
+*build/
+*dist/
+*.egg*
+/env

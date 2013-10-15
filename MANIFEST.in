@@ -1,0 +1,2 @@
+recursive-include resultsdb/templates *
+recursive-include resultsdb/static *
