@@ -239,6 +239,8 @@ RP['get_jobs'].add_argument('limit', default = QUERY_LIMIT, type = int, location
 RP['get_jobs'].add_argument('since', default = None, type = str, location = 'args')
 RP['get_jobs'].add_argument('status', default = None, type = str, location = 'args')
 RP['get_jobs'].add_argument('name', default = None, type = str, location = 'args')
+RP['get_jobs'].add_argument('load_results', default = False, type = bool, location = 'args')
+
 
 RP['create_job'] = reqparse.RequestParser()
 RP['create_job'].add_argument('ref_url', type = str, required = True, location = 'json')
@@ -269,7 +271,7 @@ def get_jobs(): #page = None, limit = QUERY_LIMIT):
 
     prev, next = prev_next_urls()
 
-    return jsonify(dict(href = request.url, prev = prev, next = next, data = [SERIALIZE(o) for o in q.all()]))
+    return jsonify(dict(href = request.url, prev = prev, next = next, data = [SERIALIZE(o, job_load_results = args['load_results']) for o in q.all()]))
 
 @api.route('/v1.0/jobs/<job_id>', methods = ['GET'])
 def get_job(job_id):

@@ -19,6 +19,8 @@
 
 import datetime
 
+from sqlalchemy import func
+
 from resultsdb import db
 from resultsdb.serializers import DBSerialize
 

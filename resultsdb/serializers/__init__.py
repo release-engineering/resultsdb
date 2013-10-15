@@ -24,11 +24,11 @@ class DBSerialize(object):
 
 class BaseSerializer(object):
 
-   def serialize(self, value):
+   def serialize(self, value, **kwargs):
         # serialize the database objects
         #   the specific serializer needs to implement serialize_CLASSNAME methods
         if DBSerialize in value.__class__.__bases__:
-            return getattr(self, '_serialize_%s' % value.__class__.__name__)(value)
+            return getattr(self, '_serialize_%s' % value.__class__.__name__)(value, **kwargs)
 
         # convert datetimes to the right format
         if type(value) in (datetime, date):
@@ -37,14 +37,14 @@ class BaseSerializer(object):
         if isinstance(value, dict):
             ret = {}
             for k, v  in value.iteritems():
-                ret[k] = self.serialize(v)
+                ret[k] = self.serialize(v, **kwargs)
             return ret
 
         # convert iterables to list of serialized stuff
         if hasattr(value, '__iter__'):
             ret = []
             for v in value:
-                ret.append(self.serialize(v))
+                ret.append(self.serialize(v, **kwargs))
             return ret
 
         return value

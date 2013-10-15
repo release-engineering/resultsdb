@@ -24,7 +24,7 @@ class Serializer(BaseSerializer):
     def __init__(self, uri_generator):
         self.get_uri = uri_generator
 
-    def _serialize_Job(self, o):
+    def _serialize_Job(self, o, job_load_results = True, **kwargs):
         rv = dict(
                 id = o.id,
                 name = o.name,
@@ -32,14 +32,17 @@ class Serializer(BaseSerializer):
                 start_time = o.start_time,
                 end_time = o.end_time,
                 ref_url = o.ref_url,
-                results = o.results,
-                href = self.get_uri(o)
+                results = None,
+                results_count = len(o.results), # find out how to make this fast
+                href = self.get_uri(o),
                 )
+        if job_load_results:
+                rv['results'] = o.results
 
         return {key: self.serialize(value) for key, value in rv.iteritems()}
 
 
-    def _serialize_Testcase(self, o):
+    def _serialize_Testcase(self, o, **kwargs):
         rv = dict(
                 name = o.name,
                 url = o.url,
@@ -48,7 +51,7 @@ class Serializer(BaseSerializer):
 
         return {key: self.serialize(value) for key, value in rv.iteritems()}
 
-    def _serialize_Result(self, o):
+    def _serialize_Result(self, o, **kwargs):
         result_data = {}
         for rd in o.result_data:
             try:
@@ -70,7 +73,7 @@ class Serializer(BaseSerializer):
 
         return {key: self.serialize(value) for key, value in rv.iteritems()}
 
-    def _serialize_ResultData(self, o):
+    def _serialize_ResultData(self, o, **kwargs):
         rv = dict(
                 key = o.key,
                 value = o.value,
