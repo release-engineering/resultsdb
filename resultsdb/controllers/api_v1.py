@@ -204,9 +204,27 @@ def select_results(since_start = None, since_end = None, outcome = None, since_s
 
     # Filter by result_data
     if result_data is not None:
-        for key, value in result_data.iteritems():
-            alias = db.aliased(ResultData)
-            q = q.join(alias).filter(db.and_(alias.key == key, alias.value.in_(value)))
+        for key, values in result_data.iteritems():
+            try:
+                key, modifier = key.split(':')
+            except ValueError: #no : in key
+                key, modifier = (key, None)
+
+            if modifier == 'like':
+                alias = db.aliased(ResultData)
+                if len(values) > 1: #multiple values
+                    likes = []
+                    # create the (value LIKE foo OR value LIKE bar OR ...) part
+                    for value in values:
+                        likes.append(alias.value.like(value))
+                    # put it together to (key = key AND (value LIKE foo OR value LIKE bar OR ...))
+                    q = q.join(alias).filter(db.and_(alias.key == key, db.or_(*likes)))
+                else:
+                    q = q.join(alias).filter(db.and_(alias.key == key, alias.value.like(values[0])))
+
+            else:
+                alias = db.aliased(ResultData)
+                q = q.join(alias).filter(db.and_(alias.key == key, alias.value.in_(values)))
 
     return q
 
@@ -400,8 +418,9 @@ def get_results(job_id = None, testcase_name = None):
 
     args = p['args']
 
-    j_id = job_id if job_id is None else args['job_id']
+    j_id = job_id if job_id is not None else args['job_id']
     t_nm = testcase_name if testcase_name is not None else args['testcase_name']
+
 
     q = select_results(
             since_start = args['since']['start'],
