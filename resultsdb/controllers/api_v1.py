@@ -27,7 +27,10 @@ from flask.ext.restful import reqparse
 from sqlalchemy.orm import exc as orm_exc
 from sqlalchemy import exc as sqlalchemy_exc
 from werkzeug.exceptions import HTTPException
-from flask.exceptions import JSONBadRequest
+
+
+# removed in flask 0.10 from flask.exceptions import JSONBadRequest
+from werkzeug.exceptions import BadRequest as JSONBadRequest
 
 import iso8601
 
