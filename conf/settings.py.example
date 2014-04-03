@@ -7,6 +7,6 @@ FAS_USER = "magicuser@unicornsarereal.com"
 FAS_PASSWORD = "password"
 BUGZILLA_COOKIE = None
 FILE_LOGGING = False
-LOGFILR = /var/log/resultsdb/resultsdb.log
+LOGFILR = '/var/log/resultsdb/resultsdb.log'
 SYSLOG_LOGGING = False
 STREAM_LOGGING = True
