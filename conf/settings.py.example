@@ -1,6 +1,6 @@
 # while you can use this as a template, we recommend that you use the blockerbugs
 # cli to generate a config file
-SECRET_KEY = 'replace-me-with-something-random'
+SECRET_KEY = 'not-really-a-secret'
 SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://dbuser:dbpassword@dbhost:dbport/dbname'
 FAS_ADMIN_GROUP = "magic-fas-group"
 FAS_USER = "magicuser@unicornsarereal.com"
