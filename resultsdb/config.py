@@ -16,6 +16,8 @@
 #
 # Authors:
 #   Josef Skladanka <jskladan@redhat.com>
+#   Ralph Bean <rbean@redhat.com>
+
 
 class Config(object):
     DEBUG = True
@@ -26,11 +28,10 @@ class Config(object):
     SYSLOG_LOGGING = False
     STREAM_LOGGING = True
 
-    RUN_HOST = None
-    RUN_PORT = None
+    HOST = None
+    PORT = None
 
     PRODUCTION = False
-
 
 
 class ProductionConfig(Config):
@@ -39,12 +40,13 @@ class ProductionConfig(Config):
 
 
 class DevelopmentConfig(Config):
-    TRAP_BAD_REQUEST_ERRORS=True
-    SQLALCHEMY_DATABASE_URI = 'mysql://resultsdb:TOP_SECRET_PASSWORD@localhost/resultsdb'
-    RUN_HOST = '0.0.0.0'
-    RUN_PORT = 5000
+    TRAP_BAD_REQUEST_ERRORS = True
+    SQLALCHEMY_DATABASE_URI = \
+        'mysql://resultsdb:TOP_SECRET_PASSWORD@localhost/resultsdb'
+    HOST = '0.0.0.0'
+    PORT = 5000
 
 
 class TestingConfig(Config):
-    TRAP_BAD_REQUEST_ERRORS=True
+    TRAP_BAD_REQUEST_ERRORS = True
     TESTING = True

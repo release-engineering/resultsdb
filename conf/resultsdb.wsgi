@@ -9,4 +9,7 @@ import pkg_resources
 #import sys
 #sys.path.insert(0,"/var/www/resultsdb/resultsdb/")
 
+import os
+os.environ['RESULTSDB_CONFIG'] = '/etc/resultsdb/settings.py'
+
 from resultsdb import app as application

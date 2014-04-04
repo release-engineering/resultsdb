@@ -1,0 +1,11 @@
+Flask>=0.9
+Flask-SQLAlchemy>=0.16
+SQLAlchemy>= 0.7
+WTForms>1.0
+Flask-WTF==0.8
+#FIXME: Flask-WTF > 0.8 introduced API change for imports
+Flask-Login>=0.2.2
+Flask-RESTful >= 0.2.5
+# although this is a Flask-Restful dependency, it was not installed, adding manualy
+six
+iso8601 >= 0.1.4
