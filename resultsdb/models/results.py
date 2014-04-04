@@ -19,8 +19,6 @@
 
 import datetime
 
-from sqlalchemy import func
-
 from resultsdb import db
 from resultsdb.serializers import DBSerialize
 
@@ -42,7 +40,7 @@ RESULT_OUTCOME = ('PASSED', 'INFO', 'FAILED', 'ERROR', 'WAIVED', 'NEEDS_INSPECTI
 class Job(db.Model, DBSerialize):
 
     id = db.Column(db.Integer, primary_key = True)
-    status = db.Column(db.Enum(*JOB_STATUS))
+    status = db.Column(db.Enum(*JOB_STATUS, name='jobstatus'))
     start_time = db.Column(db.DateTime, default = 0)
     end_time = db.Column(db.DateTime, default = 0)
     ref_url = db.Column(db.Text)
@@ -74,7 +72,7 @@ class Result(db.Model, DBSerialize):
     testcase_id = db.Column(db.Integer, db.ForeignKey('testcase.id'))
 
     submit_time = db.Column(db.DateTime, default = datetime.datetime.utcnow)
-    outcome = db.Column(db.Enum(*RESULT_OUTCOME))
+    outcome = db.Column(db.Enum(*RESULT_OUTCOME, name='resultoutcome'))
     summary = db.Column(db.Text)
     log_url = db.Column(db.Text)
 
