@@ -1,0 +1,6 @@
+{
+    "project_id" : "resultsdb",
+    "conduit_uri" : "https://phab.qadevel.cloud.fedoraproject.org",
+    "arc.land.onto.default" : "develop",
+    "arc.feature.start.default" : "develop"
+}
