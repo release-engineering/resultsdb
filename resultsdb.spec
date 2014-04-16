@@ -3,25 +3,19 @@
 %{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 %endif
 
-%global pkgname resultsdb
-%global tarball_name resultsdb
-%global commitname 8262d38ac68e
-%global bitbucket_username rajcze
-
 Name:           resultsdb
-Version:        1.0.0
+Version:        1.0.1
 Release:        1%{?dist}
-Summary:        Results store for the Taskbot
+Summary:        Results store for automated tasks
 
 License:        GPLv2+
-URL:            https://bitbucket.org/rajcze/resultsdb
-Source0:        https://bitbucket.org/rajcze/%{pkgname}/get/v1.0.tar.gz
+URL:            https://bitbucket.org/fedoraqa/resultsdb
+Source0:        https://qadevel.cloud.fedoraproject.org/releases/%{name}/%{name}-%{version}.tar.gz
 
 BuildArch:      noarch
 
 Requires:       python-flask
 Requires:       python-flask-sqlalchemy
-Requires:       MySQL-python
 Requires:       python-flask-wtf
 Requires:       python-flask-login
 Requires:       python-flask-restful
@@ -34,7 +28,7 @@ ResultsDB is a results store engine for (not only) FedoraQA tools.
 Repositories
 
 %prep
-%setup -qn %{bitbucket_username}-%{pkgname}-%{commitname}
+%setup -q
 
 %build
 %{__python2} setup.py build
@@ -62,5 +56,9 @@ install conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb/settings.p
 %{_datadir}/resultsdb/*
 
 %changelog
+* Mon Apr 14 2014 Tim Flink <tflink@fedoraproject.org> - 1.0.1-1
+- updating package for new upstream location, not using bitbucket downloads
+- removing dep on mysql
+
 * Thu Feb 6 2014 Jan Sedlak <jsedlak@redhat.com> - 1.0.0
 - initial packaging
