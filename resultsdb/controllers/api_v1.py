@@ -157,7 +157,7 @@ def select_jobs(since_start = None, since_end = None, status = None, name = None
 
     # Filter by status
     if status is not None:
-        q = q.filter(Job.status.in_([o.strip().upper() for o in args['status'].split(',')]))
+        q = q.filter(Job.status.in_([o.strip().upper() for o in status.split(',')]))
 
     # Filter by name
     if name is not None:
