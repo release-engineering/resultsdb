@@ -41,8 +41,8 @@ class Job(db.Model, DBSerialize):
 
     id = db.Column(db.Integer, primary_key = True)
     status = db.Column(db.Enum(*JOB_STATUS, name='jobstatus'))
-    start_time = db.Column(db.DateTime, default = 0)
-    end_time = db.Column(db.DateTime, default = 0)
+    start_time = db.Column(db.DateTime)
+    end_time = db.Column(db.DateTime)
     ref_url = db.Column(db.Text)
     name = db.Column(db.Text)
 
