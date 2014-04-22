@@ -296,8 +296,11 @@ def create_job():
         return jsonify(error.data), error.code
 
 
-    if args['status'] not in JOB_STATUS:
+    if args['status'] not in JOB_STATUS and args['status'] is not None:
         return jsonify({'message': "status must be one of %r" % (JOB_STATUS,) }), 400
+
+    if args['status'] is None:
+        args['status'] = 'SCHEDULED'
 
     job = Job(args['status'], args['ref_url'], args['name'])
     db.session.add(job)
