@@ -4,7 +4,7 @@
 %endif
 
 Name:           resultsdb
-Version:        1.0.1
+Version:        1.0.2
 Release:        1%{?dist}
 Summary:        Results store for automated tasks
 
@@ -56,6 +56,9 @@ install conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb/settings.p
 %{_datadir}/resultsdb/*
 
 %changelog
+* Fri Apr 25 2014 Tim Flink <tflink@fedoraproject.org> - 1.0.2-1
+- bugfixes for api and using postgres as a backend
+
 * Mon Apr 14 2014 Tim Flink <tflink@fedoraproject.org> - 1.0.1-1
 - updating package for new upstream location, not using bitbucket downloads
 - removing dep on mysql
