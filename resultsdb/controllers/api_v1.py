@@ -414,11 +414,7 @@ def __get_results_parse_args():
 
 
 @api.route('/v1.0/results', methods = ['GET'])
-@api.route('/v1.0/jobs/<job_id>/results', methods = ['GET'])
-@api.route('/v1.0/testcases/<testcase_name>/results', methods = ['GET'])
 def get_results(job_id = None, testcase_name = None):
-
-
 
     p = __get_results_parse_args()
     if p['error'] is not None:
@@ -444,6 +440,24 @@ def get_results(job_id = None, testcase_name = None):
     prev, next = prev_next_urls()
 
     return jsonify(dict(href = request.url, prev = prev, next = next, data = [SERIALIZE(o) for o in q.all()]))
+
+@api.route('/v1.0/jobs/<job_id>/results', methods = ['GET'])
+@api.route('/v1.0/testcases/<testcase_name>/results', methods = ['GET'])
+def get_results_by_job_testcase(job_id = None, testcase_name = None):
+    # check whether the job/testcase exists. If not, throw 404
+    if job_id is not None:
+        try:
+            job = Job.query.filter_by(id = job_id).one()
+        except orm_exc.NoResultFound:
+            return jsonify({'message': "Job not found" }), 404
+
+    if testcase_name is not None:
+        try:
+            testcase = Testcase.query.filter_by(name = testcase_name).one()
+        except orm_exc.NoResultFound:
+            return jsonify({'message': "Testcase not found" }), 404
+
+    return get_results(job_id, testcase_name)
 
 
 @api.route('/v1.0/results/<result_id>', methods = ['GET'])
