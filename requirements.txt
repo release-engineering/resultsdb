@@ -6,6 +6,8 @@ Flask-WTF==0.8
 #FIXME: Flask-WTF > 0.8 introduced API change for imports
 Flask-Login>=0.2.2
 Flask-RESTful >= 0.2.5
+pytest>=2.4.2
+pytest-cov>=1.6
 # although this is a Flask-Restful dependency, it was not installed, adding manualy
 six
 iso8601 >= 0.1.4

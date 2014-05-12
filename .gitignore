@@ -10,3 +10,5 @@ conf/settings.py
 *dist/
 *.egg*
 /env
+.coverage
+htmlcov/
