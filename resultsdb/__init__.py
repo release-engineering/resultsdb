@@ -18,6 +18,7 @@
 #   Josef Skladanka <jskladan@redhat.com>
 #   Ralph Bean <rbean@redhat.com>
 
+import flask
 from flask import Flask
 from flask.ext.login import LoginManager
 from flask.ext.sqlalchemy import SQLAlchemy
@@ -33,6 +34,21 @@ __version__ = "1.1.0"
 # Flask App
 app = Flask(__name__)
 app.secret_key = 'not-really-a-secret'
+
+# Monkey patch Flask's "jsonify" to also handle JSONP
+original_jsonify = flask.jsonify
+
+def jsonify_with_jsonp(*args, **kwargs):
+    response = original_jsonify(*args, **kwargs)
+    callback = flask.request.args.get('callback')
+
+    if callback:
+        response.mimetype = 'application/javascript'
+        response.set_data('%s(%s);' % (callback, response.get_data()))
+
+    return response
+
+flask.jsonify = jsonify_with_jsonp
 
 # Load default config, then override that with a config file
 if os.getenv('PROD') == 'true':
