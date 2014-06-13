@@ -4,7 +4,7 @@
 %endif
 
 Name:           resultsdb
-Version:        1.1.0
+Version:        1.1.1
 Release:        1%{?dist}
 Summary:        Results store for automated tasks
 
@@ -56,6 +56,9 @@ install conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb/settings.p
 %{_datadir}/resultsdb/*
 
 %changelog
+* Fri May 16 2014 Tim Flink <tflink@fedoraproject.org> - 1.1.1-1
+- adding jsonp suport
+
 * Fri May 16 2014 Tim Flink <tflink@fedoraproject.org> - 1.1.0-1
 - Releasing resultsdb 1.1.0
 
