@@ -110,7 +110,8 @@ def setup_logging():
 
 setup_logging()
 
-app.logger.debug('using DBURI: %s' % app.config['SQLALCHEMY_DATABASE_URI'])
+if app.config['SHOW_DB_URI']:
+    app.logger.debug('using DBURI: %s' % app.config['SQLALCHEMY_DATABASE_URI'])
 
 
 # database
