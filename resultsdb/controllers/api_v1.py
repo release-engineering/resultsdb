@@ -130,9 +130,7 @@ def parse_since(since):
     since_start = None
     since_end = None
     if since is not None:
-        # Add time information, as iso8601 can not deal with just date
-        #   if time is provided, this won't change anything
-        s = ['%sT00:00:00' % x.strip() for x in since.split(',')]
+        s = since.split(',')
         try:
             since_start = iso8601.parse_date(s[0])
         except (TypeError, ValueError, iso8601.iso8601.ParseError): # Yes, this library sucks in Exception handling..
@@ -175,7 +173,7 @@ def select_results(since_start = None, since_end = None, outcome = None, since_s
     # TODO: Find a way to do this 'better' without multiple (aka aliased) joins
     # Time constraints (args['since']) and ordering by Job.startt_time
     if since_start or since_end:
-        if asince_source == 'job':
+        if since_source == 'job':
             if since_start and since_end:
                 q = q.join(Job).order_by(db.desc(Job.start_time)).filter(Job.start_time >= since_start, Job.start_time <= since_end)
             else: #means "just since_start"
