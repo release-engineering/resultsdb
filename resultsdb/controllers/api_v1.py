@@ -133,10 +133,14 @@ def parse_since(since):
         s = since.split(',')
         try:
             since_start = iso8601.parse_date(s[0])
+            # https://phab.qadevel.cloud.fedoraproject.org/T246
+            since_start = since_start.replace(tzinfo=None) # we need to strip timezone info
         except (TypeError, ValueError, iso8601.iso8601.ParseError): # Yes, this library sucks in Exception handling..
             raise iso8601.iso8601.ParseError()
         try:
             since_end = iso8601.parse_date(s[1])
+            # https://phab.qadevel.cloud.fedoraproject.org/T246
+            since_end = since_end.replace(tzinfo=None) # we need to strip timezone info
         except IndexError: # since contained just one datetime
              pass
         except (TypeError, ValueError, iso8601.iso8601.ParseError): # Yes, this library sucks in Exception handling..
