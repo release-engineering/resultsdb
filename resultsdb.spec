@@ -4,7 +4,7 @@
 %endif
 
 Name:           resultsdb
-Version:        1.1.1
+Version:        1.1.2
 Release:        1%{?dist}
 Summary:        Results store for automated tasks
 
@@ -56,6 +56,10 @@ install conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb/settings.p
 %{_datadir}/resultsdb/*
 
 %changelog
+* Wed May 18 2014 Tim Flink <tflink@fedoraproject.org> - 1.1.2-1
+- Fixing typo in date parsing code
+- Working around limitations in how time data is stored without timezones
+
 * Fri May 16 2014 Tim Flink <tflink@fedoraproject.org> - 1.1.1-1
 - adding jsonp suport
 
