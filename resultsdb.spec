@@ -4,7 +4,7 @@
 %endif
 
 Name:           resultsdb
-Version:        1.1.2
+Version:        1.1.3
 Release:        2%{?dist}
 Summary:        Results store for automated tasks
 
@@ -56,6 +56,9 @@ install conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb/settings.p
 %{_datadir}/resultsdb/*
 
 %changelog
+* Mon Jun 23 2014 Tim Flink <tflink@fedoraproject.org> - 1.1.3-1
+- add SHOW_DB_URI configuration value to stop DB URI leaking
+
 * Wed Jun 18 2014 Tim Flink <tflink@fedoraproject.org> - 1.1.2-2
 - fixing botched build and bad changelog dates
 
