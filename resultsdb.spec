@@ -5,7 +5,7 @@
 
 Name:           resultsdb
 Version:        1.1.3
-Release:        2%{?dist}
+Release:        1%{?dist}
 Summary:        Results store for automated tasks
 
 License:        GPLv2+
