@@ -18,8 +18,9 @@
 #   Josef Skladanka <jskladan@redhat.com>
 
 from flask import Blueprint, render_template, redirect, flash, url_for, request
-from flask.ext.wtf import Form, TextField, PasswordField, HiddenField, RadioField
-from flask.ext.wtf import Required
+from flask.ext.wtf import Form
+from wtforms import TextField, PasswordField, HiddenField, RadioField
+from wtforms.validators import Required
 from flask.ext.login import login_user, logout_user, login_required, current_user, AnonymousUserMixin
 
 
