@@ -33,6 +33,8 @@ class Config(object):
 
     PRODUCTION = False
 
+    SHOW_DB_URI = False
+
 
 class ProductionConfig(Config):
     DEBUG = False

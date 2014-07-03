@@ -10,3 +10,4 @@ FILE_LOGGING = False
 LOGFILR = '/var/log/resultsdb/resultsdb.log'
 SYSLOG_LOGGING = False
 STREAM_LOGGING = True
+SHOW_DB_URI = False
