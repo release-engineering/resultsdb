@@ -18,6 +18,8 @@
 #   Josef Skladanka <jskladan@redhat.com>
 #   Ralph Bean <rbean@redhat.com>
 
+from resultsdb import proxy
+
 import flask
 from flask import Flask
 from flask.ext.login import LoginManager
@@ -34,6 +36,9 @@ __version__ = "1.1.4"
 # Flask App
 app = Flask(__name__)
 app.secret_key = 'not-really-a-secret'
+
+# make sure app behaves when behind a proxy
+app.wsgi_app = proxy.ReverseProxied(app.wsgi_app)
 
 # Monkey patch Flask's "jsonify" to also handle JSONP
 original_jsonify = flask.jsonify
