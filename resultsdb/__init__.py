@@ -48,6 +48,7 @@ def jsonify_with_jsonp(*args, **kwargs):
     callback = flask.request.args.get('callback')
 
     if callback:
+        callback = callback[0]
         response.mimetype = 'application/javascript'
         response.set_data('%s(%s);' % (callback, response.get_data()))
 
