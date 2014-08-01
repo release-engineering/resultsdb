@@ -67,16 +67,16 @@ else:
     default_config_obj = 'resultsdb.config.DevelopmentConfig'
     default_config_file = os.getcwd() + '/conf/settings.py'
 
+app.config.from_object(default_config_obj)
+
 config_file = os.environ.get('RESULTSDB_CONFIG', default_config_file)
 
-if not os.path.exists(config_file):
-    raise RuntimeError("config file %r does not exist" % config_file)
+if os.path.exists(config_file):
+    app.config.from_pyfile(config_file)
 
-app.config.from_object(default_config_obj)
-app.config.from_pyfile(config_file)
-
-if app.secret_key == 'not-really-a-secret':
-    raise Warning("You need to change the app.secret_key value for production")
+if app.config['PRODUCTION']:
+    if app.secret_key == 'not-really-a-secret':
+        raise Warning("You need to change the app.secret_key value for production")
 
 # setup logging
 fmt = '[%(filename)s:%(lineno)d] ' if app.debug else '%(module)-12s '
