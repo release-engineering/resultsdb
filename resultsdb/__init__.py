@@ -45,16 +45,14 @@ original_jsonify = flask.jsonify
 
 def jsonify_with_jsonp(*args, **kwargs):
     response = original_jsonify(*args, **kwargs)
-    callback = flask.request.args.pop('callback')
+
+    callback = flask.request.args.get('callback', None)
 
     if callback:
-        callback = callback[0]
+        if not isinstance(callback, basestring):
+            callback = callback[0]
         response.mimetype = 'application/javascript'
         response.set_data('%s(%s);' % (callback, response.get_data()))
-
-        # Also, strip off the '_' used as a timestamp by jquery to get
-        # around any caching.
-        _ = flask.request.args.pop('_')
 
     return response
 

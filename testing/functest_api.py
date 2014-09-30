@@ -397,3 +397,16 @@ class TestFuncApi():
 
         assert r.status_code == 404
         assert data['message'] == "Job not found"
+
+    def test_get_jobs_results_with_jsonp(self):
+        self.test_create_result()
+
+        r = self.app.get('/api/v1.0/testcases/%s/results?callback=wat' % self.ref_testcase_name)
+
+        assert r.data.startswith('wat(')
+        data = json.loads(r.data[4:-2])
+
+        assert r.status_code == 200
+        assert data['data'][0]['outcome'] == self.ref_outcome
+        assert data['data'][0]['id'] == self.ref_job_id
+        assert data['data'][0]['testcase']['name'] == self.ref_testcase_name
