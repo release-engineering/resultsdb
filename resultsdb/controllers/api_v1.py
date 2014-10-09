@@ -245,6 +245,9 @@ RP['get_jobs'].add_argument('since', default = None, type = str, location = 'arg
 RP['get_jobs'].add_argument('status', default = None, type = str, location = 'args')
 RP['get_jobs'].add_argument('name', default = None, type = str, location = 'args')
 RP['get_jobs'].add_argument('load_results', default = False, type = bool, location = 'args')
+# These two are ignored.  They're present so reqparse isn't confused by JSONP.
+RP['get_jobs'].add_argument('callback', type = str, location = 'args')
+RP['get_jobs'].add_argument('_', type = str, location = 'args')
 
 
 RP['create_job'] = reqparse.RequestParser()
@@ -364,6 +367,9 @@ RP['get_results'].add_argument('since_source', type = str, default = 'result', l
 RP['get_results'].add_argument('outcome', type = str, location = 'args')
 RP['get_results'].add_argument('job_id', type = str, location = 'args')
 RP['get_results'].add_argument('testcase_name', type = str, location = 'args')
+# These two are ignored.  They're present so reqparse isn't confused by JSONP.
+RP['get_results'].add_argument('callback', type = str, location = 'args')
+RP['get_results'].add_argument('_', type = str, location = 'args')
 
 RP['create_result'] = reqparse.RequestParser()
 RP['create_result'].add_argument('job_id', type = int, required = True, location = 'json')
@@ -546,6 +552,9 @@ def create_result():
 RP['get_testcases'] = reqparse.RequestParser()
 RP['get_testcases'].add_argument('page', default = 0, type = int, location = 'args')
 RP['get_testcases'].add_argument('limit', default = QUERY_LIMIT, type = int, location = 'args')
+# These two are ignored.  They're present so reqparse isn't confused by JSONP.
+RP['get_testcases'].add_argument('callback', type = str, location = 'args')
+RP['get_testcases'].add_argument('_', type = str, location = 'args')
 
 RP['create_testcase'] = reqparse.RequestParser()
 RP['create_testcase'].add_argument('name', type = str, required = True, location = 'json')

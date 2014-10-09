@@ -18,6 +18,8 @@
 #   Josef Skladanka <jskladan@redhat.com>
 #   Ralph Bean <rbean@redhat.com>
 
+from resultsdb import proxy
+
 import flask
 from flask import Flask
 from flask.ext.login import LoginManager
@@ -28,21 +30,27 @@ import os
 
 
 # the version as used in setup.py
-__version__ = "1.1.3"
+__version__ = "1.1.7"
 
 
 # Flask App
 app = Flask(__name__)
 app.secret_key = 'not-really-a-secret'
 
+# make sure app behaves when behind a proxy
+app.wsgi_app = proxy.ReverseProxied(app.wsgi_app)
+
 # Monkey patch Flask's "jsonify" to also handle JSONP
 original_jsonify = flask.jsonify
 
 def jsonify_with_jsonp(*args, **kwargs):
     response = original_jsonify(*args, **kwargs)
-    callback = flask.request.args.get('callback')
+
+    callback = flask.request.args.get('callback', None)
 
     if callback:
+        if not isinstance(callback, basestring):
+            callback = callback[0]
         response.mimetype = 'application/javascript'
         response.set_data('%s(%s);' % (callback, response.get_data()))
 
@@ -61,16 +69,16 @@ else:
     default_config_obj = 'resultsdb.config.DevelopmentConfig'
     default_config_file = os.getcwd() + '/conf/settings.py'
 
+app.config.from_object(default_config_obj)
+
 config_file = os.environ.get('RESULTSDB_CONFIG', default_config_file)
 
-if not os.path.exists(config_file):
-    raise RuntimeError("config file %r does not exist" % config_file)
+if os.path.exists(config_file):
+    app.config.from_pyfile(config_file)
 
-app.config.from_object(default_config_obj)
-app.config.from_pyfile(config_file)
-
-if app.secret_key == 'not-really-a-secret':
-    raise Warning("You need to change the app.secret_key value for production")
+if app.config['PRODUCTION']:
+    if app.secret_key == 'not-really-a-secret':
+        raise Warning("You need to change the app.secret_key value for production")
 
 # setup logging
 fmt = '[%(filename)s:%(lineno)d] ' if app.debug else '%(module)-12s '
