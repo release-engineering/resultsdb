@@ -30,7 +30,7 @@ class TestFuncApi():
 
     def setup_method(self, method):
         self.app = resultsdb.app.test_client()
-        resultsdb.cli.initialize_db()
+        resultsdb.cli.initialize_db(destructive=True)
 
         self.ref_testcase_name = "testcase"
         self.ref_testcase_url = "http://fedoraqa.fedoraproject.org/%s" % self.ref_testcase_name
