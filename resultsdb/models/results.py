@@ -94,8 +94,7 @@ class ResultData(db.Model, DBSerialize):
     key = db.Column(db.Text)
     value = db.Column(db.Text)
 
-    #FIXME: the index is not created with db.create_all() why?
-    db.Index('rd_key_value_idx', 'key', 'value', mysql_length={'key': 20, 'value': 50})
+    __table_args__ = (db.Index('rd_key_value_idx', 'key', 'value', mysql_length={'key': 20, 'value': 50}), )
 
     def __init__(self, result, key, value):
         self.result = result

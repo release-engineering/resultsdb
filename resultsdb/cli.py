@@ -22,22 +22,80 @@ import __main__
 __main__.__requires__ = ['SQLAlchemy >= 0.7', 'Flask >= 0.9', 'jinja2 >= 2.6']
 import pkg_resources
 
-
-from optparse import OptionParser
+import os
 import sys
 import datetime
+from optparse import OptionParser
+
+from alembic.config import Config
+from alembic import command as al_command
+from alembic.migration import MigrationContext
 
 from resultsdb import db
 from resultsdb.models.user import User
 from resultsdb.models.results import Job, Testcase, Result, ResultData
 
+from sqlalchemy.engine import reflection
+
+def get_alembic_config():
+    # the location of the alembic ini file and alembic scripts changes when
+    # installed via package
+    if os.path.exists("./alembic.ini"):
+        alembic_cfg = Config("./alembic.ini")
+    else:
+        alembic_cfg = Config("/usr/share/resultsdb/alembic.ini",
+                             ini_section='alembic-packaged')
+    return alembic_cfg
+
+def upgrade_db(*args):
+    print "Upgrading Database to Latest Revision"
+    alembic_cfg = get_alembic_config()
+    al_command.upgrade(alembic_cfg, "head")
+
+def init_alembic(*args):
+    alembic_cfg = get_alembic_config()
+
+    # check to see if the db has already been initialized by checking for an
+    # alembic revision
+    context = MigrationContext.configure(db.engine.connect())
+    current_rev = context.get_current_revision()
+
+    if not current_rev:
+        print "Initializing alembic"
+        print " - Setting the current version to the first revision"
+        al_command.stamp(alembic_cfg, "15f5eeb9f635")
+    else:
+        print "Alembic already initialized"
+
 def initialize_db(destructive):
+    alembic_cfg = get_alembic_config()
+
     print "Initializing database"
+
     if destructive:
         print " - Dropping all tables"
         db.drop_all()
-    print " - Creating tables"
-    db.create_all()
+
+    # check whether the table 'job' exists
+    # if it does, we assume that the database is empty
+    insp = reflection.Inspector.from_engine(db.engine)
+    table_names = insp.get_table_names()
+    if 'job' not in table_names and 'Job' not in table_names:
+        print " - Creating tables"
+        db.create_all()
+        print " - Stamping alembic's current version to 'head'"
+        al_command.stamp(alembic_cfg, "head")
+
+    # check to see if the db has already been initialized by checking for an
+    # alembic revision
+    context = MigrationContext.configure(db.engine.connect())
+    current_rev = context.get_current_revision()
+    if current_rev:
+        print " - Database is currently at rev %s" % current_rev
+        upgrade_db(destructive)
+    else:
+        print "WARN: You need to have your db stamped with an alembic revision"
+        print "      Run 'init_alembic' sub-command first."
 
 def mock_data(destructive):
     print "Populating tables with mock-data"
@@ -87,7 +145,7 @@ def mock_data(destructive):
 
 
 def main():
-    possible_commands = ['init_db', 'mock_data']
+    possible_commands = ['init_db', 'mock_data', 'upgrade_db', 'init_alembic']
 
     usage = 'usage: [DEV=true] %prog ' + "(%s)" % ' | '.join(possible_commands)
     parser = OptionParser(usage=usage)
@@ -106,11 +164,13 @@ def main():
 
     command = {
                 'init_db': initialize_db,
+                'upgrade_db': upgrade_db,
                 'mock_data': mock_data,
+                'init_alembic': init_alembic,
               }[args[0]]
 
     if not options.destructive:
-        print "Proceeding with non-destructive init. To perform destructive "\
+        print "Proceeding in non-destructive mode. To perform destructive "\
               "steps use -d option."
 
     command(options.destructive)

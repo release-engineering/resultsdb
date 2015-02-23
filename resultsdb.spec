@@ -4,7 +4,7 @@
 %endif
 
 Name:           resultsdb
-Version:        1.1.7
+Version:        1.1.8
 Release:        1%{?dist}
 Summary:        Results store for automated tasks
 
@@ -21,6 +21,7 @@ Requires:       python-flask-login
 Requires:       python-flask-restful
 Requires:       python-six
 Requires:       python-iso8601
+Requires:       python-alembic
 BuildRequires:  python2-devel python-setuptools
 
 %description
@@ -35,6 +36,12 @@ Repositories
 
 %install
 %{__python2} setup.py install --skip-build --root %{buildroot}
+
+# alembic stuff
+mkdir -p %{buildroot}%{_datadir}/resultsdb
+cp -r alembic %{buildroot}%{_datadir}/resultsdb/.
+cp alembic.ini %{buildroot}%{_datadir}/resultsdb/.
+
 
 # apache and wsgi settings
 mkdir -p %{buildroot}%{_datadir}/resultsdb/conf
@@ -56,6 +63,9 @@ install conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb/settings.p
 %{_datadir}/resultsdb/*
 
 %changelog
+* Tue Feb 24 2015 Josef Skladanka <jskladan@fedoraproject.org> - 1.1.8-1
+- added Alembic support
+
 * Thu Oct 9 2014 Tim Flink <tflink@fedoraproject.org> - 1.1.7-1
 - fix jsonp interface and various associated bugs
 

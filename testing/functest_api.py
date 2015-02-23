@@ -19,6 +19,8 @@
 
 import json
 import datetime
+import os
+import tempfile
 
 import resultsdb
 import resultsdb.cli
@@ -26,7 +28,13 @@ import resultsdb.cli
 class TestFuncApi():
     @classmethod
     def setup_class(cls):
-        resultsdb.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
+        cls.dbfile = tempfile.NamedTemporaryFile(delete=False)
+        cls.dbfile.close()
+        resultsdb.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///%s' % cls.dbfile.name
+
+    @classmethod
+    def teardown_class(cls):
+        os.unlink(cls.dbfile.name)
 
     def setup_method(self, method):
         self.app = resultsdb.app.test_client()
@@ -94,7 +102,7 @@ class TestFuncApi():
     def test_get_testcase(self):
         self.test_create_testcase()
 
-        r = self.app.get('/api/v1.0/testcases/%s' % self.ref_testcase_name, content_type='application/json')
+        r = self.app.get('/api/v1.0/testcases/%s' % self.ref_testcase_name)
 
         data = json.loads(r.data)
 
@@ -103,7 +111,7 @@ class TestFuncApi():
         assert data['url'] == self.ref_testcase_url
 
     def test_get_invalid_testcase(self):
-        r = self.app.get('/api/v1.0/testcases/%s' % self.ref_testcase_name, content_type='application/json')
+        r = self.app.get('/api/v1.0/testcases/%s' % self.ref_testcase_name)
 
         data = json.loads(r.data)
 
@@ -113,7 +121,7 @@ class TestFuncApi():
     def test_get_testcases(self):
         self.test_create_testcase()
 
-        r = self.app.get('/api/v1.0/testcases', content_type='application/json')
+        r = self.app.get('/api/v1.0/testcases')
 
         data = json.loads(r.data)
 
@@ -122,7 +130,7 @@ class TestFuncApi():
         assert data['data'][0]['url'] == self.ref_testcase_url
 
     def test_get_empty_testcases(self):
-        r = self.app.get('/api/v1.0/testcases', content_type='application/json')
+        r = self.app.get('/api/v1.0/testcases')
 
         data = json.loads(r.data)
 
@@ -206,7 +214,7 @@ class TestFuncApi():
     def test_get_job(self):
         self.test_create_job()
 
-        r = self.app.get('/api/v1.0/jobs/%d' % self.ref_job_id, content_type='application/json')
+        r = self.app.get('/api/v1.0/jobs/%d' % self.ref_job_id)
 
         data = json.loads(r.data)
 
@@ -215,7 +223,7 @@ class TestFuncApi():
         assert data['status'] == self.ref_status
 
     def test_get_invalid_job(self):
-        r = self.app.get('/api/v1.0/jobs/%d' % self.ref_job_id, content_type='application/json')
+        r = self.app.get('/api/v1.0/jobs/%d' % self.ref_job_id)
 
         data = json.loads(r.data)
 
@@ -225,7 +233,7 @@ class TestFuncApi():
     def test_get_jobs(self):
         self.test_create_job()
 
-        r = self.app.get('/api/v1.0/jobs', content_type='application/json')
+        r = self.app.get('/api/v1.0/jobs')
 
         data = json.loads(r.data)
 
@@ -241,7 +249,7 @@ class TestFuncApi():
                                 'status': self.ref_status,
                                 'since': datetime.datetime(1970, 1, 1).isoformat(' ')})
 
-        r = self.app.get('/api/v1.0/jobs', data=ref_data, content_type='application/json')
+        r = self.app.get('/api/v1.0/jobs', data=ref_data)
 
         data = json.loads(r.data)
 
@@ -250,7 +258,7 @@ class TestFuncApi():
         assert data['data'][0]['status'] == self.ref_status
 
     def test_get_empty_jobs(self):
-        r = self.app.get('/api/v1.0/jobs', content_type='application/json')
+        r = self.app.get('/api/v1.0/jobs')
 
         data = json.loads(r.data)
 
@@ -321,7 +329,7 @@ class TestFuncApi():
     def test_get_result(self):
         self.test_create_result()
 
-        r = self.app.get('/api/v1.0/results/%d' % self.ref_result_id, content_type='application/json')
+        r = self.app.get('/api/v1.0/results/%d' % self.ref_result_id)
 
         data = json.loads(r.data)
 
@@ -331,7 +339,7 @@ class TestFuncApi():
         assert data['testcase']['name'] == self.ref_testcase_name
 
     def test_get_invalid_result(self):
-        r = self.app.get('/api/v1.0/results/%d' % self.ref_result_id, content_type='application/json')
+        r = self.app.get('/api/v1.0/results/%d' % self.ref_result_id)
 
         data = json.loads(r.data)
 
@@ -341,7 +349,7 @@ class TestFuncApi():
     def test_get_results(self):
         self.test_create_result()
 
-        r = self.app.get('/api/v1.0/results', content_type='application/json')
+        r = self.app.get('/api/v1.0/results')
 
         data = json.loads(r.data)
 
@@ -351,7 +359,7 @@ class TestFuncApi():
         assert data['data'][0]['testcase']['name'] == self.ref_testcase_name
 
     def test_get_empty_results(self):
-        r = self.app.get('/api/v1.0/results', content_type='application/json')
+        r = self.app.get('/api/v1.0/results')
 
         data = json.loads(r.data)
 
@@ -361,7 +369,7 @@ class TestFuncApi():
     def test_get_testcases_results(self):
         self.test_create_result()
 
-        r = self.app.get('/api/v1.0/testcases/%s/results' % self.ref_testcase_name, content_type='application/json')
+        r = self.app.get('/api/v1.0/testcases/%s/results' % self.ref_testcase_name)
 
         data = json.loads(r.data)
 
@@ -371,7 +379,7 @@ class TestFuncApi():
         assert data['data'][0]['testcase']['name'] == self.ref_testcase_name
 
     def test_get_testcases_empty_results(self):
-        r = self.app.get('/api/v1.0/testcases/%s/results' % self.ref_testcase_name, content_type='application/json')
+        r = self.app.get('/api/v1.0/testcases/%s/results' % self.ref_testcase_name)
 
         data = json.loads(r.data)
 
@@ -381,7 +389,7 @@ class TestFuncApi():
     def test_get_jobs_results(self):
         self.test_create_result()
 
-        r = self.app.get('/api/v1.0/testcases/%s/results' % self.ref_testcase_name, content_type='application/json')
+        r = self.app.get('/api/v1.0/testcases/%s/results' % self.ref_testcase_name)
 
         data = json.loads(r.data)
 
@@ -391,7 +399,7 @@ class TestFuncApi():
         assert data['data'][0]['testcase']['name'] == self.ref_testcase_name
 
     def test_get_jobs_empty_results(self):
-        r = self.app.get('/api/v1.0/jobs/%s/results' % self.ref_job_id, content_type='application/json')
+        r = self.app.get('/api/v1.0/jobs/%s/results' % self.ref_job_id)
 
         data = json.loads(r.data)
 
