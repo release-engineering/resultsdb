@@ -43,6 +43,7 @@ class TestFuncApi():
         self.ref_testcase_name = "testcase"
         self.ref_testcase_url = "http://fedoraqa.fedoraproject.org/%s" % self.ref_testcase_name
         self.ref_job_id = 1
+        self.ref_job_uuid = '12-3456-7890'
         self.ref_job_url = "http://fedoraqa.fedoraproject.org"
         self.ref_job_name = "F20 Virtualization Testday"
         self.ref_status = "SCHEDULED"
@@ -138,7 +139,12 @@ class TestFuncApi():
         assert data['data'] == []
 
     def test_create_job(self):
-        ref_data = json.dumps({'ref_url': self.ref_job_url, 'status': self.ref_status, 'name': self.ref_job_name})
+        ref_data = json.dumps({
+            'ref_url': self.ref_job_url,
+            'status': self.ref_status,
+            'name': self.ref_job_name,
+            'uuid': self.ref_job_uuid,
+            })
 
         r = self.app.post('/api/v1.0/jobs', data=ref_data, content_type='application/json')
 
@@ -147,6 +153,7 @@ class TestFuncApi():
         assert r.status_code == 201
         assert data['ref_url'] == self.ref_job_url
         assert data['status'] == self.ref_status
+        assert data['uuid'] == self.ref_job_uuid
 
     def test_create_invalid_job(self):
         ref_data = json.dumps({'ref_url': self.ref_job_url, 'status': 'INVALIDFAKE'})
@@ -222,8 +229,27 @@ class TestFuncApi():
         assert data['id'] == self.ref_job_id
         assert data['status'] == self.ref_status
 
+    def test_get_job_uuid(self):
+        self.test_create_job()
+
+        r = self.app.get('/api/v1.0/jobs/%s' % self.ref_job_uuid)
+
+        data = json.loads(r.data)
+
+        assert r.status_code == 200
+        assert data['id'] == self.ref_job_id
+        assert data['status'] == self.ref_status
+
     def test_get_invalid_job(self):
         r = self.app.get('/api/v1.0/jobs/%d' % self.ref_job_id)
+
+        data = json.loads(r.data)
+
+        assert r.status_code == 404
+        assert data['message'] == "Job not found"
+
+    def test_get_invalid_job_uuid(self):
+        r = self.app.get('/api/v1.0/jobs/%s' % self.ref_job_uuid)
 
         data = json.loads(r.data)
 

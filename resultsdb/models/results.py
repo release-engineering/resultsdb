@@ -45,13 +45,15 @@ class Job(db.Model, DBSerialize):
     end_time = db.Column(db.DateTime)
     ref_url = db.Column(db.Text)
     name = db.Column(db.Text)
+    uuid = db.Column(db.String(36))
 
     results = db.relation('Result', backref = 'job') #, lazy = False)
 
-    def __init__(self, status = 'SCHEDULED', ref_url = None, name = None):
+    def __init__(self, status = 'SCHEDULED', ref_url = None, name = None, uuid = None):
         self.status = status
         self.ref_url = ref_url
         self.name = name
+        self.uuid = uuid
 
 
 class Testcase(db.Model, DBSerialize):

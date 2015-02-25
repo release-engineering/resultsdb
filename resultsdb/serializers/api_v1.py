@@ -27,6 +27,7 @@ class Serializer(BaseSerializer):
     def _serialize_Job(self, o, job_load_results = True, **kwargs):
         rv = dict(
                 id = o.id,
+                uuid = o.uuid,
                 name = o.name,
                 status = o.status,
                 start_time = o.start_time,
