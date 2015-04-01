@@ -4,7 +4,7 @@
 %endif
 
 Name:           resultsdb
-Version:        1.1.7
+Version:        1.1.8
 Release:        1%{?dist}
 Summary:        Results store for automated tasks
 
@@ -56,6 +56,10 @@ install conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb/settings.p
 %{_datadir}/resultsdb/*
 
 %changelog
+* Wed Apr 1 2015 Tim Flink <tflink@fedoraproject.org> - 1.1.8-1
+- initial alembic support
+- UUID support for integration with execdb
+
 * Thu Oct 9 2014 Tim Flink <tflink@fedoraproject.org> - 1.1.7-1
 - fix jsonp interface and various associated bugs
 

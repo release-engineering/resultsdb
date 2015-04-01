@@ -45,13 +45,15 @@ class Job(db.Model, DBSerialize):
     end_time = db.Column(db.DateTime)
     ref_url = db.Column(db.Text)
     name = db.Column(db.Text)
+    uuid = db.Column(db.String(36))
 
     results = db.relation('Result', backref = 'job') #, lazy = False)
 
-    def __init__(self, status = 'SCHEDULED', ref_url = None, name = None):
+    def __init__(self, status = 'SCHEDULED', ref_url = None, name = None, uuid = None):
         self.status = status
         self.ref_url = ref_url
         self.name = name
+        self.uuid = uuid
 
 
 class Testcase(db.Model, DBSerialize):
@@ -94,8 +96,7 @@ class ResultData(db.Model, DBSerialize):
     key = db.Column(db.Text)
     value = db.Column(db.Text)
 
-    #FIXME: the index is not created with db.create_all() why?
-    db.Index('rd_key_value_idx', 'key', 'value', mysql_length={'key': 20, 'value': 50})
+    __table_args__ = (db.Index('rd_key_value_idx', 'key', 'value', mysql_length={'key': 20, 'value': 50}), )
 
     def __init__(self, result, key, value):
         self.result = result

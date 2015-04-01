@@ -43,8 +43,7 @@ class ProductionConfig(Config):
 
 class DevelopmentConfig(Config):
     TRAP_BAD_REQUEST_ERRORS = True
-    SQLALCHEMY_DATABASE_URI = \
-        'mysql://resultsdb:TOP_SECRET_PASSWORD@localhost/resultsdb'
+    SQLALCHEMY_DATABASE_URI = 'sqlite:////tmp/resultsdb.db'
     HOST = '0.0.0.0'
     PORT = 5000
 

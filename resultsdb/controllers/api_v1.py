@@ -254,6 +254,7 @@ RP['create_job'] = reqparse.RequestParser()
 RP['create_job'].add_argument('ref_url', type = str, required = True, location = 'json')
 RP['create_job'].add_argument('status', type = str, default = 'SCHEDULED', location = 'json')
 RP['create_job'].add_argument('name', type = str, default = None, location = 'json')
+RP['create_job'].add_argument('uuid', type = str, default = None, location = 'json')
 
 RP['update_job'] = reqparse.RequestParser()
 RP['update_job'].add_argument('status', type = str, required = True, location = 'json')
@@ -284,8 +285,14 @@ def get_jobs(): #page = None, limit = QUERY_LIMIT):
 @api.route('/v1.0/jobs/<job_id>', methods = ['GET'])
 def get_job(job_id):
     try:
-        job = Job.query.filter_by(id = job_id).one()
-    except orm_exc.NoResultFound:
+        job_id = int(job_id)
+    except ValueError: # uuid can not be parsed to int
+        q =  Job.query.filter_by(uuid = job_id)
+    else: # id was int -> filter by id
+        q =  Job.query.filter_by(id = job_id)
+
+    job = q.first()
+    if not job:
         return jsonify({'message': "Job not found" }), 404
 
     return jsonify(SERIALIZE(job))
@@ -307,7 +314,7 @@ def create_job():
     if args['status'] is None:
         args['status'] = 'SCHEDULED'
 
-    job = Job(args['status'], args['ref_url'], args['name'])
+    job = Job(args['status'], args['ref_url'], args['name'], args['uuid'])
     db.session.add(job)
     db.session.commit()
 
@@ -485,7 +492,6 @@ def create_result():
         return jsonify({"message": "Malformed JSON data"}), error.code
     except HTTPException as error:
         return jsonify(error.data), error.code
-
 
     try:
         job = Job.query.filter_by(id = args['job_id']).one()
