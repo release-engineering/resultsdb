@@ -5,7 +5,7 @@
 
 Name:           resultsdb
 Version:        1.1.8
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Results store for automated tasks
 
 License:        GPLv2+
@@ -21,6 +21,7 @@ Requires:       python-flask-login
 Requires:       python-flask-restful
 Requires:       python-six
 Requires:       python-iso8601
+Requires:       python-alembic
 BuildRequires:  python2-devel python-setuptools
 
 %description
@@ -41,6 +42,11 @@ mkdir -p %{buildroot}%{_datadir}/resultsdb/conf
 cp conf/resultsdb.conf %{buildroot}%{_datadir}/resultsdb/conf/.
 cp conf/resultsdb.wsgi %{buildroot}%{_datadir}/resultsdb/.
 
+# alembic config and data
+cp -r alembic %{buildroot}%{_datadir}/resultsdb/.
+install alembic.ini %{buildroot}%{_datadir}/resultsdb/.
+
+# resultsdb config
 mkdir -p %{buildroot}%{_sysconfdir}/resultsdb
 install conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb/settings.py.example
 
@@ -56,6 +62,10 @@ install conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb/settings.p
 %{_datadir}/resultsdb/*
 
 %changelog
+* Wed Apr 1 2015 Tim Flink <tflink@fedoraproject.org> - 1.1.8-2
+- added alembic config and data to package
+- added requires python-alembic
+
 * Wed Apr 1 2015 Tim Flink <tflink@fedoraproject.org> - 1.1.8-1
 - initial alembic support
 - UUID support for integration with execdb
