@@ -26,6 +26,7 @@ from flask.ext.login import LoginManager
 from flask.ext.sqlalchemy import SQLAlchemy
 
 import logging
+import logging.handlers
 import os
 
 
