@@ -4,8 +4,8 @@
 %endif
 
 Name:           resultsdb
-Version:        1.1.8
-Release:        2%{?dist}
+Version:        1.1.9
+Release:        1%{?dist}
 Summary:        Results store for automated tasks
 
 License:        GPLv2+
@@ -62,6 +62,10 @@ install conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb/settings.p
 %{_datadir}/resultsdb/*
 
 %changelog
+* Thu Apr 9 2015 Tim Flink <tflink@fedoraproject.org> - 1.1.9-1
+- fixed TB with file logging (T454)
+- changed complete data returning on update_job to be optional (T466)
+
 * Wed Apr 1 2015 Tim Flink <tflink@fedoraproject.org> - 1.1.8-2
 - added alembic config and data to package
 - added requires python-alembic
