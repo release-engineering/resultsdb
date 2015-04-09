@@ -258,6 +258,7 @@ RP['create_job'].add_argument('uuid', type = str, default = None, location = 'js
 
 RP['update_job'] = reqparse.RequestParser()
 RP['update_job'].add_argument('status', type = str, required = True, location = 'json')
+RP['update_job'].add_argument('return_data', default = False, type = bool, location = 'args')
 
 
 @api.route('/v1.0/jobs', methods = ['GET'])
@@ -359,7 +360,11 @@ def update_job(job_id):
     db.session.add(job)
     db.session.commit()
 
-    return jsonify(SERIALIZE(job)), 200
+    data = {}
+    if args['return_data']:
+        data = job
+
+    return jsonify(SERIALIZE(data)), 200
 
 
 # =============================================================================

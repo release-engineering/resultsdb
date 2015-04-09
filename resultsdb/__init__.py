@@ -26,11 +26,12 @@ from flask.ext.login import LoginManager
 from flask.ext.sqlalchemy import SQLAlchemy
 
 import logging
+import logging.handlers
 import os
 
 
 # the version as used in setup.py
-__version__ = "1.1.8"
+__version__ = "1.1.9"
 
 
 # Flask App
