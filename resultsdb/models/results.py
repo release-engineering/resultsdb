@@ -81,6 +81,11 @@ class Result(db.Model, DBSerialize):
     testcase = db.relation('Testcase', backref = 'results') #, lazy = False)
     result_data = db.relation('ResultData', backref = 'result') #, lazy = False)
 
+    __table_args__ = (
+            db.Index('result_fk_job_id', 'job_id'),
+            db.Index('result_fk_testcase_id', 'testcase_id'),
+            )
+
     def __init__(self, job, testcase, outcome, log_url = None, summary = None):
         self.job = job
         self.testcase = testcase
@@ -96,7 +101,12 @@ class ResultData(db.Model, DBSerialize):
     key = db.Column(db.Text)
     value = db.Column(db.Text)
 
-    __table_args__ = (db.Index('rd_key_value_idx', 'key', 'value', mysql_length={'key': 20, 'value': 50}), )
+    __table_args__ = (
+            db.Index('result_data_idx_key_value', 'key', 'value',
+                postgresql_ops={'key': 'text_pattern_ops', 'value': 'text_pattern_ops'},
+                ),
+            db.Index('result_data_fk_result_id', 'result_id'),
+            )
 
     def __init__(self, result, key, value):
         self.result = result
