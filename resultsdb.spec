@@ -4,7 +4,7 @@
 %endif
 
 Name:           resultsdb
-Version:        1.1.9
+Version:        1.1.10
 Release:        1%{?dist}
 Summary:        Results store for automated tasks
 
@@ -62,6 +62,9 @@ install conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb/settings.p
 %{_datadir}/resultsdb/*
 
 %changelog
+* Mon Apr 20 2015 Tim Flink <tflink@fedoraproject.org> - 1.1.10-1
+- Added indexes for foreign keys (T452)
+
 * Thu Apr 9 2015 Tim Flink <tflink@fedoraproject.org> - 1.1.9-1
 - fixed TB with file logging (T454)
 - changed complete data returning on update_job to be optional (T466)
