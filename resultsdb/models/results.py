@@ -28,7 +28,7 @@ __all__ = ['Testcase', 'Job', 'Result', 'ResultData', 'JOB_STATUS', 'RESULT_OUTC
 
 
 JOB_STATUS = ('SCHEDULED', 'RUNNING', 'COMPLETED', 'ABORTED', 'CRASHED', 'NEEDS_INSPECTION')
-RESULT_OUTCOME = ('PASSED', 'INFO', 'FAILED', 'ERROR', 'WAIVED', 'NEEDS_INSPECTION')
+RESULT_OUTCOME = ('PASSED', 'INFO', 'FAILED', 'ERROR', 'WAIVED', 'NEEDS_INSPECTION', 'ABORTED')
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
