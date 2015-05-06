@@ -4,7 +4,7 @@
 %endif
 
 Name:           resultsdb
-Version:        1.1.10
+Version:        1.1.11
 Release:        1%{?dist}
 Summary:        Results store for automated tasks
 
@@ -62,6 +62,9 @@ install conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb/settings.p
 %{_datadir}/resultsdb/*
 
 %changelog
+* Wed May 6 2015 Tim Flink <tflink@fedoraproject.org> - 1.1.11-1
+- Added ABORTED outcome (T458)
+
 * Mon Apr 20 2015 Tim Flink <tflink@fedoraproject.org> - 1.1.10-1
 - Added indexes for foreign keys (T452)
 
