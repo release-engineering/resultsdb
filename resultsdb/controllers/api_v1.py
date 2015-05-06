@@ -275,6 +275,8 @@ def get_jobs(): #page = None, limit = QUERY_LIMIT):
     except iso8601.iso8601.ParseError:
         return jsonify({"message": "'since' parameter not in ISO8601 format"}), 400
 
+    if args['status'] is not None and args['status'] not in JOB_STATUS:
+        return jsonify({'message': "status must be one of %r" % (JOB_STATUS,) }), 400
 
     q = select_jobs(since_start = s, since_end = e, status = args['status'], name = args['name'])
     q = pagination(q, args['page'], args['limit'])
@@ -309,7 +311,7 @@ def create_job():
         return jsonify(error.data), error.code
 
 
-    if args['status'] not in JOB_STATUS and args['status'] is not None:
+    if args['status'] is not None and args['status'] not in JOB_STATUS:
         return jsonify({'message': "status must be one of %r" % (JOB_STATUS,) }), 400
 
     if args['status'] is None:
@@ -402,6 +404,12 @@ def __get_results_parse_args():
     except HTTPException as error:
         retval["error"] = (jsonify(error.data), error.code)
         return retval
+
+    if args['outcome'] is not None:
+        args['outcome'] = args['outcome'].strip().upper()
+        if args['outcome'] not in RESULT_OUTCOME:
+            retval["error"] =(jsonify({'message': "outcome must be one of %r" % (RESULT_OUTCOME,) }), 400)
+            return retval
 
     try:
         s, e = parse_since(args['since'])

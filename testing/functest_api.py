@@ -171,7 +171,7 @@ class TestFuncApi():
         ref_status = "RUNNING"
         ref_data = json.dumps({'status': ref_status})
 
-        r = self.app.put('/api/v1.0/jobs/%d' % self.ref_job_id, data=ref_data, content_type='application/json')
+        r = self.app.put('/api/v1.0/jobs/%d?return_data=1' % self.ref_job_id, data=ref_data, content_type='application/json')
 
         data = json.loads(r.data)
 
@@ -185,7 +185,7 @@ class TestFuncApi():
         ref_status = "COMPLETED"
         ref_data = json.dumps({'status': ref_status})
 
-        r = self.app.put('/api/v1.0/jobs/%d' % self.ref_job_id, data=ref_data, content_type='application/json')
+        r = self.app.put('/api/v1.0/jobs/%d?return_data=1' % self.ref_job_id, data=ref_data, content_type='application/json')
 
         data = json.loads(r.data)
 
@@ -193,6 +193,19 @@ class TestFuncApi():
         assert data['status'] == ref_status
         assert data['start_time'] is not None
         assert data['end_time'] is not None
+
+    def test_update_job_do_not_return_data(self):
+        self.test_create_job()
+
+        ref_status = "RUNNING"
+        ref_data = json.dumps({'status': ref_status})
+
+        r = self.app.put('/api/v1.0/jobs/%d' % self.ref_job_id, data=ref_data, content_type='application/json')
+
+        data = json.loads(r.data)
+
+        assert r.status_code == 200
+        assert data == {}
 
     def test_update_invalid_job(self):
         ref_status = "RUNNING"
@@ -247,6 +260,15 @@ class TestFuncApi():
 
         assert r.status_code == 404
         assert data['message'] == "Job not found"
+
+    def test_get_invalid_job_status(self):
+        r = self.app.get('/api/v1.0/jobs?status=BADSTATUS')
+
+        data = json.loads(r.data)
+
+        assert r.status_code == 400
+        assert data['message'].startswith('status must be one of')
+
 
     def test_get_invalid_job_uuid(self):
         r = self.app.get('/api/v1.0/jobs/%s' % self.ref_job_uuid)
@@ -371,6 +393,14 @@ class TestFuncApi():
 
         assert r.status_code == 404
         assert data['message'] == "Result not found"
+
+    def test_get_invalid_result_outcome(self):
+        r = self.app.get('/api/v1.0/results?outcome=BADOUTCOME')
+
+        data = json.loads(r.data)
+
+        assert r.status_code == 400
+        assert data['message'].startswith("outcome must be one of")
 
     def test_get_results(self):
         self.test_create_result()
