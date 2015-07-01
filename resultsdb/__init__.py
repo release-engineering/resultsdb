@@ -44,6 +44,9 @@ app.wsgi_app = proxy.ReverseProxied(app.wsgi_app)
 # Monkey patch Flask's "jsonify" to also handle JSONP
 original_jsonify = flask.jsonify
 
+# Expose the __version__ variable in templates
+app.jinja_env.globals['app_version'] = __version__
+
 def jsonify_with_jsonp(*args, **kwargs):
     response = original_jsonify(*args, **kwargs)
 

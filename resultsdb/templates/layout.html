@@ -36,28 +36,28 @@
       </div><!--/.container -->
     </div><!--/.navbar -->
 
-
     <div class="container">
+
     {% for message in get_flashed_messages() %}
       <div class="alert alert-info">
         <button type="button" class="close" data-dismiss="alert">&times;</button>
         {{ message }}
       </div>
     {% endfor %}
-    </div>
 
-
-
-    <div class="container">
     {% block body %}
        <h1> My First Flask Application! </h1>
     {% endblock %}
+
     </div>
-
-
-
-    {% block footer %}
+   {% block footer %}
+      <footer class="footer">
+        <div class="container text-right">
+          <p class="text-muted">Version: {{app_version}}</p>
+        </div>
+      </footer>
     {% endblock %}
+
 
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="//code.jquery.com/jquery.js"></script>
