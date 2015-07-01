@@ -200,7 +200,13 @@ def select_results(since_start = None, since_end = None, outcome = None, since_s
 
     # Filter by job_id
     if job_id is not None:
-        q = q.filter(Result.job_id == job_id)
+        try:
+            job_id = int(job_id)
+        except ValueError: # uuid can not be parsed to int
+            alias = db.aliased(Job)
+            q = q.join(alias).filter(alias.uuid == job_id)
+        else: # id was int -> filter by id
+            q = q.filter(Result.job_id == job_id)
 
     # Filter by testcase_name
     if testcase_name is not None:
@@ -326,9 +332,16 @@ def create_job():
 
 @api.route('/v1.0/jobs/<job_id>', methods = ['PUT'])
 def update_job(job_id):
+    try:
+        job_id = int(job_id)
+    except ValueError: # uuid can not be parsed to int
+        q = Job.query.filter_by(uuid = job_id)
+    else: # id was int -> filter by id
+        q = Job.query.filter_by(id = job_id)
+
     # Fail early, if the job does not exist
     try:
-        job = Job.query.filter_by(id = job_id).one()
+        job = q.one()
     except orm_exc.NoResultFound:
         return jsonify({'message': "Job not found" }), 404
 
@@ -386,7 +399,7 @@ RP['get_results'].add_argument('callback', type = str, location = 'args')
 RP['get_results'].add_argument('_', type = str, location = 'args')
 
 RP['create_result'] = reqparse.RequestParser()
-RP['create_result'].add_argument('job_id', type = int, required = True, location = 'json')
+RP['create_result'].add_argument('job_id', type = str, required = True, location = 'json')
 RP['create_result'].add_argument('outcome', type = str, required = True, location = 'json')
 RP['create_result'].add_argument('testcase_name', type = str, required = True, location = 'json')
 RP['create_result'].add_argument('summary', type = str, location = 'json')
@@ -476,6 +489,13 @@ def get_results_by_job_testcase(job_id = None, testcase_name = None):
     # check whether the job/testcase exists. If not, throw 404
     if job_id is not None:
         try:
+            job_id = int(job_id)
+        except ValueError: # uuid can not be parsed to int
+            q =  Job.query.filter_by(uuid = job_id)
+        else: # id was int -> filter by id
+            q =  Job.query.filter_by(id = job_id)
+
+        try:
             job = Job.query.filter_by(id = job_id).one()
         except orm_exc.NoResultFound:
             return jsonify({'message': "Job not found" }), 404
@@ -507,8 +527,17 @@ def create_result():
     except HTTPException as error:
         return jsonify(error.data), error.code
 
+
     try:
-        job = Job.query.filter_by(id = args['job_id']).one()
+        job_id = int(job_id)
+    except ValueError: # uuid can not be parsed to int
+        q = Job.query.filter_by(uuid = job_id)
+    else: # id was int -> filter by id
+        q = Job.query.filter_by(id = job_id)
+
+    # Fail early, if the job does not exist
+    try:
+        job = q.one()
     except orm_exc.NoResultFound:
         return jsonify({'message': "Job not found" }), 404
 
