@@ -654,4 +654,16 @@ def update_testcase(testcase_name):
 
     return jsonify(SERIALIZE(tc)), 200
 
+@api.route('/', methods=['GET'])
+@api.route('/v1.0', methods=['GET'])
+@api.route('/v1.0/', methods=['GET'])
+def landing_page():
+    return jsonify({"message": "Everything is fine. But choose wisely, for while "
+                               "the true Grail will bring you life, the false "
+                               "Grail will take it from you.",
+                    "documentation": "http://docs.resultsdb.apiary.io/",
+                    "jobs": url_for('.get_jobs', _external=True),
+                    "results": url_for('.get_results', _external=True),
+                    "testcases": url_for('.get_testcases', _external=True)
+                    }), 300
 
