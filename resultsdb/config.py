@@ -28,8 +28,8 @@ class Config(object):
     SYSLOG_LOGGING = False
     STREAM_LOGGING = True
 
-    HOST = None
-    PORT = None
+    HOST = '0.0.0.0'
+    PORT = 5001
 
     PRODUCTION = False
 
@@ -43,9 +43,8 @@ class ProductionConfig(Config):
 
 class DevelopmentConfig(Config):
     TRAP_BAD_REQUEST_ERRORS = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:////tmp/resultsdb.db'
-    HOST = '0.0.0.0'
-    PORT = 5000
+    SQLALCHEMY_DATABASE_URI = 'sqlite:////var/tmp/resultsdb_db.sqlite'
+    SHOW_DB_URI = True
 
 
 class TestingConfig(Config):

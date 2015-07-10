@@ -1,33 +1,54 @@
 # ResultsDB
 
-ResultsDB is a results store engine for (not only) FedoraQA tools.
+ResultsDB is a results store engine for (not only) Fedora QA tools.
 
 ## Repositories
 
 * ResultsDB Frontend - [Bitbucket GIT repo](https://bitbucket.org/fedoraqa/resultsdb_frontend)
 * ResultsDB Client Library - [Bitbucket GIT repo](https://bitbucket.org/fedoraqa/resultsdb_api)
 
-## Hacking
+## Quick development setup
 
 First, clone the repository.
 
-Then, setup a virtual environment for development.
+Then, setup a virtual environment for development:
 
-    $ sudo yum install python-virtualenv
-    $ virtualenv resultsdb
-    $ source resultsdb/bin/activate
+    $ sudo dnf install python-virtualenv
+    $ virtualenv env_resultsdb
+    $ source env_resultsdb/bin/activate
     $ pip install -r requirements.txt
-    $ python setup.py install
-
-Setup a config file:
-
-    $ cp conf/settings.py.example conf/settings.py
-    $ # edit conf/settings.py accordingly
 
 Initialize your database:
 
-    $ ./init_db.sh
+    $ DEV=true ./init_db.sh
 
-Run the server
+Run the server:
 
-    $ python runapp.py
+    $ DEV=true python runapp.py
+
+The server is now running with a very simple frontend at <http://localhost:5001>.
+API calls can be sent to <http://localhost:5001/api/v1.0>. All data is stored
+inside `/var/tmp/resultsdb_db.sqlite`.
+
+## Adjusting configuration
+
+You can configure this app by copying `conf/settings.py.example` into
+`conf/setting.py` and adjusting values as you see fit. It overrides default
+values in `resultsdb/config.py`.
+
+## Using with libtaskotron
+
+You might want to use this tool together with libtaskotron. To use your own
+*ResultsDB* server in libtaskotron, edit `/etc/taskotron/taskotron.yaml` and
+set the following value::
+
+    resultsdb_server: http://localhost:5001/api/v1.0
+
+You might also need to adjust `reporting_enabled` and `report_to_resultsdb`,
+depending on your local settings.
+
+## Running test suite
+
+You can run this test suite with the following command::
+
+    $ py.test --functional testing/

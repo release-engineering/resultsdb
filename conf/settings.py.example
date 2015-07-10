@@ -1,13 +1,12 @@
-# while you can use this as a template, we recommend that you use the blockerbugs
-# cli to generate a config file
-SECRET_KEY = 'not-really-a-secret'
-SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://dbuser:dbpassword@dbhost:dbport/dbname'
-FAS_ADMIN_GROUP = "magic-fas-group"
-FAS_USER = "magicuser@unicornsarereal.com"
-FAS_PASSWORD = "password"
-BUGZILLA_COOKIE = None
+# Copy this file to `conf/settings.py` to put it into effect. It overrides the values defined
+# in `resultsdb/config.py`.
+SECRET_KEY = 'replace-me-with-something-random'
+#SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://dbuser:dbpassword@dbhost:dbport/dbname'
+SQLALCHEMY_DATABASE_URI = 'sqlite:////var/tmp/resultsdb_db.sqlite'
 FILE_LOGGING = False
-LOGFILR = '/var/log/resultsdb/resultsdb.log'
+LOGFILE = '/var/log/resultsdb/resultsdb.log'
 SYSLOG_LOGGING = False
 STREAM_LOGGING = True
-SHOW_DB_URI = False
+#SHOW_DB_URI = False
+RUN_HOST= '0.0.0.0'
+RUN_PORT = 5001

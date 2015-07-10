@@ -1,3 +1,5 @@
+import os
+
 def pytest_addoption(parser):
     """
     Add an option to the py.test parser to detect when the functional tests
@@ -24,4 +26,4 @@ def pytest_configure(config):
     """Called after command line options have been parsed and all plugins and
     initial conftest files been loaded."""
 
-    pass
+    os.environ['TEST'] = 'true'
