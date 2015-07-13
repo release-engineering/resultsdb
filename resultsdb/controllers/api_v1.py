@@ -392,6 +392,7 @@ RP['create_result'].add_argument('testcase_name', type = str, required = True, l
 RP['create_result'].add_argument('summary', type = str, location = 'json')
 RP['create_result'].add_argument('result_data', type = dict, location = 'json')
 RP['create_result'].add_argument('log_url', type = str, location = 'json')
+RP['create_result'].add_argument('strict', type = bool, default=False, location = 'json')
 
 
 def __get_results_parse_args():
@@ -517,7 +518,13 @@ def create_result():
     try:
         testcase = Testcase.query.filter_by(name = args['testcase_name']).one()
     except orm_exc.NoResultFound:
-        return jsonify({'message': "Testcase not found" }), 404
+        if args['strict']:
+            return jsonify({'message': "Testcase not found" }), 404
+        else:
+            # TODO: add configurable default "empty" URL
+            testcase = Testcase(args['testcase_name'], "")
+            db.session.add(testcase)
+            db.session.commit()
 
     outcome = args['outcome'].strip().upper()
     if outcome not in RESULT_OUTCOME:
@@ -577,7 +584,7 @@ RP['get_testcases'].add_argument('_', type = str, location = 'args')
 
 RP['create_testcase'] = reqparse.RequestParser()
 RP['create_testcase'].add_argument('name', type = str, required = True, location = 'json')
-RP['create_testcase'].add_argument('url', type = str, required = True, location = 'json')
+RP['create_testcase'].add_argument('url', type = str, required = False, location = 'json')
 
 RP['update_testcase'] = reqparse.RequestParser()
 RP['update_testcase'].add_argument('url', type = str, required = True, location = 'json')
