@@ -129,11 +129,17 @@ def mock_data(destructive):
         r2 = Result(job = j1, testcase = tc1, outcome = 'FAILED', log_url = "http://example.com/r2")
         r3 = Result(job = j2, testcase = tc2, outcome = 'FAILED', log_url = "http://example.com/r2")
 
-        td1 = ResultData(r1, "envr", "cabal-rpm-0.8.3-1.fc18")
-        td2 = ResultData(r1, "arch", "x86_64")
+        rd = ResultData(r1, "item", "cabal-rpm-0.8.3-1.fc18")
+        rd = ResultData(r1, "arch", "x86_64")
+        rd = ResultData(r1, "type", "koji_build")
 
-        td3 = ResultData(r3, "envr", "cabal-rpm-0.8.3-1.fc18")
-        td4 = ResultData(r3, "arch", "i386")
+        rd = ResultData(r2, "item", "htop-1.0-1.fc22")
+        rd = ResultData(r2, "arch", "i386")
+        rd = ResultData(r2, "type", "bodhi_update")
+
+        rd = ResultData(r3, "item", "cabal-rpm-0.8.3-1.fc18")
+        rd = ResultData(r3, "arch", "i386")
+        rd = ResultData(r3, "type", "bodhi_update")
 
         db.session.add(tc1)
         db.session.add(j1)
@@ -180,4 +186,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
