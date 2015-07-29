@@ -52,6 +52,7 @@ class TestFuncApi():
         self.ref_result_data = {'data': 'fakedata', 'data1': ['fakedata1'], 'data2': 1}
         self.ref_result_summary = "1 PASSED, 0 FAILED"
         self.ref_result_log_url = "http://fedoraqa.fedoraproject.org/logs"
+        self.prefix = 'http://localhost/api/v1.0/'
 
     def test_create_testcase(self):
         ref_data = json.dumps({'name': self.ref_testcase_name, 'url': self.ref_testcase_url})
@@ -413,6 +414,11 @@ class TestFuncApi():
         assert data['data'][0]['outcome'] == self.ref_outcome
         assert data['data'][0]['id'] == self.ref_job_id
         assert data['data'][0]['testcase']['name'] == self.ref_testcase_name
+        assert data['href'] == self.prefix + 'results'
+        assert data['next'] == self.prefix + 'results?page=1'
+        assert data['prev'] == None
+        assert data['pages'] == 1
+        assert data['total'] == 1
 
     def test_get_empty_results(self):
         r = self.app.get('/api/v1.0/results')
@@ -433,6 +439,11 @@ class TestFuncApi():
         assert data['data'][0]['outcome'] == self.ref_outcome
         assert data['data'][0]['id'] == self.ref_job_id
         assert data['data'][0]['testcase']['name'] == self.ref_testcase_name
+        assert data['href'] == self.prefix + 'testcases/testcase/results'
+        assert data['next'] == self.prefix + 'testcases/testcase/results?page=1'
+        assert data['prev'] == None
+        assert data['pages'] == 1
+        assert data['total'] == 1
 
     def test_get_testcases_empty_results(self):
         r = self.app.get('/api/v1.0/testcases/%s/results' % self.ref_testcase_name)
@@ -453,6 +464,11 @@ class TestFuncApi():
         assert data['data'][0]['outcome'] == self.ref_outcome
         assert data['data'][0]['id'] == self.ref_job_id
         assert data['data'][0]['testcase']['name'] == self.ref_testcase_name
+        assert data['href'] == self.prefix + 'testcases/testcase/results'
+        assert data['next'] == self.prefix + 'testcases/testcase/results?page=1'
+        assert data['prev'] == None
+        assert data['pages'] == 1
+        assert data['total'] == 1
 
     def test_get_jobs_empty_results(self):
         r = self.app.get('/api/v1.0/jobs/%s/results' % self.ref_job_id)
@@ -474,3 +490,8 @@ class TestFuncApi():
         assert data['data'][0]['outcome'] == self.ref_outcome
         assert data['data'][0]['id'] == self.ref_job_id
         assert data['data'][0]['testcase']['name'] == self.ref_testcase_name
+        assert data['href'] == self.prefix + 'testcases/testcase/results?callback=wat'
+        assert data['next'] == self.prefix + 'testcases/testcase/results?callback=wat&page=1'
+        assert data['prev'] == None
+        assert data['pages'] == 1
+        assert data['total'] == 1

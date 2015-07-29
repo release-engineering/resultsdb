@@ -1,4 +1,4 @@
-# Copyright 2013, Red Hat, Inc
+# Copyright 2013-2014, Red Hat, Inc
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,8 +16,10 @@
 #
 # Authors:
 #   Josef Skladanka <jskladan@redhat.com>
+#   Ralph Bean <rbean@redhat.com>
 
 import datetime
+import math
 import re
 from functools import partial
 
@@ -83,6 +85,10 @@ SERIALIZE = __serializer.serialize
 # =============================================================================
 
 def pagination(q, page, limit):
+
+    total = q.count()
+    pages = int(math.ceil(total / float(limit)))
+
     # pagination offset
     try:
         page = int(page)
@@ -99,7 +105,7 @@ def pagination(q, page, limit):
         limit = QUERY_LIMIT
 
     q = q.limit(limit)
-    return q
+    return total, pages, q
 
 #TODO: find a better way to do this
 def prev_next_urls():
@@ -285,11 +291,21 @@ def get_jobs(): #page = None, limit = QUERY_LIMIT):
         return jsonify({'message': "status must be one of %r" % (JOB_STATUS,) }), 400
 
     q = select_jobs(since_start = s, since_end = e, status = args['status'], name = args['name'])
-    q = pagination(q, args['page'], args['limit'])
 
+    total, pages, q = pagination(q, args['page'], args['limit'])
     prev, next = prev_next_urls()
 
-    return jsonify(dict(href = request.url, prev = prev, next = next, data = [SERIALIZE(o, job_load_results = args['load_results']) for o in q.all()]))
+    return jsonify(dict(
+        href=request.url,
+        prev=prev,
+        next=next,
+        total=total,
+        pages=pages,
+        data=[
+            SERIALIZE(o, job_load_results=args['load_results'])
+            for o in q.all()
+        ],
+    ))
 
 @api.route('/v1.0/jobs/<job_id>', methods = ['GET'])
 def get_job(job_id):
@@ -477,11 +493,18 @@ def get_results(job_id = None, testcase_name = None):
             job_id = j_id,
             testcase_name = t_nm,
             )
-    q = pagination(q, args['page'], args['limit'])
 
+    total, pages, q = pagination(q, args['page'], args['limit'])
     prev, next = prev_next_urls()
 
-    return jsonify(dict(href = request.url, prev = prev, next = next, data = [SERIALIZE(o) for o in q.all()]))
+    return jsonify(dict(
+        href=request.url,
+        prev=prev,
+        next=next,
+        total=total,
+        pages=pages,
+        data=[SERIALIZE(o) for o in q.all()],
+    ))
 
 @api.route('/v1.0/jobs/<job_id>/results', methods = ['GET'])
 @api.route('/v1.0/testcases/<testcase_name>/results', methods = ['GET'])
@@ -633,10 +656,17 @@ def get_testcases(): #page = None, limit = QUERY_LIMIT):
     q = db.session.query(Testcase)
     q.order_by(db.asc(Testcase.name))
 
-    q = pagination(q, args['page'], args['limit'])
-
+    total, pages, q = pagination(q, args['page'], args['limit'])
     prev, next = prev_next_urls()
-    return jsonify(dict(href = request.url, prev = prev, next = next, data = [SERIALIZE(o) for o in q.all()]))
+
+    return jsonify(dict(
+        href=request.url,
+        prev=prev,
+        next=next,
+        total=total,
+        pages=pages,
+        data=[SERIALIZE(o) for o in q.all()],
+    ))
 
 @api.route('/v1.0/testcases/<testcase_name>', methods = ['GET'])
 def get_testcase(testcase_name):
