@@ -35,6 +35,9 @@ class Config(object):
 
     SHOW_DB_URI = False
 
+    FEDMENU_URL = 'https://apps.fedoraproject.org/fedmenu'
+    FEDMENU_DATA_URL = 'https://apps.fedoraproject.org/js/data.js'
+
 
 class ProductionConfig(Config):
     DEBUG = False
@@ -50,3 +53,5 @@ class DevelopmentConfig(Config):
 class TestingConfig(Config):
     TRAP_BAD_REQUEST_ERRORS = True
     TESTING = True
+    FEDMENU_URL = 'https://apps.stg.fedoraproject.org/fedmenu'
+    FEDMENU_DATA_URL = 'https://apps.stg.fedoraproject.org/js/data.js'

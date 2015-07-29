@@ -63,5 +63,17 @@
     <script src="//code.jquery.com/jquery.js"></script>
     <!-- Include all compiled plugins -->
     <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+
+    {% if config['FEDMENU_URL'] is defined %}
+    <script src="{{ config['FEDMENU_URL'] }}/js/fedmenu.js"></script>
+    <script>
+      fedmenu({
+        'url': '{{ config["FEDMENU_DATA_URL"] }}',
+        'mimeType': 'application/javascript',
+        'position': 'bottom-right',
+      });
+    </script>
+    {% endif %}
+
   </body>
 </html>
