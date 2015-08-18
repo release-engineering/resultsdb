@@ -552,7 +552,9 @@ def create_result():
 
 
     try:
-        job_id = int(job_id)
+        # since job_id is in the posted data here, get it from the processed
+        # input args
+        job_id = int(args['job_id'])
     except ValueError: # uuid can not be parsed to int
         q = Job.query.filter_by(uuid = job_id)
     else: # id was int -> filter by id
