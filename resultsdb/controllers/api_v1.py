@@ -1,4 +1,4 @@
-# Copyright 2013, Red Hat, Inc
+# Copyright 2013-2014, Red Hat, Inc
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,8 +16,10 @@
 #
 # Authors:
 #   Josef Skladanka <jskladan@redhat.com>
+#   Ralph Bean <rbean@redhat.com>
 
 import datetime
+import math
 import re
 from functools import partial
 
@@ -83,6 +85,10 @@ SERIALIZE = __serializer.serialize
 # =============================================================================
 
 def pagination(q, page, limit):
+
+    total = q.count()
+    pages = int(math.ceil(total / float(limit)))
+
     # pagination offset
     try:
         page = int(page)
@@ -99,7 +105,7 @@ def pagination(q, page, limit):
         limit = QUERY_LIMIT
 
     q = q.limit(limit)
-    return q
+    return total, pages, q
 
 #TODO: find a better way to do this
 def prev_next_urls():
@@ -200,7 +206,13 @@ def select_results(since_start = None, since_end = None, outcome = None, since_s
 
     # Filter by job_id
     if job_id is not None:
-        q = q.filter(Result.job_id == job_id)
+        try:
+            job_id = int(job_id)
+        except ValueError: # uuid can not be parsed to int
+            alias = db.aliased(Job)
+            q = q.join(alias).filter(alias.uuid == job_id)
+        else: # id was int -> filter by id
+            q = q.filter(Result.job_id == job_id)
 
     # Filter by testcase_name
     if testcase_name is not None:
@@ -275,13 +287,25 @@ def get_jobs(): #page = None, limit = QUERY_LIMIT):
     except iso8601.iso8601.ParseError:
         return jsonify({"message": "'since' parameter not in ISO8601 format"}), 400
 
+    if args['status'] is not None and args['status'] not in JOB_STATUS:
+        return jsonify({'message': "status must be one of %r" % (JOB_STATUS,) }), 400
 
     q = select_jobs(since_start = s, since_end = e, status = args['status'], name = args['name'])
-    q = pagination(q, args['page'], args['limit'])
 
+    total, pages, q = pagination(q, args['page'], args['limit'])
     prev, next = prev_next_urls()
 
-    return jsonify(dict(href = request.url, prev = prev, next = next, data = [SERIALIZE(o, job_load_results = args['load_results']) for o in q.all()]))
+    return jsonify(dict(
+        href=request.url,
+        prev=prev,
+        next=next,
+        total=total,
+        pages=pages,
+        data=[
+            SERIALIZE(o, job_load_results=args['load_results'])
+            for o in q.all()
+        ],
+    ))
 
 @api.route('/v1.0/jobs/<job_id>', methods = ['GET'])
 def get_job(job_id):
@@ -309,7 +333,7 @@ def create_job():
         return jsonify(error.data), error.code
 
 
-    if args['status'] not in JOB_STATUS and args['status'] is not None:
+    if args['status'] is not None and args['status'] not in JOB_STATUS:
         return jsonify({'message': "status must be one of %r" % (JOB_STATUS,) }), 400
 
     if args['status'] is None:
@@ -324,9 +348,16 @@ def create_job():
 
 @api.route('/v1.0/jobs/<job_id>', methods = ['PUT'])
 def update_job(job_id):
+    try:
+        job_id = int(job_id)
+    except ValueError: # uuid can not be parsed to int
+        q = Job.query.filter_by(uuid = job_id)
+    else: # id was int -> filter by id
+        q = Job.query.filter_by(id = job_id)
+
     # Fail early, if the job does not exist
     try:
-        job = Job.query.filter_by(id = job_id).one()
+        job = q.one()
     except orm_exc.NoResultFound:
         return jsonify({'message': "Job not found" }), 404
 
@@ -384,12 +415,13 @@ RP['get_results'].add_argument('callback', type = str, location = 'args')
 RP['get_results'].add_argument('_', type = str, location = 'args')
 
 RP['create_result'] = reqparse.RequestParser()
-RP['create_result'].add_argument('job_id', type = int, required = True, location = 'json')
+RP['create_result'].add_argument('job_id', type = str, required = True, location = 'json')
 RP['create_result'].add_argument('outcome', type = str, required = True, location = 'json')
 RP['create_result'].add_argument('testcase_name', type = str, required = True, location = 'json')
 RP['create_result'].add_argument('summary', type = str, location = 'json')
 RP['create_result'].add_argument('result_data', type = dict, location = 'json')
 RP['create_result'].add_argument('log_url', type = str, location = 'json')
+RP['create_result'].add_argument('strict', type = bool, default=False, location = 'json')
 
 
 def __get_results_parse_args():
@@ -402,6 +434,12 @@ def __get_results_parse_args():
     except HTTPException as error:
         retval["error"] = (jsonify(error.data), error.code)
         return retval
+
+    if args['outcome'] is not None:
+        args['outcome'] = args['outcome'].strip().upper()
+        if args['outcome'] not in RESULT_OUTCOME:
+            retval["error"] =(jsonify({'message': "outcome must be one of %r" % (RESULT_OUTCOME,) }), 400)
+            return retval
 
     try:
         s, e = parse_since(args['since'])
@@ -455,17 +493,31 @@ def get_results(job_id = None, testcase_name = None):
             job_id = j_id,
             testcase_name = t_nm,
             )
-    q = pagination(q, args['page'], args['limit'])
 
+    total, pages, q = pagination(q, args['page'], args['limit'])
     prev, next = prev_next_urls()
 
-    return jsonify(dict(href = request.url, prev = prev, next = next, data = [SERIALIZE(o) for o in q.all()]))
+    return jsonify(dict(
+        href=request.url,
+        prev=prev,
+        next=next,
+        total=total,
+        pages=pages,
+        data=[SERIALIZE(o) for o in q.all()],
+    ))
 
 @api.route('/v1.0/jobs/<job_id>/results', methods = ['GET'])
 @api.route('/v1.0/testcases/<testcase_name>/results', methods = ['GET'])
 def get_results_by_job_testcase(job_id = None, testcase_name = None):
     # check whether the job/testcase exists. If not, throw 404
     if job_id is not None:
+        try:
+            job_id = int(job_id)
+        except ValueError: # uuid can not be parsed to int
+            q =  Job.query.filter_by(uuid = job_id)
+        else: # id was int -> filter by id
+            q =  Job.query.filter_by(id = job_id)
+
         try:
             job = Job.query.filter_by(id = job_id).one()
         except orm_exc.NoResultFound:
@@ -498,8 +550,19 @@ def create_result():
     except HTTPException as error:
         return jsonify(error.data), error.code
 
+
     try:
-        job = Job.query.filter_by(id = args['job_id']).one()
+        # since job_id is in the posted data here, get it from the processed
+        # input args
+        job_id = int(args['job_id'])
+    except ValueError: # uuid can not be parsed to int
+        q = Job.query.filter_by(uuid = job_id)
+    else: # id was int -> filter by id
+        q = Job.query.filter_by(id = job_id)
+
+    # Fail early, if the job does not exist
+    try:
+        job = q.one()
     except orm_exc.NoResultFound:
         return jsonify({'message': "Job not found" }), 404
 
@@ -509,7 +572,13 @@ def create_result():
     try:
         testcase = Testcase.query.filter_by(name = args['testcase_name']).one()
     except orm_exc.NoResultFound:
-        return jsonify({'message': "Testcase not found" }), 404
+        if args['strict']:
+            return jsonify({'message': "Testcase not found" }), 404
+        else:
+            # TODO: add configurable default "empty" URL
+            testcase = Testcase(args['testcase_name'], "")
+            db.session.add(testcase)
+            db.session.commit()
 
     outcome = args['outcome'].strip().upper()
     if outcome not in RESULT_OUTCOME:
@@ -569,7 +638,7 @@ RP['get_testcases'].add_argument('_', type = str, location = 'args')
 
 RP['create_testcase'] = reqparse.RequestParser()
 RP['create_testcase'].add_argument('name', type = str, required = True, location = 'json')
-RP['create_testcase'].add_argument('url', type = str, required = True, location = 'json')
+RP['create_testcase'].add_argument('url', type = str, required = False, location = 'json')
 
 RP['update_testcase'] = reqparse.RequestParser()
 RP['update_testcase'].add_argument('url', type = str, required = True, location = 'json')
@@ -589,10 +658,17 @@ def get_testcases(): #page = None, limit = QUERY_LIMIT):
     q = db.session.query(Testcase)
     q.order_by(db.asc(Testcase.name))
 
-    q = pagination(q, args['page'], args['limit'])
-
+    total, pages, q = pagination(q, args['page'], args['limit'])
     prev, next = prev_next_urls()
-    return jsonify(dict(href = request.url, prev = prev, next = next, data = [SERIALIZE(o) for o in q.all()]))
+
+    return jsonify(dict(
+        href=request.url,
+        prev=prev,
+        next=next,
+        total=total,
+        pages=pages,
+        data=[SERIALIZE(o) for o in q.all()],
+    ))
 
 @api.route('/v1.0/testcases/<testcase_name>', methods = ['GET'])
 def get_testcase(testcase_name):
@@ -646,4 +722,16 @@ def update_testcase(testcase_name):
 
     return jsonify(SERIALIZE(tc)), 200
 
+@api.route('/', methods=['GET'])
+@api.route('/v1.0', methods=['GET'])
+@api.route('/v1.0/', methods=['GET'])
+def landing_page():
+    return jsonify({"message": "Everything is fine. But choose wisely, for while "
+                               "the true Grail will bring you life, the false "
+                               "Grail will take it from you.",
+                    "documentation": "http://docs.resultsdb.apiary.io/",
+                    "jobs": url_for('.get_jobs', _external=True),
+                    "results": url_for('.get_results', _external=True),
+                    "testcases": url_for('.get_testcases', _external=True)
+                    }), 300
 

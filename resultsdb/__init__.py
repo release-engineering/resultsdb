@@ -31,18 +31,21 @@ import os
 
 
 # the version as used in setup.py
-__version__ = "1.1.11"
+__version__ = "1.1.12"
 
 
 # Flask App
 app = Flask(__name__)
-app.secret_key = 'not-really-a-secret'
+app.secret_key = 'replace-me-with-something-random'
 
 # make sure app behaves when behind a proxy
 app.wsgi_app = proxy.ReverseProxied(app.wsgi_app)
 
 # Monkey patch Flask's "jsonify" to also handle JSONP
 original_jsonify = flask.jsonify
+
+# Expose the __version__ variable in templates
+app.jinja_env.globals['app_version'] = __version__
 
 def jsonify_with_jsonp(*args, **kwargs):
     response = original_jsonify(*args, **kwargs)
@@ -60,15 +63,15 @@ def jsonify_with_jsonp(*args, **kwargs):
 flask.jsonify = jsonify_with_jsonp
 
 # Load default config, then override that with a config file
-if os.getenv('PROD') == 'true':
-    default_config_obj = 'resultsdb.config.ProductionConfig'
-    default_config_file = '/etc/resultsdb/settings.py'
+if os.getenv('DEV') == 'true':
+    default_config_obj = 'resultsdb.config.DevelopmentConfig'
+    default_config_file = os.getcwd() + '/conf/settings.py'
 elif os.getenv('TEST') == 'true':
     default_config_obj = 'resultsdb.config.TestingConfig'
     default_config_file = os.getcwd() + '/conf/settings.py'
 else:
-    default_config_obj = 'resultsdb.config.DevelopmentConfig'
-    default_config_file = os.getcwd() + '/conf/settings.py'
+    default_config_obj = 'resultsdb.config.ProductionConfig'
+    default_config_file = '/etc/resultsdb/settings.py'
 
 app.config.from_object(default_config_obj)
 
@@ -78,7 +81,7 @@ if os.path.exists(config_file):
     app.config.from_pyfile(config_file)
 
 if app.config['PRODUCTION']:
-    if app.secret_key == 'not-really-a-secret':
+    if app.secret_key == 'replace-me-with-something-random':
         raise Warning("You need to change the app.secret_key value for production")
 
 # setup logging
@@ -143,4 +146,3 @@ app.register_blueprint(admin)
 
 from resultsdb.controllers.api_v1 import api as api_v1
 app.register_blueprint(api_v1, url_prefix = "/api")
-

@@ -28,12 +28,15 @@ class Config(object):
     SYSLOG_LOGGING = False
     STREAM_LOGGING = True
 
-    HOST = None
-    PORT = None
+    HOST = '0.0.0.0'
+    PORT = 5001
 
     PRODUCTION = False
 
     SHOW_DB_URI = False
+
+    FEDMENU_URL = 'https://apps.fedoraproject.org/fedmenu'
+    FEDMENU_DATA_URL = 'https://apps.fedoraproject.org/js/data.js'
 
 
 class ProductionConfig(Config):
@@ -43,11 +46,12 @@ class ProductionConfig(Config):
 
 class DevelopmentConfig(Config):
     TRAP_BAD_REQUEST_ERRORS = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:////tmp/resultsdb.db'
-    HOST = '0.0.0.0'
-    PORT = 5000
+    SQLALCHEMY_DATABASE_URI = 'sqlite:////var/tmp/resultsdb_db.sqlite'
+    SHOW_DB_URI = True
 
 
 class TestingConfig(Config):
     TRAP_BAD_REQUEST_ERRORS = True
     TESTING = True
+    FEDMENU_URL = 'https://apps.stg.fedoraproject.org/fedmenu'
+    FEDMENU_DATA_URL = 'https://apps.stg.fedoraproject.org/js/data.js'

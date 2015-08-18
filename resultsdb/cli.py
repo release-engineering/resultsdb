@@ -120,20 +120,28 @@ def mock_data(destructive):
         j1 = Job(status = "COMPLETED", ref_url = "http://example.com/job1")
         j1.start_time = datetime.datetime(2013, 6, 1, 12, 0, 0)
         j1.end_time = datetime.datetime(2013, 6, 1, 12, 30, 0)
+        j1.uuid = '5b3f47b4-2ba2-11e5-a343-5254007dccf9'
 
         j2 = Job(status = "RUNNING", ref_url = "http://example.com/job2")
         j2.start_time = datetime.datetime(2013, 7, 1, 16, 0, 0)
         j2.end_time = datetime.datetime(2013, 7, 1, 16, 30, 0)
+        j2.uuid = '4e575b2c-2ba2-11e5-a343-5254007dccf9'
 
         r1 = Result(job = j1, testcase = tc1, outcome = 'PASSED', log_url = "http://example.com/r1")
         r2 = Result(job = j1, testcase = tc1, outcome = 'FAILED', log_url = "http://example.com/r2")
         r3 = Result(job = j2, testcase = tc2, outcome = 'FAILED', log_url = "http://example.com/r2")
 
-        td1 = ResultData(r1, "envr", "cabal-rpm-0.8.3-1.fc18")
-        td2 = ResultData(r1, "arch", "x86_64")
+        rd = ResultData(r1, "item", "cabal-rpm-0.8.3-1.fc18")
+        rd = ResultData(r1, "arch", "x86_64")
+        rd = ResultData(r1, "type", "koji_build")
 
-        td3 = ResultData(r3, "envr", "cabal-rpm-0.8.3-1.fc18")
-        td4 = ResultData(r3, "arch", "i386")
+        rd = ResultData(r2, "item", "htop-1.0-1.fc22")
+        rd = ResultData(r2, "arch", "i386")
+        rd = ResultData(r2, "type", "bodhi_update")
+
+        rd = ResultData(r3, "item", "cabal-rpm-0.8.3-1.fc18")
+        rd = ResultData(r3, "arch", "i386")
+        rd = ResultData(r3, "type", "bodhi_update")
 
         db.session.add(tc1)
         db.session.add(j1)
@@ -180,4 +188,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
