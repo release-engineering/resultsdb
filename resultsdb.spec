@@ -4,7 +4,7 @@
 %endif
 
 Name:           resultsdb
-Version:        1.1.11
+Version:        1.1.12
 Release:        1%{?dist}
 Summary:        Results store for automated tasks
 
@@ -62,6 +62,12 @@ install conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb/settings.p
 %{_datadir}/resultsdb/*
 
 %changelog
+* Tue Aug 18 2015 Tim Flink <tflink@fedoraproject.org> - 1.1.12-1
+- Use HTTP_X_FORWARDED_SCHEME (D264)
+- Improve pagination metadata for JSON queries (D264)
+- Add fedmenu to resultsdb (D364)
+- Several dev and backend fixes
+
 * Wed May 6 2015 Tim Flink <tflink@fedoraproject.org> - 1.1.11-1
 - Added ABORTED outcome (T458)
 
