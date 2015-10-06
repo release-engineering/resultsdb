@@ -22,6 +22,7 @@ Requires:       python-flask-restful
 Requires:       python-six
 Requires:       python-iso8601
 Requires:       python-alembic
+Requires:       fedmsg
 BuildRequires:  python2-devel python-setuptools
 
 %description

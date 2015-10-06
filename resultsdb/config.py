@@ -38,10 +38,14 @@ class Config(object):
     FEDMENU_URL = 'https://apps.fedoraproject.org/fedmenu'
     FEDMENU_DATA_URL = 'https://apps.fedoraproject.org/js/data.js'
 
+    FEDMSG_PUBLISH = False
+    FEDMSG_MODNAME = 'resultsdb'
+
 
 class ProductionConfig(Config):
     DEBUG = False
     PRODUCTION = True
+    FEDMSG_PUBLISH = True
 
 
 class DevelopmentConfig(Config):

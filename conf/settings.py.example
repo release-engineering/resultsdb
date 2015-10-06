@@ -10,3 +10,8 @@ STREAM_LOGGING = True
 #SHOW_DB_URI = False
 RUN_HOST= '0.0.0.0'
 RUN_PORT = 5001
+# the format of the fully qualified topic of a fedmsg is
+# <topic_prefix>.<environment>.<modname>.<topic>
+# e.g. org.fedoraproject.prod.taskotron.result.new
+FEDMSG_PUBLISH = False
+FEDMSG_MODNAME = 'resultsdb'

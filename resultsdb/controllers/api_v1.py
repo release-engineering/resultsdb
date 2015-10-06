@@ -35,6 +35,7 @@ from werkzeug.exceptions import HTTPException
 from werkzeug.exceptions import BadRequest as JSONBadRequest
 
 import iso8601
+import fedmsg
 
 from resultsdb import app, db
 from resultsdb.serializers.api_v1 import Serializer
@@ -621,8 +622,62 @@ def create_result():
     db.session.commit()
 
     db.session.add(result)
+
+    if app.config['FEDMSG_PUBLISH']:
+        if not is_duplicate_result(result):
+            msg = create_fedmsg(result)
+            fedmsg.publish(**msg)
+
     return jsonify(SERIALIZE(result)), 201
 
+
+def is_duplicate_result(cur_result):
+    '''
+    Check whether the current result that is being submitted is already
+    stored in database.
+
+    Two results are considered duplicates if they have same:
+    item, testcase and outcome.
+    '''
+    item = None
+    for result_data in cur_result.result_data:
+        if result_data.key == 'item':
+            item = result_data.value
+
+    q = db.session.query(Result).filter(Result.id != cur_result.id)
+
+    alias = db.aliased(Testcase)
+    q = q.join(alias).filter(alias.name == cur_result.testcase.name)
+
+    alias = db.aliased(ResultData)
+    q = q.join(alias).filter(db.and_(alias.key == 'item', alias.value == item))
+
+    q = q.order_by(db.desc(Result.submit_time))
+
+    last_result = q.first()
+    if not last_result:
+        return False
+    return last_result.outcome == cur_result.outcome
+
+
+def create_fedmsg(result):
+    task = dict((result_data.key, result_data.value) for result_data in result.result_data
+                 if result_data.key in ['item', 'type'])
+    task['name'] = result.testcase.name
+    return {
+        'topic': 'result.new',
+        'modname': app.config['FEDMSG_MODNAME'],
+        'msg': {
+            'task': task,
+            'result': {
+                'id': result.id,
+                'submit_time': result.submit_time.strftime("%Y-%m-%d %H:%M:%S UTC"),
+                'outcome': result.outcome,
+                'job_url': result.job.ref_url,
+                'log_url': result.log_url,
+            }
+        }
+    }
 
 
 # =============================================================================
