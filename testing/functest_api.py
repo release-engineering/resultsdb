@@ -31,6 +31,7 @@ class TestFuncApi():
         cls.dbfile = tempfile.NamedTemporaryFile(delete=False)
         cls.dbfile.close()
         resultsdb.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///%s' % cls.dbfile.name
+        resultsdb.app.config['FEDMSG_PUBLISH'] = False
 
     @classmethod
     def teardown_class(cls):

@@ -11,3 +11,4 @@ alembic>=0.7.4
 # although this is a Flask-Restful dependency, it was not installed, adding manualy
 six
 iso8601 >= 0.1.4
+fedmsg>=0.11.1
