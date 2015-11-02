@@ -30,8 +30,8 @@ VERSION:=$(shell rpmspec -q --queryformat="%{VERSION}\n" $(SPECFILE) | uniq)
 RELEASE:=$(subst $(DIST),,$(shell rpmspec -q --queryformat="%{RELEASE}\n" $(SPECFILE) | uniq))
 NVR:=$(SRC)-$(VERSION)-$(RELEASE)
 GITBRANCH:=$(shell git rev-parse --abbrev-ref HEAD)
-TARGETDIST:=fc21
-BUILDTARGET=fedora-21-x86_64
+TARGETDIST:=fc22
+BUILDTARGET=fedora-22-x86_64
 
 test: $(VENV)
 	sh -c "TEST='true' . $(VENV)/bin/activate; py.test --cov $(SRC) testing/; deactivate"
