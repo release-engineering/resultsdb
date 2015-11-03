@@ -87,9 +87,6 @@ SERIALIZE = __serializer.serialize
 
 def pagination(q, page, limit):
 
-    total = q.count()
-    pages = int(math.ceil(total / float(limit)))
-
     # pagination offset
     try:
         page = int(page)
@@ -106,7 +103,7 @@ def pagination(q, page, limit):
         limit = QUERY_LIMIT
 
     q = q.limit(limit)
-    return total, pages, q
+    return q
 
 #TODO: find a better way to do this
 def prev_next_urls():
@@ -293,15 +290,13 @@ def get_jobs(): #page = None, limit = QUERY_LIMIT):
 
     q = select_jobs(since_start = s, since_end = e, status = args['status'], name = args['name'])
 
-    total, pages, q = pagination(q, args['page'], args['limit'])
+    q = pagination(q, args['page'], args['limit'])
     prev, next = prev_next_urls()
 
     return jsonify(dict(
         href=request.url,
         prev=prev,
         next=next,
-        total=total,
-        pages=pages,
         data=[
             SERIALIZE(o, job_load_results=args['load_results'])
             for o in q.all()
@@ -495,15 +490,13 @@ def get_results(job_id = None, testcase_name = None):
             testcase_name = t_nm,
             )
 
-    total, pages, q = pagination(q, args['page'], args['limit'])
+    q = pagination(q, args['page'], args['limit'])
     prev, next = prev_next_urls()
 
     return jsonify(dict(
         href=request.url,
         prev=prev,
         next=next,
-        total=total,
-        pages=pages,
         data=[SERIALIZE(o) for o in q.all()],
     ))
 
@@ -713,15 +706,13 @@ def get_testcases(): #page = None, limit = QUERY_LIMIT):
     q = db.session.query(Testcase)
     q.order_by(db.asc(Testcase.name))
 
-    total, pages, q = pagination(q, args['page'], args['limit'])
+    q = pagination(q, args['page'], args['limit'])
     prev, next = prev_next_urls()
 
     return jsonify(dict(
         href=request.url,
         prev=prev,
         next=next,
-        total=total,
-        pages=pages,
         data=[SERIALIZE(o) for o in q.all()],
     ))
 
