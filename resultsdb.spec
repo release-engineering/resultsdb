@@ -5,7 +5,7 @@
 
 Name:           resultsdb
 Version:        1.1.13
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Results store for automated tasks
 
 License:        GPLv2+
@@ -14,15 +14,17 @@ Source0:        https://qadevel.cloud.fedoraproject.org/releases/%{name}/%{name}
 
 BuildArch:      noarch
 
-Requires:       python-flask
-Requires:       python-flask-sqlalchemy
-Requires:       python-flask-wtf
-Requires:       python-flask-login
-Requires:       python-flask-restful
-Requires:       python-six
-Requires:       python-iso8601
-Requires:       python-alembic
-Requires:       fedmsg
+Requires:       fedmsg >= 0.16.2
+Requires:       python-alembic >= 0.8.3
+Requires:       python-flask >= 0.10.1
+Requires:       python-flask-login >= 0.2.11
+Requires:       python-flask-restful >= 0.2.11
+Requires:       python-flask-sqlalchemy >= 2.0
+Requires:       python-flask-wtf >= 0.10.0
+Requires:       python-iso8601 >= 0.1.10
+Requires:       python-six >= 1.9.0
+Requires:       python-sqlalchemy >= 0.9.10
+Requires:       python-wtforms >= 2.0
 BuildRequires:  python2-devel python-setuptools
 
 %description
@@ -63,6 +65,9 @@ install conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb/settings.p
 %{_datadir}/resultsdb/*
 
 %changelog
+* Wed Nov 4 2015 Josef Skladanka <jskladan@redhat.com> - 1.1.13-2
+- synchronize package versions between spec file and requirements.txt
+
 * Wed Oct 7 2015 Martin Krizek <mkrizek@redhat.com> - 1.1.13-1
 - Emit fedmsg with whatever result is being stored
 
