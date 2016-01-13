@@ -418,8 +418,6 @@ class TestFuncApi():
         assert data['href'] == self.prefix + 'results'
         assert data['next'] == self.prefix + 'results?page=1'
         assert data['prev'] == None
-        assert data['pages'] == 1
-        assert data['total'] == 1
 
     def test_get_empty_results(self):
         r = self.app.get('/api/v1.0/results')
@@ -443,8 +441,6 @@ class TestFuncApi():
         assert data['href'] == self.prefix + 'testcases/testcase/results'
         assert data['next'] == self.prefix + 'testcases/testcase/results?page=1'
         assert data['prev'] == None
-        assert data['pages'] == 1
-        assert data['total'] == 1
 
     def test_get_testcases_empty_results(self):
         r = self.app.get('/api/v1.0/testcases/%s/results' % self.ref_testcase_name)
@@ -468,8 +464,6 @@ class TestFuncApi():
         assert data['href'] == self.prefix + 'testcases/testcase/results'
         assert data['next'] == self.prefix + 'testcases/testcase/results?page=1'
         assert data['prev'] == None
-        assert data['pages'] == 1
-        assert data['total'] == 1
 
     def test_get_jobs_empty_results(self):
         r = self.app.get('/api/v1.0/jobs/%s/results' % self.ref_job_id)
@@ -494,5 +488,3 @@ class TestFuncApi():
         assert data['href'] == self.prefix + 'testcases/testcase/results?callback=wat'
         assert data['next'] == self.prefix + 'testcases/testcase/results?callback=wat&page=1'
         assert data['prev'] == None
-        assert data['pages'] == 1
-        assert data['total'] == 1

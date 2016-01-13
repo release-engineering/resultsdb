@@ -630,20 +630,18 @@ def is_duplicate_result(cur_result):
     stored in database.
 
     Two results are considered duplicates if they have same:
-    item, testcase and outcome.
+    item, testcase, outcome and arch.
     '''
-    item = None
-    for result_data in cur_result.result_data:
-        if result_data.key == 'item':
-            item = result_data.value
 
     q = db.session.query(Result).filter(Result.id != cur_result.id)
 
     alias = db.aliased(Testcase)
     q = q.join(alias).filter(alias.name == cur_result.testcase.name)
 
-    alias = db.aliased(ResultData)
-    q = q.join(alias).filter(db.and_(alias.key == 'item', alias.value == item))
+    for result_data in cur_result.result_data:
+        if result_data.key in ['item', 'arch']:
+            alias = db.aliased(ResultData)
+            q = q.join(alias).filter(db.and_(alias.key == result_data.key, alias.value == result_data.value))
 
     q = q.order_by(db.desc(Result.submit_time))
 
