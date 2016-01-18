@@ -31,7 +31,7 @@ import os
 
 
 # the version as used in setup.py
-__version__ = "1.1.13"
+__version__ = "1.1.14"
 
 
 # Flask App
