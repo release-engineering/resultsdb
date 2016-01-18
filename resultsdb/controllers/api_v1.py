@@ -87,9 +87,6 @@ SERIALIZE = __serializer.serialize
 
 def pagination(q, page, limit):
 
-    total = q.count()
-    pages = int(math.ceil(total / float(limit)))
-
     # pagination offset
     try:
         page = int(page)
@@ -106,7 +103,7 @@ def pagination(q, page, limit):
         limit = QUERY_LIMIT
 
     q = q.limit(limit)
-    return total, pages, q
+    return q
 
 #TODO: find a better way to do this
 def prev_next_urls():
@@ -293,15 +290,13 @@ def get_jobs(): #page = None, limit = QUERY_LIMIT):
 
     q = select_jobs(since_start = s, since_end = e, status = args['status'], name = args['name'])
 
-    total, pages, q = pagination(q, args['page'], args['limit'])
+    q = pagination(q, args['page'], args['limit'])
     prev, next = prev_next_urls()
 
     return jsonify(dict(
         href=request.url,
         prev=prev,
         next=next,
-        total=total,
-        pages=pages,
         data=[
             SERIALIZE(o, job_load_results=args['load_results'])
             for o in q.all()
@@ -495,15 +490,13 @@ def get_results(job_id = None, testcase_name = None):
             testcase_name = t_nm,
             )
 
-    total, pages, q = pagination(q, args['page'], args['limit'])
+    q = pagination(q, args['page'], args['limit'])
     prev, next = prev_next_urls()
 
     return jsonify(dict(
         href=request.url,
         prev=prev,
         next=next,
-        total=total,
-        pages=pages,
         data=[SERIALIZE(o) for o in q.all()],
     ))
 
@@ -637,20 +630,18 @@ def is_duplicate_result(cur_result):
     stored in database.
 
     Two results are considered duplicates if they have same:
-    item, testcase and outcome.
+    item, testcase, outcome and arch.
     '''
-    item = None
-    for result_data in cur_result.result_data:
-        if result_data.key == 'item':
-            item = result_data.value
 
     q = db.session.query(Result).filter(Result.id != cur_result.id)
 
     alias = db.aliased(Testcase)
     q = q.join(alias).filter(alias.name == cur_result.testcase.name)
 
-    alias = db.aliased(ResultData)
-    q = q.join(alias).filter(db.and_(alias.key == 'item', alias.value == item))
+    for result_data in cur_result.result_data:
+        if result_data.key in ['item', 'arch']:
+            alias = db.aliased(ResultData)
+            q = q.join(alias).filter(db.and_(alias.key == result_data.key, alias.value == result_data.value))
 
     q = q.order_by(db.desc(Result.submit_time))
 
@@ -713,15 +704,13 @@ def get_testcases(): #page = None, limit = QUERY_LIMIT):
     q = db.session.query(Testcase)
     q.order_by(db.asc(Testcase.name))
 
-    total, pages, q = pagination(q, args['page'], args['limit'])
+    q = pagination(q, args['page'], args['limit'])
     prev, next = prev_next_urls()
 
     return jsonify(dict(
         href=request.url,
         prev=prev,
         next=next,
-        total=total,
-        pages=pages,
         data=[SERIALIZE(o) for o in q.all()],
     ))
 

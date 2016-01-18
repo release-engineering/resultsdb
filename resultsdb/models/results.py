@@ -84,6 +84,7 @@ class Result(db.Model, DBSerialize):
     __table_args__ = (
             db.Index('result_fk_job_id', 'job_id'),
             db.Index('result_fk_testcase_id', 'testcase_id'),
+            db.Index('result_submit_time', 'submit_time')
             )
 
     def __init__(self, job, testcase, outcome, log_url = None, summary = None):
