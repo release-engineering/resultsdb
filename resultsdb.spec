@@ -5,7 +5,7 @@
 
 Name:           resultsdb
 Version:        1.1.14
-Release:        2%{?dist}
+Release:        1%{?dist}
 Summary:        Results store for automated tasks
 
 License:        GPLv2+
@@ -102,7 +102,7 @@ install conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb/settings.p
 * Thu Oct 9 2014 Tim Flink <tflink@fedoraproject.org> - 1.1.7-1
 - fix jsonp interface and various associated bugs
 
-* Fri Jul 3 2014 Tim Flink <tflink@fedoraproject.org> - 1.1.4-1
+* Fri Jul 4 2014 Tim Flink <tflink@fedoraproject.org> - 1.1.4-1
 - fix compatibility with flask-wtf 0.9
 
 * Mon Jun 23 2014 Tim Flink <tflink@fedoraproject.org> - 1.1.3-1
