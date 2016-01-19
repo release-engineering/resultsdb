@@ -26,7 +26,7 @@ import resultsdb.cli
 
 from resultsdb import db
 from resultsdb.models.results import Testcase, Job, Result, ResultData
-from resultsdb.controllers.api_v1 import is_duplicate_result
+from resultsdb.controllers.api_v1 import get_prev_result
 
 
 class TestFuncDuplicateResult():
@@ -88,26 +88,32 @@ class TestFuncDuplicateResult():
 
     def test_duplicate_result(self):
         result = self.create_result(self.testcase, self.ref_outcome, self.ref_item, self.ref_arch)
+        prev_result = get_prev_result(result)
 
-        assert is_duplicate_result(result)
+        assert prev_result
+        assert prev_result.outcome == result.outcome
 
     def test_duplicate_result_more_results(self):
         result = self.create_result(self.testcase, self.ref_outcome, self.ref_item, self.ref_arch)
         self.create_result(self.testcase, self.ref_outcome, 'item1', 'arch1')
         self.create_result(self.testcase, self.ref_outcome, 'item2', 'arch2')
         self.create_result(self.testcase, self.ref_outcome, 'item3', 'arch3')
+        prev_result = get_prev_result(result)
 
-        assert is_duplicate_result(result)
+        assert prev_result
+        assert prev_result.outcome == result.outcome
 
     def test_not_duplicate_result_item(self):
         result = self.create_result(self.testcase, self.ref_outcome, item='chat-2.8.8-21.fc21', arch=self.ref_arch)
+        prev_result = get_prev_result(result)
 
-        assert not is_duplicate_result(result)
+        assert not prev_result
 
     def test_not_duplicate_result_arch(self):
         result = self.create_result(self.testcase, self.ref_outcome, item=self.ref_item, arch='i686')
+        prev_result = get_prev_result(result)
 
-        assert not is_duplicate_result(result)
+        assert not prev_result
 
     def test_not_duplicate_result_testcase(self):
         testcase = Testcase('random_testcase_unique', 'random_testcase_unique_url')
@@ -115,10 +121,13 @@ class TestFuncDuplicateResult():
         db.session.commit()
 
         result = self.create_result(testcase, self.ref_outcome, self.ref_item, self.ref_arch)
+        prev_result = get_prev_result(result)
 
-        assert not is_duplicate_result(result)
+        assert not prev_result
 
     def test_not_duplicate_result_outcome(self):
         result = self.create_result(self.testcase, 'FAILED', self.ref_item, self.ref_arch)
+        prev_result = get_prev_result(result)
 
-        assert not is_duplicate_result(result)
+        assert prev_result
+        assert prev_result.outcome != result.outcome

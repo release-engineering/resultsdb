@@ -617,41 +617,39 @@ def create_result():
     db.session.add(result)
 
     if app.config['FEDMSG_PUBLISH']:
-        if not is_duplicate_result(result):
-            msg = create_fedmsg(result)
+        prev_result = get_prev_result(result)
+        # result is considered duplicate of prev_result when
+        # outcomes are the same.
+        if not prev_result or prev_result.outcome != result.outcome:
+            msg = create_fedmsg(result, prev_result)
             fedmsg.publish(**msg)
 
     return jsonify(SERIALIZE(result)), 201
 
 
-def is_duplicate_result(cur_result):
+def get_prev_result(result):
     '''
-    Check whether the current result that is being submitted is already
-    stored in database.
-
-    Two results are considered duplicates if they have same:
+    Find previous result with the same:
     item, testcase, outcome and arch.
-    '''
 
-    q = db.session.query(Result).filter(Result.id != cur_result.id)
+    Return None if no result is found.
+    '''
+    q = db.session.query(Result).filter(Result.id != result.id)
 
     alias = db.aliased(Testcase)
-    q = q.join(alias).filter(alias.name == cur_result.testcase.name)
+    q = q.join(alias).filter(alias.name == result.testcase.name)
 
-    for result_data in cur_result.result_data:
+    for result_data in result.result_data:
         if result_data.key in ['item', 'arch']:
             alias = db.aliased(ResultData)
             q = q.join(alias).filter(db.and_(alias.key == result_data.key, alias.value == result_data.value))
 
     q = q.order_by(db.desc(Result.submit_time))
 
-    last_result = q.first()
-    if not last_result:
-        return False
-    return last_result.outcome == cur_result.outcome
+    return q.first()
 
 
-def create_fedmsg(result):
+def create_fedmsg(result, prev_result=None):
     task = dict((result_data.key, result_data.value) for result_data in result.result_data
                  if result_data.key in ['item', 'type'])
     task['name'] = result.testcase.name
@@ -663,6 +661,7 @@ def create_fedmsg(result):
             'result': {
                 'id': result.id,
                 'submit_time': result.submit_time.strftime("%Y-%m-%d %H:%M:%S UTC"),
+                'prev_outcome': prev_result.outcome if prev_result else None,
                 'outcome': result.outcome,
                 'job_url': result.job.ref_url,
                 'log_url': result.log_url,
@@ -778,4 +777,3 @@ def landing_page():
                     "results": url_for('.get_results', _external=True),
                     "testcases": url_for('.get_testcases', _external=True)
                     }), 300
-
