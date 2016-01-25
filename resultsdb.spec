@@ -4,7 +4,7 @@
 %endif
 
 Name:           resultsdb
-Version:        1.1.14
+Version:        1.1.15
 Release:        1%{?dist}
 Summary:        Results store for automated tasks
 
@@ -65,6 +65,9 @@ install conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb/settings.p
 %{_datadir}/resultsdb/*
 
 %changelog
+* Mon Jan 25 2016 Tim Flink <tflink@fedoraproject.org> - 1.1.15-1
+- Add previous_outcome field to fedmsgs (D728)
+
 * Mon Jan 18 2016 Tim Flink <tflink@fedoraproject.org> - 1.1.14-1
 - Removed unnecessary count, added index on submit_time (D635)
 - Don't ignore arch for fedmsg deduplication (D698)
