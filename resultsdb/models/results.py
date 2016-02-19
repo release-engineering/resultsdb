@@ -59,8 +59,14 @@ class Job(db.Model, DBSerialize):
 class Testcase(db.Model, DBSerialize):
 
     id = db.Column(db.Integer, primary_key = True)
-    name = db.Column(db.String(255), unique = True)
+    name = db.Column(db.Text, unique = True)
     url = db.Column(db.Text)
+
+    __table_args__ = (
+        db.Index('testcase_idx_name', 'name',
+                 postgresql_ops={'name': 'text_pattern_ops'},
+                ),
+        )
 
     def __init__(self, name, url):
         self.url = url
