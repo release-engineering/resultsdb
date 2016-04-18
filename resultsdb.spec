@@ -4,7 +4,7 @@
 %endif
 
 Name:           resultsdb
-Version:        1.1.15
+Version:        1.1.16
 Release:        1%{?dist}
 Summary:        Results store for automated tasks
 
@@ -65,6 +65,9 @@ install conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb/settings.p
 %{_datadir}/resultsdb/*
 
 %changelog
+* Mon Apr 18 2016 Martin Krizek <mkrizek@fedoraproject.org> - 1.1.16-1
+- support for testcase namespaces
+
 * Mon Jan 25 2016 Tim Flink <tflink@fedoraproject.org> - 1.1.15-1
 - Add previous_outcome field to fedmsgs (D728)
 
