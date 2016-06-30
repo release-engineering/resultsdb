@@ -561,7 +561,13 @@ def create_result():
         return jsonify({'message': "Job not found" }), 404
 
     if job.status != 'RUNNING':
-        return jsonify({'message': "Job not running" }), 400
+        # Side-effects based on status transitions
+        if job.start_time is None or job.status == 'SCHEDULED':
+            job.start_time = datetime.datetime.utcnow()
+            job.status = 'RUNNING'
+
+        if job.end_time:
+            job.end_time = datetime.datetime.utcnow()
 
     try:
         testcase = Testcase.query.filter_by(name = args['testcase_name']).one()
