@@ -18,15 +18,15 @@
 #   Josef Skladanka <jskladan@redhat.com>
 
 
-from flask import Blueprint, render_template, flash, url_for
+from flask import Blueprint, render_template
 from flask.ext.login import login_required
 
 
 admin = Blueprint('admin', __name__)
+
 
 @admin.route('/admin')
 @admin.route('/admin/')
 @login_required
 def admin_index():
     return render_template('admin/index.html')
-

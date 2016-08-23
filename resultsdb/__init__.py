@@ -47,6 +47,7 @@ original_jsonify = flask.jsonify
 # Expose the __version__ variable in templates
 app.jinja_env.globals['app_version'] = __version__
 
+
 def jsonify_with_jsonp(*args, **kwargs):
     response = original_jsonify(*args, **kwargs)
 
@@ -91,6 +92,7 @@ datefmt = '%Y-%m-%d %H:%M:%S'
 loglevel = logging.DEBUG if app.debug else logging.INFO
 formatter = logging.Formatter(fmt=fmt, datefmt=datefmt)
 
+
 def setup_logging():
     root_logger = logging.getLogger('')
     root_logger.setLevel(logging.DEBUG)
@@ -106,7 +108,7 @@ def setup_logging():
     if app.config['SYSLOG_LOGGING']:
         print "doing syslog logging"
         syslog_handler = logging.handlers.SysLogHandler(address='/dev/log',
-                            facility=logging.handlers.SysLogHandler.LOG_LOCAL4)
+                                                        facility=logging.handlers.SysLogHandler.LOG_LOCAL4)
         syslog_handler.setLevel(loglevel)
         syslog_handler.setFormatter(formatter)
         root_logger.addHandler(syslog_handler)
@@ -114,7 +116,8 @@ def setup_logging():
 
     if app.config['FILE_LOGGING'] and app.config['LOGFILE']:
         print "doing file logging to %s" % app.config['LOGFILE']
-        file_handler = logging.handlers.RotatingFileHandler(app.config['LOGFILE'], maxBytes=500000, backupCount=5)
+        file_handler = logging.handlers.RotatingFileHandler(
+            app.config['LOGFILE'], maxBytes=500000, backupCount=5)
         file_handler.setLevel(loglevel)
         file_handler.setFormatter(formatter)
         root_logger.addHandler(file_handler)
@@ -145,4 +148,7 @@ from resultsdb.controllers.admin import admin
 app.register_blueprint(admin)
 
 from resultsdb.controllers.api_v1 import api as api_v1
-app.register_blueprint(api_v1, url_prefix = "/api")
+app.register_blueprint(api_v1, url_prefix="/api/v1.0")
+
+from resultsdb.controllers.api_v2 import api as api_v2
+app.register_blueprint(api_v2, url_prefix="/api/v2.0")

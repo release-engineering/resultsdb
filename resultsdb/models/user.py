@@ -22,6 +22,7 @@ from resultsdb import db
 from flask.ext.login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 
+
 class User(db.Model, UserMixin):
 
     id = db.Column(db.Integer, primary_key=True)
@@ -40,4 +41,3 @@ class User(db.Model, UserMixin):
 
     def check_password(self, password):
         return check_password_hash(self.pw_hash, password)
-

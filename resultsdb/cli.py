@@ -17,14 +17,8 @@
 # Authors:
 #   Josef Skladanka <jskladan@redhat.com>
 
-# This is required for running on EL6
-import __main__
-__main__.__requires__ = ['SQLAlchemy >= 0.7', 'Flask >= 0.9', 'jinja2 >= 2.6']
-import pkg_resources
-
 import os
 import sys
-import datetime
 from optparse import OptionParser
 
 from alembic.config import Config
@@ -33,7 +27,7 @@ from alembic.migration import MigrationContext
 
 from resultsdb import db
 from resultsdb.models.user import User
-from resultsdb.models.results import Job, Testcase, Result, ResultData
+from resultsdb.models.results import Group, Testcase, Result, ResultData
 
 from sqlalchemy.engine import reflection
 
@@ -47,10 +41,12 @@ def get_alembic_config():
                              ini_section='alembic-packaged')
     return alembic_cfg
 
+
 def upgrade_db(*args):
     print "Upgrading Database to Latest Revision"
     alembic_cfg = get_alembic_config()
     al_command.upgrade(alembic_cfg, "head")
+
 
 def init_alembic(*args):
     alembic_cfg = get_alembic_config()
@@ -67,6 +63,7 @@ def init_alembic(*args):
     else:
         print "Alembic already initialized"
 
+
 def initialize_db(destructive):
     alembic_cfg = get_alembic_config()
 
@@ -76,11 +73,11 @@ def initialize_db(destructive):
         print " - Dropping all tables"
         db.drop_all()
 
-    # check whether the table 'job' exists
+    # check whether the table 'group' exists
     # if it does, we assume that the database is empty
     insp = reflection.Inspector.from_engine(db.engine)
     table_names = insp.get_table_names()
-    if 'job' not in table_names and 'Job' not in table_names:
+    if 'group' not in table_names and 'Group' not in table_names:
         print " - Creating tables"
         db.create_all()
         print " - Stamping alembic's current version to 'head'"
@@ -96,6 +93,7 @@ def initialize_db(destructive):
     else:
         print "WARN: You need to have your db stamped with an alembic revision"
         print "      Run 'init_alembic' sub-command first."
+
 
 def mock_data(destructive):
     print "Populating tables with mock-data"
@@ -114,34 +112,33 @@ def mock_data(destructive):
 
     if destructive or not db.session.query(Testcase).count():
         print " - Testcase, Job, Result, ResultData"
-        tc1 = Testcase( url = "http://example.com/depcheck", name = "depcheck")
-        tc2 = Testcase( url = "http://example.com/rpmlint", name = "rpmlint")
+        tc1 = Testcase(ref_url="http://example.com/depcheck", name="depcheck")
+        tc2 = Testcase(ref_url="http://example.com/rpmlint", name="rpmlint")
 
-        j1 = Job(status = "COMPLETED", ref_url = "http://example.com/job1")
-        j1.start_time = datetime.datetime(2013, 6, 1, 12, 0, 0)
-        j1.end_time = datetime.datetime(2013, 6, 1, 12, 30, 0)
-        j1.uuid = '5b3f47b4-2ba2-11e5-a343-5254007dccf9'
+        j1 = Group(uuid='5b3f47b4-2ba2-11e5-a343-5254007dccf9', ref_url="http://example.com/job1")
 
-        j2 = Job(status = "RUNNING", ref_url = "http://example.com/job2")
-        j2.start_time = datetime.datetime(2013, 7, 1, 16, 0, 0)
-        j2.end_time = datetime.datetime(2013, 7, 1, 16, 30, 0)
-        j2.uuid = '4e575b2c-2ba2-11e5-a343-5254007dccf9'
+        j2 = Group(uuid='4e575b2c-2ba2-11e5-a343-5254007dccf9', ref_url="http://example.com/job2")
 
-        r1 = Result(job = j1, testcase = tc1, outcome = 'PASSED', log_url = "http://example.com/r1")
-        r2 = Result(job = j1, testcase = tc1, outcome = 'FAILED', log_url = "http://example.com/r2")
-        r3 = Result(job = j2, testcase = tc2, outcome = 'FAILED', log_url = "http://example.com/r2")
+        r1 = Result(groups=[j1], testcase=tc1, outcome='PASSED', ref_url="http://example.com/r1")
+        r2 = Result(
+            groups=[j1, j2],
+            testcase=tc1,
+            outcome='FAILED',
+            ref_url="http://example.com/r2"
+            )
+        r3 = Result(groups=[j2], testcase=tc2, outcome='FAILED', ref_url="http://example.com/r2")
 
-        rd = ResultData(r1, "item", "cabal-rpm-0.8.3-1.fc18")
-        rd = ResultData(r1, "arch", "x86_64")
-        rd = ResultData(r1, "type", "koji_build")
+        ResultData(r1, "item", "cabal-rpm-0.8.3-1.fc18")
+        ResultData(r1, "arch", "x86_64")
+        ResultData(r1, "type", "koji_build")
 
-        rd = ResultData(r2, "item", "htop-1.0-1.fc22")
-        rd = ResultData(r2, "arch", "i386")
-        rd = ResultData(r2, "type", "bodhi_update")
+        ResultData(r2, "item", "htop-1.0-1.fc22")
+        ResultData(r2, "arch", "i386")
+        ResultData(r2, "type", "bodhi_update")
 
-        rd = ResultData(r3, "item", "cabal-rpm-0.8.3-1.fc18")
-        rd = ResultData(r3, "arch", "i386")
-        rd = ResultData(r3, "type", "bodhi_update")
+        ResultData(r3, "item", "cabal-rpm-0.8.3-1.fc18")
+        ResultData(r3, "arch", "i386")
+        ResultData(r3, "type", "bodhi_update")
 
         db.session.add(tc1)
         db.session.add(j1)
@@ -158,9 +155,9 @@ def main():
     usage = 'usage: [DEV=true] %prog ' + "(%s)" % ' | '.join(possible_commands)
     parser = OptionParser(usage=usage)
     parser.add_option("-d", "--destructive",
-                  action="store_true", dest="destructive", default=False,
-                  help="Drop tables in `init_db`; Store data in `mock_data` "
-                  "even if the tables are not empty")
+                      action="store_true", dest="destructive", default=False,
+                      help="Drop tables in `init_db`; Store data in `mock_data` "
+                      "even if the tables are not empty")
 
     (options, args) = parser.parse_args()
 
@@ -171,11 +168,11 @@ def main():
         sys.exit(1)
 
     command = {
-                'init_db': initialize_db,
-                'upgrade_db': upgrade_db,
-                'mock_data': mock_data,
-                'init_alembic': init_alembic,
-              }[args[0]]
+        'init_db': initialize_db,
+        'upgrade_db': upgrade_db,
+        'mock_data': mock_data,
+        'init_alembic': init_alembic,
+    }[args[0]]
 
     if not options.destructive:
         print "Proceeding in non-destructive mode. To perform destructive "\

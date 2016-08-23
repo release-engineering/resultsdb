@@ -19,7 +19,7 @@
 
 from flask import Blueprint, render_template, redirect, flash, url_for, request
 from flask.ext.wtf import Form
-from wtforms import TextField, PasswordField, HiddenField, RadioField
+from wtforms import TextField, PasswordField, HiddenField
 from wtforms.validators import Required
 from flask.ext.login import login_user, logout_user, login_required, current_user, AnonymousUserMixin
 
@@ -31,8 +31,8 @@ login_page = Blueprint('login_page', __name__)
 
 
 class LoginForm(Form):
-    username = TextField(u'Username', validators = [Required()])
-    password = PasswordField(u'Password', validators = [Required()])
+    username = TextField(u'Username', validators=[Required()])
+    password = PasswordField(u'Password', validators=[Required()])
     next_page = HiddenField()
 
 
@@ -51,7 +51,7 @@ def login():
     login_form = LoginForm()
 
     if login_form.validate_on_submit():
-        user = User.query.filter_by(username = login_form.username.data).first()
+        user = User.query.filter_by(username=login_form.username.data).first()
         if user and user.check_password(login_form.password.data):
             login_user(user)
 
@@ -64,7 +64,7 @@ def login():
             flash('Login Failed! Please Try again!')
 
     login_form.next_page.data = request.args.get('next') or url_for('main.index')
-    return render_template('login.html', form = login_form)
+    return render_template('login.html', form=login_form)
 
 
 @login_page.route('/logout')
@@ -74,4 +74,3 @@ def logout():
     logout_user()
     flash('Logged Out Successfully!')
     return redirect(url_for('main.index'))
-
