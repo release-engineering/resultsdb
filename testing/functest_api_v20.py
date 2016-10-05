@@ -91,7 +91,7 @@ class TestFuncApiV20():
         self.ref_result_ref_url = 'http://example.com/testing.result'
         self.ref_result = {
             'id': self.ref_result_id,
-            'groups': [self.ref_group['href']],
+            'groups': [self.ref_group['uuid']],
             'testcase': self.ref_testcase,
             'submit_time': AboutTime(),
             'outcome': self.ref_result_outcome,

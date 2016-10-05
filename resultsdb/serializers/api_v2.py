@@ -54,8 +54,7 @@ class Serializer(BaseSerializer):
 
         rv = dict(
             id=o.id,
-            groups=[url_for('api_v2.get_group', group_id=group.uuid, _external=True)
-                    for group in o.groups],
+            groups=[group.uuid for group in o.groups],
             testcase=o.testcase,
             submit_time=o.submit_time.isoformat(),
             outcome=o.outcome,
