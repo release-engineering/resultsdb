@@ -12,21 +12,16 @@ BuildArch:      noarch
 Requires:       fedmsg >= 0.16.2
 Requires:       python-alembic >= 0.8.3
 Requires:       python-flask >= 0.10.1
-Requires:       python-flask-login >= 0.2.11
 Requires:       python-flask-restful >= 0.2.11
 Requires:       python-flask-sqlalchemy >= 2.0
-Requires:       python-flask-wtf >= 0.10.0
 Requires:       python-iso8601 >= 0.1.10
 Requires:       python-six >= 1.9.0
 Requires:       python-sqlalchemy >= 0.9.10
-Requires:       python-wtforms >= 2.0
 BuildRequires:  fedmsg >= 0.16.2
 BuildRequires:  python-alembic >= 0.8.3
 BuildRequires:  python-flask >= 0.10.1
-BuildRequires:  python-flask-login >= 0.2.11
 BuildRequires:  python-flask-restful >= 0.2.11
 BuildRequires:  python-flask-sqlalchemy >= 2.0
-BuildRequires:  python-flask-wtf >= 0.10.0
 BuildRequires:  python-iso8601 >= 0.1.10
 BuildRequires:  pytest
 BuildRequires:  python2-devel

@@ -22,7 +22,6 @@ from resultsdb import proxy
 
 import flask
 from flask import Flask
-from flask.ext.login import LoginManager
 from flask.ext.sqlalchemy import SQLAlchemy
 
 import logging
@@ -132,20 +131,9 @@ if app.config['SHOW_DB_URI']:
 # database
 db = SQLAlchemy(app)
 
-# setup login manager
-login_manager = LoginManager()
-login_manager.setup_app(app)
-login_manager.login_view = 'login_page.login'
-
 # register blueprints
 from resultsdb.controllers.main import main
 app.register_blueprint(main)
-
-from resultsdb.controllers.login_page import login_page
-app.register_blueprint(login_page)
-
-from resultsdb.controllers.admin import admin
-app.register_blueprint(admin)
 
 from resultsdb.controllers.api_v1 import api as api_v1
 app.register_blueprint(api_v1, url_prefix="/api/v1.0")

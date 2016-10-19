@@ -26,7 +26,6 @@ from alembic import command as al_command
 from alembic.migration import MigrationContext
 
 from resultsdb import db
-from resultsdb.models.user import User
 from resultsdb.models.results import Group, Testcase, Result, ResultData
 
 from sqlalchemy.engine import reflection
@@ -97,18 +96,6 @@ def initialize_db(destructive):
 
 def mock_data(destructive):
     print "Populating tables with mock-data"
-
-    if destructive or not db.session.query(User).count():
-        print " - User"
-        data_users = [('admin', 'admin'), ('user', 'user')]
-
-        for d in data_users:
-            u = User(*d)
-            db.session.add(u)
-
-        db.session.commit()
-    else:
-        print " - skipped User"
 
     if destructive or not db.session.query(Testcase).count():
         print " - Testcase, Job, Result, ResultData"
