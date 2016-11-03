@@ -1,6 +1,6 @@
 Name:           resultsdb
-Version:        1.1.16
-Release:        3%{?dist}
+Version:        2.0.0
+Release:        1%{?dist}
 Summary:        Results store for automated tasks
 
 License:        GPLv2+
@@ -71,6 +71,9 @@ install -p -m 0644 conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb
 %{_datadir}/resultsdb/*
 
 %changelog
+* Thu Nov 3 2016 Tim Flink <tflink@fedoraproject.org> - 2.0.0-1
+- releasing v2.0 with new API
+
 * Thu Jul 21 2016 Martin Krizek <mkrizek@fedoraproject.org> - 1.1.16-3
 - preserve timestamps of original installed files
 - fix installing the config file
