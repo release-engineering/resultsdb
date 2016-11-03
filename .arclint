@@ -1,0 +1,13 @@
+{
+  "linters": {
+    "flake8": {
+      "type": "flake8",
+      "include": "(\\.py$)",
+      "severity.rules": {
+        "(E501)": "disabled",
+        "(^E)": "warning",
+        "(^F)": "error"
+      }
+    }
+  }
+}

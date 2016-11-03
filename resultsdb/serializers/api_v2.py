@@ -17,38 +17,29 @@
 # Authors:
 #   Josef Skladanka <jskladan@redhat.com>
 
+from flask import url_for
 from resultsdb.serializers import BaseSerializer
-import datetime
 
 
 class Serializer(BaseSerializer):
 
-    def __init__(self, uri_generator):
-        self.get_uri = uri_generator
-
-    def _serialize_Group(self, o, job_load_results=True, **kwargs):
+    def _serialize_Group(self, o, **kwargs):
         rv = dict(
-            id=o.id,
             uuid=o.uuid,
-            name=o.description,
-            status='UNDEFINED',
-            start_time=datetime.datetime.utcnow().isoformat(),
-            end_time=datetime.datetime.utcnow().isoformat(),
+            description=o.description,
             ref_url=o.ref_url,
-            results=None,
-            results_count=len(o.results),  # find out how to make this fast
-            href=self.get_uri(o),
+            results=url_for('api_v2.get_results', groups=[o.uuid], _external=True),
+            results_count=len(o.results),
+            href=url_for('api_v2.get_group', group_id=o.uuid, _external=True),
         )
-        if job_load_results:
-            rv['results'] = o.results
 
         return {key: self.serialize(value) for key, value in rv.iteritems()}
 
     def _serialize_Testcase(self, o, **kwargs):
         rv = dict(
             name=o.name,
-            url=o.ref_url,
-            href=self.get_uri(o)
+            ref_url=o.ref_url,
+            href=url_for('api_v2.get_testcase', testcase_name=o.name, _external=True),
         )
 
         return {key: self.serialize(value) for key, value in rv.iteritems()}
@@ -63,14 +54,14 @@ class Serializer(BaseSerializer):
 
         rv = dict(
             id=o.id,
-            job_url=self.get_uri(o.groups[0]),
+            groups=[group.uuid for group in o.groups],
             testcase=o.testcase,
             submit_time=o.submit_time.isoformat(),
             outcome=o.outcome,
-            summary=o.note,
-            log_url=o.ref_url,
-            result_data=result_data,
-            href=self.get_uri(o),
+            note=o.note,
+            ref_url=o.ref_url,
+            data=result_data,
+            href=url_for('api_v2.get_result', result_id=o.id, _external=True),
         )
 
         return {key: self.serialize(value) for key, value in rv.iteritems()}

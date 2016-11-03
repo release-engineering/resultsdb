@@ -1,10 +1,5 @@
-%if ! (0%{?fedora} > 12 || 0%{?rhel} > 5)
-%{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
-%{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
-%endif
-
 Name:           resultsdb
-Version:        1.1.16
+Version:        2.0.0
 Release:        1%{?dist}
 Summary:        Results store for automated tasks
 
@@ -17,22 +12,32 @@ BuildArch:      noarch
 Requires:       fedmsg >= 0.16.2
 Requires:       python-alembic >= 0.8.3
 Requires:       python-flask >= 0.10.1
-Requires:       python-flask-login >= 0.2.11
 Requires:       python-flask-restful >= 0.2.11
 Requires:       python-flask-sqlalchemy >= 2.0
-Requires:       python-flask-wtf >= 0.10.0
 Requires:       python-iso8601 >= 0.1.10
 Requires:       python-six >= 1.9.0
-Requires:       python-sqlalchemy >= 0.9.10
-Requires:       python-wtforms >= 2.0
-BuildRequires:  python2-devel python-setuptools
+Requires:       python-sqlalchemy >= 0.9.8
+BuildRequires:  fedmsg >= 0.16.2
+BuildRequires:  python-alembic >= 0.8.3
+BuildRequires:  python-flask >= 0.10.1
+BuildRequires:  python-flask-restful >= 0.2.11
+BuildRequires:  python-flask-sqlalchemy >= 2.0
+BuildRequires:  python-iso8601 >= 0.1.10
+BuildRequires:  pytest
+BuildRequires:  python2-devel
+BuildRequires:  python-setuptools
 
 %description
-ResultsDB is a results store engine for (not only) FedoraQA tools.
-Repositories
+ResultsDB is a results store engine for, but not limited to, Fedora QA tools.
 
 %prep
 %setup -q
+
+%check
+py.test -F testing
+# Remove compiled .py files after running unittests
+rm -f %{buildroot}%{_sysconfdir}/resultsdb/*.py{c,o}
+find %{buildroot}%{_datadir}/resultsdb/alembic -name '*.py[c,o]' -delete
 
 %build
 %{__python2} setup.py build
@@ -41,22 +46,23 @@ Repositories
 %{__python2} setup.py install --skip-build --root %{buildroot}
 
 # apache and wsgi settings
-mkdir -p %{buildroot}%{_datadir}/resultsdb/conf
-cp conf/resultsdb.conf %{buildroot}%{_datadir}/resultsdb/conf/.
-cp conf/resultsdb.wsgi %{buildroot}%{_datadir}/resultsdb/.
+install -d %{buildroot}%{_datadir}/resultsdb/conf
+install -p -m 0644 conf/resultsdb.conf %{buildroot}%{_datadir}/resultsdb/conf/
+install -p -m 0644 conf/resultsdb.wsgi %{buildroot}%{_datadir}/resultsdb/
 
 # alembic config and data
-cp -r alembic %{buildroot}%{_datadir}/resultsdb/.
-install alembic.ini %{buildroot}%{_datadir}/resultsdb/.
+cp -r --preserve=timestamps alembic %{buildroot}%{_datadir}/resultsdb/
+install -p -m 0644 alembic.ini %{buildroot}%{_datadir}/resultsdb/
 
 # resultsdb config
-mkdir -p %{buildroot}%{_sysconfdir}/resultsdb
-install conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb/settings.py.example
+install -d %{buildroot}%{_sysconfdir}/resultsdb
+install -p -m 0644 conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb/settings.py
 
 %files
 %doc README.md conf/*
-%{python_sitelib}/resultsdb
-%{python_sitelib}/*.egg-info
+%license LICENSE
+%{python2_sitelib}/resultsdb
+%{python2_sitelib}/*.egg-info
 
 %attr(755,root,root) %{_bindir}/resultsdb
 %dir %{_sysconfdir}/resultsdb
@@ -65,6 +71,17 @@ install conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb/settings.p
 %{_datadir}/resultsdb/*
 
 %changelog
+* Thu Nov 3 2016 Tim Flink <tflink@fedoraproject.org> - 2.0.0-1
+- releasing v2.0 with new API
+
+* Thu Jul 21 2016 Martin Krizek <mkrizek@fedoraproject.org> - 1.1.16-3
+- preserve timestamps of original installed files
+- fix installing the config file
+- remove .py compiled files from config and datadir
+
+* Wed Jun 1 2016 Martin Krizek <mkrizek@fedoraproject.org> - 1.1.16-2
+- add license
+
 * Mon Apr 18 2016 Martin Krizek <mkrizek@fedoraproject.org> - 1.1.16-1
 - support for testcase namespaces
 
@@ -134,5 +151,5 @@ install conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb/settings.p
 - updating package for new upstream location, not using bitbucket downloads
 - removing dep on mysql
 
-* Thu Feb 6 2014 Jan Sedlak <jsedlak@redhat.com> - 1.0.0
+* Thu Feb 6 2014 Jan Sedlak <jsedlak@redhat.com> - 1.0.0-1
 - initial packaging

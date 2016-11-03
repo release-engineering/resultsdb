@@ -19,12 +19,14 @@
 
 from datetime import date, datetime
 
+
 class DBSerialize(object):
     pass
 
+
 class BaseSerializer(object):
 
-   def serialize(self, value, **kwargs):
+    def serialize(self, value, **kwargs):
         # serialize the database objects
         #   the specific serializer needs to implement serialize_CLASSNAME methods
         if DBSerialize in value.__class__.__bases__:
@@ -36,7 +38,7 @@ class BaseSerializer(object):
 
         if isinstance(value, dict):
             ret = {}
-            for k, v  in value.iteritems():
+            for k, v in value.iteritems():
                 ret[k] = self.serialize(v, **kwargs)
             return ret
 
@@ -48,4 +50,3 @@ class BaseSerializer(object):
             return ret
 
         return value
-

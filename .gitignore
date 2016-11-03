@@ -12,3 +12,5 @@ conf/settings.py
 /env*/
 .coverage
 htmlcov/
+.cache
+.idea

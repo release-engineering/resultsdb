@@ -5,6 +5,7 @@ import os
 
 here = os.path.abspath(os.path.dirname(__file__))
 
+
 def read(*parts):
     return codecs.open(os.path.join(here, *parts), 'r').read()
 
@@ -24,7 +25,7 @@ setup(name='resultsdb',
       author_email='jskladan@redhat.com',
       license='GPLv2+',
       packages=['resultsdb', 'resultsdb.controllers', 'resultsdb.models', 'resultsdb.serializers'],
-      package_dir={'resultsdb':'resultsdb'},
+      package_dir={'resultsdb': 'resultsdb'},
       entry_points=dict(console_scripts=['resultsdb=resultsdb.cli:main']),
       include_package_data=True,
-     )
+      )

@@ -1,5 +1,6 @@
 import os
 
+
 def pytest_addoption(parser):
     """
     Add an option to the py.test parser to detect when the functional tests
