@@ -1,6 +1,6 @@
 Name:           resultsdb
 Version:        2.0.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Results store for automated tasks
 
 License:        GPLv2+
@@ -66,11 +66,15 @@ install -p -m 0644 conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb
 
 %attr(755,root,root) %{_bindir}/resultsdb
 %dir %{_sysconfdir}/resultsdb
-%{_sysconfdir}/resultsdb/*
+%config(noreplace) %{_sysconfdir}/resultsdb/settings.py
+
 %dir %{_datadir}/resultsdb
 %{_datadir}/resultsdb/*
 
 %changelog
+* Fri Nov 11 2016 Martin Krizek <mkrizek@fedoraproject.org> - 2.0.0-2
+- do not replace config file
+
 * Thu Nov 3 2016 Tim Flink <tflink@fedoraproject.org> - 2.0.0-1
 - releasing v2.0 with new API
 
