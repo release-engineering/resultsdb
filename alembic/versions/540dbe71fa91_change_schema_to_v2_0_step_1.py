@@ -14,9 +14,49 @@ depends_on = None
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relation, sessionmaker
+from sqlalchemy.sql import text
+
+Session = sessionmaker()
+Base = declarative_base()
+
+
+class Job(Base):
+    __tablename__ = 'job'
+
+    id = sa.Column(sa.Integer, primary_key=True)
+    uuid = sa.Column(sa.String(36), unique=True)
+    results = relation('Result', backref='job')
+
+
+class Result(Base):
+    __tablename__ = 'result'
+
+    id = sa.Column(sa.Integer, primary_key=True)
+    job_id = sa.Column(sa.Integer, sa.ForeignKey('job.id'))
 
 
 def upgrade():
+    # Merge duplicate Jobs
+    connection = op.get_bind()
+    session = Session(bind=connection)
+    merge_targets = {}
+    jobs_to_delete = []
+    job_query = session.query(Job).from_statement(text(
+        "select id, uuid from job where uuid in (select uuid from job group by uuid having count(uuid) > 1) order by id;"))
+    for job in job_query:
+        primary = merge_targets.setdefault(job.uuid, job)
+        if primary.id != job.id:
+            for result in job.results:
+                result.job_id = primary.id
+                session.add(result)
+            jobs_to_delete.append(job)
+    session.commit()
+    for job in jobs_to_delete:
+        session.delete(job)
+    session.commit()
+
     # JOB
     op.rename_table('job', 'group')
     op.alter_column('group', 'name', new_column_name='description')
@@ -28,16 +68,19 @@ def upgrade():
         'group_idx_uuid', 'group', ['uuid'], unique=False, postgresql_ops={'uuid': 'text_pattern_ops'})
 
     # RESULT
-    op.add_column(u'result', sa.Column('testcase_name', sa.Text(), nullable=True))
+    op.add_column(
+        u'result', sa.Column('testcase_name', sa.Text(), nullable=True))
     op.alter_column('result', 'summary', new_column_name='note')
     op.alter_column('result', 'log_url', new_column_name='ref_url')
     op.create_index('result_fk_testcase_name', 'result', [
                     'testcase_name'], unique=False, postgresql_ops={'testcase_name': 'text_pattern_ops'})
     op.drop_index('result_fk_job_id', table_name='result')
     op.drop_index('result_fk_testcase_id', table_name='result')
-    op.drop_constraint(u'result_testcase_id_fkey', 'result', type_='foreignkey')
+    op.drop_constraint(
+        u'result_testcase_id_fkey', 'result', type_='foreignkey')
     op.drop_constraint(u'result_job_id_fkey', 'result', type_='foreignkey')
-    op.create_foreign_key(None, 'result', 'testcase', ['testcase_name'], ['name'])
+    op.create_foreign_key(
+        None, 'result', 'testcase', ['testcase_name'], ['name'])
 
     # TESTCASE
     op.alter_column('testcase', 'url', new_column_name='ref_url')
@@ -53,7 +96,8 @@ def upgrade():
                     )
     op.create_index('gtr_fk_group_uuid', 'groups_to_results', [
                     'group_uuid'], unique=False, postgresql_ops={'uuid': 'text_pattern_ops'})
-    op.create_index('gtr_fk_result_id', 'groups_to_results', ['result_id'], unique=False)
+    op.create_index(
+        'gtr_fk_result_id', 'groups_to_results', ['result_id'], unique=False)
 
 
 def downgrade():
@@ -63,8 +107,10 @@ def downgrade():
     # RESULT
     op.alter_column('result', 'note', new_column_name='summary')
     op.alter_column('result', 'ref_url', new_column_name='log_url')
-    op.drop_constraint('result_testcase_name_fkey', 'result', type_='foreignkey')
-    op.create_index('result_fk_testcase_id', 'result', ['testcase_id'], unique=False)
+    op.drop_constraint(
+        'result_testcase_name_fkey', 'result', type_='foreignkey')
+    op.create_index(
+        'result_fk_testcase_id', 'result', ['testcase_id'], unique=False)
     op.create_index('result_fk_job_id', 'result', ['job_id'], unique=False)
     op.drop_index('result_fk_testcase_name', table_name='result')
     op.drop_column(u'result', 'testcase_name')
@@ -73,8 +119,10 @@ def downgrade():
     op.rename_table('group', 'job')
     op.alter_column('job', 'description', new_column_name='name')
     op.add_column(u'job', sa.Column('end_time', sa.DateTime(), nullable=True))
-    op.add_column(u'job', sa.Column('start_time', sa.DateTime(), nullable=True))
-    op.add_column(u'job', sa.Column('status', sa.VARCHAR(length=16), nullable=True))
+    op.add_column(
+        u'job', sa.Column('start_time', sa.DateTime(), nullable=True))
+    op.add_column(
+        u'job', sa.Column('status', sa.VARCHAR(length=16), nullable=True))
     op.drop_index('group_idx_uuid', table_name='job')
 
     # MANY TO MANY
