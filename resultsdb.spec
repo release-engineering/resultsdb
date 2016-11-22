@@ -1,6 +1,6 @@
 Name:           resultsdb
-Version:        2.0.0
-Release:        2%{?dist}
+Version:        2.0.1
+Release:        1%{?dist}
 Summary:        Results store for automated tasks
 
 License:        GPLv2+
@@ -72,8 +72,10 @@ install -p -m 0644 conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb
 %{_datadir}/resultsdb/*
 
 %changelog
-* Fri Nov 11 2016 Martin Krizek <mkrizek@fedoraproject.org> - 2.0.0-2
+* Tue Nov 22 2016 Martin Krizek <mkrizek@fedoraproject.org> - 2.0.1-1
 - do not replace config file
+- loosen pin on sqlalchemy in requirements.txt
+- fix the migration, so it deals with duplicate job uuids
 
 * Thu Nov 3 2016 Tim Flink <tflink@fedoraproject.org> - 2.0.0-1
 - releasing v2.0 with new API
