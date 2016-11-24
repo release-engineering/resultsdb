@@ -17,6 +17,7 @@ import sqlalchemy as db
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, relation, sessionmaker
 import uuid
+import logging
 
 Session = sessionmaker()
 Base = declarative_base()
@@ -64,18 +65,33 @@ def upgrade():
         job = db.relation('Group')  # , lazy = False)
         testcase = db.relation('Testcase', backref='results')  # , lazy = False)
 
+    logger = logging.getLogger('alembic')
     connection = op.get_bind()
     session = Session(bind=connection)
-    for group in session.query(Group):
+    i = 0
+    for group in session.query(Group).yield_per(100):
+        i += 1
         if not group.uuid:
             group.uuid = str(uuid.uuid1())
             session.add(group)
+        if not i % 1000:
+            logger.info("Traversed %s groups", i)
             session.commit()
-    for result in session.query(Result):
+    logger.info("Final group commit")
+    session.commit()
+    i = 0
+    logger.info("Starting results")
+    for result in session.query(Result).yield_per(100):
+        i += 1
         result.groups = [result.job]
         result.testcase_name = result.testcase.name
         session.add(result)
-        session.commit()
+        if not i % 1000:
+            logger.info("Traversed %s results", i)
+            session.commit()
+    logger.info("Final result commit")
+    session.commit()
+    logger.info("Removing the columns")
     op.drop_column('result', 'testcase_id')
     op.drop_column('result', 'job_id')
 
