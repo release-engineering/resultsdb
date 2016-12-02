@@ -10,8 +10,16 @@ STREAM_LOGGING = True
 #SHOW_DB_URI = False
 RUN_HOST= '0.0.0.0'
 RUN_PORT = 5001
-# the format of the fully qualified topic of a fedmsg is
-# <topic_prefix>.<environment>.<modname>.<topic>
+
+
+# Set this to True or False to enable publishing to a message bus
+MESSAGE_BUS_PUBLISH = False
+# Name of the message bus plugin to use goes here.  'fedmsg' is installed by
+# default, but you could create your own.
+MESSAGE_BUS_PLUGIN = 'fedmsg'
+# You can pass extra arguments to your message bus plugin here.  For instance,
+# the fedmsg plugin expects an extra `modname` argument that can be used to
+# configure the topic, like this:
+#   <topic_prefix>.<environment>.<modname>.<topic>
 # e.g. org.fedoraproject.prod.taskotron.result.new
-FEDMSG_PUBLISH = False
-FEDMSG_MODNAME = 'resultsdb'
+MESSAGE_BUS_KWARGS = {'modname': 'resultsdb'}

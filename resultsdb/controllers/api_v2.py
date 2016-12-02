@@ -31,12 +31,12 @@ from werkzeug.exceptions import HTTPException
 from werkzeug.exceptions import BadRequest as JSONBadRequest
 
 import iso8601
-import fedmsg
 
 from resultsdb import app, db
 from resultsdb.serializers.api_v2 import Serializer
 from resultsdb.models.results import Group, Result, Testcase, ResultData
 from resultsdb.models.results import RESULT_OUTCOME
+from resultsdb.messaging import load_messaging_plugin
 
 QUERY_LIMIT = 20
 
@@ -580,8 +580,17 @@ def create_result():
 
     db.session.add(result)
 
-    if app.config['FEDMSG_PUBLISH']:
-        fedmsg.publish(**create_fedmsg(result))
+    if app.config['MESSAGE_BUS_PUBLISH']:
+        prev_result = get_prev_result(result)
+        # result is considered duplicate of prev_result when
+        # outcomes are the same.
+        if not prev_result or prev_result.outcome != result.outcome:
+            plugin = load_messaging_plugin(
+                name=app.config['MESSAGE_BUS_PLUGIN'],
+                kwargs=app.config['MESSAGE_BUS_KWARGS'],
+            )
+            plugin.publish(plugin.create_message(result, prev_result))
+
 
     return jsonify(SERIALIZE(result)), 201
 
@@ -602,32 +611,6 @@ def get_prev_result(result):
 
     q = q.order_by(db.desc(Result.submit_time))
     return q.first()
-
-
-def create_fedmsg(result):
-    prev_result = get_prev_result(result)
-    if prev_result and prev_result.outcome == result.outcome:
-        return
-
-    task = dict((result_data.key, result_data.value) for result_data in result.data
-                if result_data.key in ['item', 'type'])
-    task['name'] = result.testcase.name
-    msg = {
-        'topic': 'result.new',
-        'modname': app.config['FEDMSG_MODNAME'],
-        'msg': {
-            'task': task,
-            'result': {
-                'id': result.id,
-                'submit_time': result.submit_time.strftime("%Y-%m-%d %H:%M:%S UTC"),
-                'prev_outcome': prev_result.outcome if prev_result else None,
-                'outcome': result.outcome,
-                'group_url': result.group.ref_url,
-                'log_url': result.ref_url,
-            }
-        }
-    }
-    return msg
 
 
 # =============================================================================
