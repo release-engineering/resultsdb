@@ -14,3 +14,4 @@ conf/settings.py
 htmlcov/
 .cache
 .idea
+test_env

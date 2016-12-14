@@ -26,6 +26,12 @@ setup(name='resultsdb',
       license='GPLv2+',
       packages=['resultsdb', 'resultsdb.controllers', 'resultsdb.models', 'resultsdb.serializers'],
       package_dir={'resultsdb': 'resultsdb'},
-      entry_points=dict(console_scripts=['resultsdb=resultsdb.cli:main']),
+      entry_points={
+          'console_scripts': ['resultsdb=resultsdb.cli:main'],
+          'resultsdb.messaging.plugins': [
+              'dummy=resultsdb.messaging:DummyPlugin',
+              'fedmsg=resultsdb.messaging:FedmsgPlugin',
+          ],
+      },
       include_package_data=True,
       )

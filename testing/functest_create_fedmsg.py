@@ -26,6 +26,7 @@ import copy
 import resultsdb
 import resultsdb.cli
 import resultsdb.controllers.api_v2 as apiv2
+import resultsdb.messaging
 
 
 class MyResultData(object):
@@ -63,7 +64,8 @@ class TestFuncCreateFedmsg():
         cls.dbfile = tempfile.NamedTemporaryFile(delete=False)
         cls.dbfile.close()
         resultsdb.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///%s' % cls.dbfile.name
-        resultsdb.app.config['FEDMSG_PUBLISH'] = False
+        resultsdb.app.config['MESSAGE_BUS_PUBLISH'] = True
+        resultsdb.app.config['MESSAGE_BUS_PLUGIN'] = 'dummy'
 
     @classmethod
     def teardown_class(cls):
@@ -95,6 +97,10 @@ class TestFuncCreateFedmsg():
         self.ref_result_ref_url = 'http://example.com/testing.result'
         self.ref_result_obj = MyResult(
             0, self.ref_testcase_name, self.ref_result_outcome, self.ref_result_item, self.ref_result_type, self.ref_result_arch)
+
+    def teardown_method(self, method):
+        # Reset this for each test.
+        resultsdb.messaging.DummyPlugin.history = []
 
     def helper_create_result(self, outcome=None, groups=None, testcase=None, data=None):
         if outcome is None:
@@ -199,3 +205,9 @@ class TestFuncCreateFedmsg():
 
         prev_result = apiv2.get_prev_result(self.ref_result_obj)
         assert prev_result is None
+
+    def test_message_publication(self):
+        self.helper_create_result()
+        plugin = resultsdb.messaging.DummyPlugin
+        assert len(plugin.history) == 1, plugin.history
+        assert plugin.history == [{'id': 1}]

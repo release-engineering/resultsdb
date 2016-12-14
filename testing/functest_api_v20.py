@@ -25,6 +25,7 @@ import copy
 
 import resultsdb
 import resultsdb.cli
+import resultsdb.messaging
 
 
 class AboutTime(object):
@@ -42,7 +43,8 @@ class TestFuncApiV20():
         cls.dbfile = tempfile.NamedTemporaryFile(delete=False)
         cls.dbfile.close()
         resultsdb.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///%s' % cls.dbfile.name
-        resultsdb.app.config['FEDMSG_PUBLISH'] = False
+        resultsdb.app.config['MESSAGE_BUS_PUBLISH'] = True
+        resultsdb.app.config['MESSAGE_BUS_PLUGIN'] = 'dummy'
 
     @classmethod
     def teardown_class(cls):
@@ -100,6 +102,10 @@ class TestFuncApiV20():
             'data': dict(((key, [value] if isinstance(value, basestring) else value) for key, value in self.ref_result_data.iteritems())),
             'href': self.ref_url_prefix + '/results/1',
         }
+
+    def teardown_method(self, method):
+        # Reset this for each test.
+        resultsdb.messaging.DummyPlugin.history = []
 
     # =============== TESTCASES ==================
 
@@ -723,3 +729,9 @@ class TestFuncApiV20():
         assert data['data'][0]['outcome'] == "FAILED"
         assert data['data'][1]['testcase']['name'] == self.ref_testcase_name + ".1"
         assert data['data'][1]['outcome'] == "PASSED"
+
+    def test_message_publication(self):
+        self.helper_create_result()
+        plugin = resultsdb.messaging.DummyPlugin
+        assert len(plugin.history) == 1, plugin.history
+        assert plugin.history == [{'id': 1}]

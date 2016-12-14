@@ -17,6 +17,7 @@ import sqlalchemy as sa
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relation, sessionmaker
 from sqlalchemy.sql import text
+import logging
 
 Session = sessionmaker()
 Base = declarative_base()
@@ -39,23 +40,44 @@ class Result(Base):
 
 def upgrade():
     # Merge duplicate Jobs
+    logger = logging.getLogger('alembic')
     connection = op.get_bind()
     session = Session(bind=connection)
     merge_targets = {}
     jobs_to_delete = []
+
+    job_count_query = connection.execute("select count(*) from job where uuid in (select uuid from job group by uuid having count(uuid) > 1);")
+    job_count = -1
+    for row in job_count_query:
+        job_count = row[0]
+
+    logger.info("Jobs marked for inspection: %s", job_count)
+
     job_query = session.query(Job).from_statement(text(
-        "select id, uuid from job where uuid in (select uuid from job group by uuid having count(uuid) > 1) order by id;"))
+        "select id, uuid from job where uuid in (select uuid from job group by uuid having count(uuid) > 1) order by id;")
+        ).yield_per(100)
+
+    j = r = 0
     for job in job_query:
+        j += 1
         primary = merge_targets.setdefault(job.uuid, job)
         if primary.id != job.id:
             for result in job.results:
+                r += 1
                 result.job_id = primary.id
                 session.add(result)
             jobs_to_delete.append(job)
+        if not j % 1000:
+            logger.info("Jobs seen: %s out of %s", j, job_count)
+            logger.info("Results marked for move: %s", r)
+            session.commit()
     session.commit()
+    logger.info("Removing duplicate jobs")
     for job in jobs_to_delete:
         session.delete(job)
     session.commit()
+
+    logger.info("Changing table structure")
 
     # JOB
     op.rename_table('job', 'group')
