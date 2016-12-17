@@ -34,8 +34,7 @@ ResultsDB is a results store engine for, but not limited to, Fedora QA tools.
 %setup -q
 
 %check
-# TODO remember to re-enable functional tests when they're fixed
-py.test testing
+PYTHONPATH=%{buildroot}%{python2_sitelib}/ py.test -F testing/
 # Remove compiled .py files after running unittests
 rm -f %{buildroot}%{_sysconfdir}/resultsdb/*.py{c,o}
 find %{buildroot}%{_datadir}/resultsdb/alembic -name '*.py[c,o]' -delete
