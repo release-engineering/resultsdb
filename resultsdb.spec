@@ -5,7 +5,7 @@ Summary:        Results store for automated tasks
 
 License:        GPLv2+
 URL:            https://bitbucket.org/fedoraqa/resultsdb
-Source0:        https://qadevel.cloud.fedoraproject.org/releases/%{name}/%{name}-%{version}.tar.gz
+Source0:        https://qa.fedoraproject.org/releases/%{name}/%{name}-%{version}.tar.gz
 
 BuildArch:      noarch
 
