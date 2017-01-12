@@ -51,6 +51,15 @@ class TestPrevNextURL():
         assert prev is None
         assert next == 'URL?page=1'
 
+    def test_data_no_page_in_url_stuff_in_url(self, monkeypatch):
+        self.rq.url = 'URL?stuff=some'
+        monkeypatch.setattr(apiv2, 'request', self.rq)
+
+        data, prev, next = apiv2.prev_next_urls(range(10), 1)
+        assert data == [0]
+        assert prev is None
+        assert next == 'URL?stuff=some&page=1'
+
     def test_data_page_and_limit_in_url(self, monkeypatch):
         self.rq.url = 'URL?page=1&limit=1'
         monkeypatch.setattr(apiv2, 'request', self.rq)
@@ -60,6 +69,14 @@ class TestPrevNextURL():
         assert prev == 'URL?page=0&limit=1'
         assert next == 'URL?page=2&limit=1'
 
+        self.rq.url = 'URL?limit=1&page=1'
+        monkeypatch.setattr(apiv2, 'request', self.rq)
+
+        data, prev, next = apiv2.prev_next_urls(range(10), 1)
+        assert data == [0]
+        assert prev == 'URL?limit=1&page=0'
+        assert next == 'URL?limit=1&page=2'
+
         self.rq.url = 'URL&page=1&limit=1'
         monkeypatch.setattr(apiv2, 'request', self.rq)
 
@@ -67,6 +84,14 @@ class TestPrevNextURL():
         assert data == [0]
         assert prev == 'URL&page=0&limit=1'
         assert next == 'URL&page=2&limit=1'
+
+        self.rq.url = 'URL&limit=1&page=1'
+        monkeypatch.setattr(apiv2, 'request', self.rq)
+
+        data, prev, next = apiv2.prev_next_urls(range(10), 1)
+        assert data == [0]
+        assert prev == 'URL&limit=1&page=0'
+        assert next == 'URL&limit=1&page=2'
 
 
 class TestParseSince():

@@ -124,7 +124,10 @@ def prev_next_urls(data, limit=QUERY_LIMIT):
     placeholder = "[!@#$%^&*PLACEHOLDER*&^%$#@!]"
 
     if not page:
-        baseurl = "%s?page=%s" % (request.url, placeholder)
+        if "?" in request.url:
+            baseurl = "%s&page=%s" % (request.url, placeholder)
+        else:
+            baseurl = "%s?page=%s" % (request.url, placeholder)
         page = 0
     else:
         baseurl = RE_PAGE.sub("%spage=%s" % (flag, placeholder), request.url)
