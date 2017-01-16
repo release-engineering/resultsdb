@@ -123,7 +123,7 @@ def prev_next_urls(data, limit=QUERY_LIMIT):
     next = None
     placeholder = "[!@#$%^&*PLACEHOLDER*&^%$#@!]"
 
-    if not page:
+    if page is None:
         if "?" in request.url:
             baseurl = "%s&page=%s" % (request.url, placeholder)
         else:
