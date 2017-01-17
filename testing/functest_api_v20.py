@@ -125,13 +125,13 @@ class TestFuncApiV20():
         r = self.app.post('/api/v2.0/results', data=json.dumps(ref_data), content_type='application/json')
         data = json.loads(r.data)
         assert r.status_code == 400
-        assert data['message'] == 'Malformed Request'
+        assert data['message'].startswith('Malformed Request')
 
         ref_data['ref_url'] = ''
         r = self.app.post('/api/v2.0/results', data=json.dumps(ref_data), content_type='application/json')
         data = json.loads(r.data)
         assert r.status_code == 400
-        assert data['message'] == 'Malformed Request'
+        assert data['message'].startswith('Malformed Request')
 
         ref_data['ref_url'] = self.ref_result_ref_url
         r = self.app.post('/api/v2.0/results', data=json.dumps(ref_data), content_type='application/json')
@@ -144,19 +144,19 @@ class TestFuncApiV20():
         r = self.app.post('/api/v2.0/results', data=json.dumps(ref_data), content_type='application/json')
         data = json.loads(r.data)
         assert r.status_code == 400
-        assert data['message'] == 'Malformed Request'
+        assert data['message'].startswith('Malformed Request')
 
         ref_data['data'] = ['foo', 'bar']
         r = self.app.post('/api/v2.0/results', data=json.dumps(ref_data), content_type='application/json')
         data = json.loads(r.data)
         assert r.status_code == 400
-        assert data['message'] == 'Malformed Request'
+        assert data['message'].startswith('Malformed Request')
 
         ref_data['data'] = {'foo': 'bar'}
         r = self.app.post('/api/v2.0/results', data=json.dumps(ref_data), content_type='application/json')
         data = json.loads(r.data)
         assert r.status_code == 400
-        assert data['message'] == 'Malformed Request'
+        assert data['message'].startswith('Malformed Request')
 
         ref_data['data'] = {'foobar': 'bar'}
         r = self.app.post('/api/v2.0/results', data=json.dumps(ref_data), content_type='application/json')
@@ -197,7 +197,7 @@ class TestFuncApiV20():
         data = json.loads(r.data)
 
         assert r.status_code == 400
-        assert data['message'] == 'Malformed Request'
+        assert data['message'].startswith('Malformed Request')
 
     def test_update_testcase(self):
         self.test_create_testcase()
@@ -435,14 +435,14 @@ class TestFuncApiV20():
         data = json.loads(r.data)
 
         assert r.status_code == 400
-        assert data['message'] == 'Malformed Request'
+        assert data['message'].startswith('Malformed Request')
 
         ref_data = json.dumps({'testcase': self.ref_testcase})
         r = self.app.post('/api/v2.0/results', data=ref_data, content_type='application/json')
         data = json.loads(r.data)
 
         assert r.status_code == 400
-        assert data['message'] == 'Malformed Request'
+        assert data['message'].startswith('Malformed Request')
 
     def test_create_result_multiple_groups(self):
         uuid2 = '1c26effb-7c07-4d90-9428-86aac053288c'

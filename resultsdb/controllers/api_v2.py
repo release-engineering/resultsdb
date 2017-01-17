@@ -224,7 +224,7 @@ def get_groups():
     try:
         args = RP['get_groups'].parse_args()
     except JSONBadRequest as error:
-        return jsonify({"message": "Malformed Request"}), error.code
+        return jsonify({"message": "Malformed Request: %s" % error.data['message']}), error.code
     except HTTPException as error:
         return jsonify(error.data), error.code
 
@@ -280,7 +280,7 @@ def create_group():
     try:
         args = RP['create_group'].parse_args()
     except JSONBadRequest as error:
-        return jsonify({"message": "Malformed Request"}), error.code
+        return jsonify({"message": "Malformed Request: %s" % error.data['message']}), error.code
     except HTTPException as error:
         return jsonify(error.data), error.code
 
@@ -368,7 +368,7 @@ def __get_results_parse_args():
     try:
         args = RP['get_results'].parse_args()
     except JSONBadRequest as error:
-        retval["error"] = (jsonify({"message": "Malformed Request"}), error.code)
+        retval["error"] = (jsonify({"message": "Malformed Request: %s" % error.data['message']}), error.code)
         return retval
     except HTTPException as error:
         retval["error"] = (jsonify(error.data), error.code)
@@ -540,7 +540,7 @@ def create_result():
     try:
         args = RP['create_result'].parse_args()
     except JSONBadRequest as error:
-        return jsonify({"message": "Malformed Request"}), error.code
+        return jsonify({"message": "Malformed Request: %s" % error.data['message']}), error.code
     except HTTPException as error:
         return jsonify(error.data), error.code
 
@@ -696,7 +696,7 @@ def get_testcases():  # page = None, limit = QUERY_LIMIT):
     try:
         args = RP['get_testcases'].parse_args()
     except JSONBadRequest as error:
-        return jsonify({"message": "Malformed Request"}), error.code
+        return jsonify({"message": "Malformed Request: %s" % error.data['message']}), error.code
     except HTTPException as error:
         return jsonify(error.data), error.code
 
@@ -731,7 +731,7 @@ def create_testcase():
     try:
         args = RP['create_testcase'].parse_args()
     except JSONBadRequest as error:
-        return jsonify({"message": "Malformed Request"}), error.code
+        return jsonify({"message": "Malformed Request: %s" % error.data['message']}), error.code
     except HTTPException as error:
         return jsonify(error.data), error.code
 
