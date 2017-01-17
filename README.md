@@ -5,8 +5,8 @@ documentation can be found at <http://docs.resultsdb20.apiary.io/>.
 
 ## Repositories
 
-* ResultsDB Frontend - [Bitbucket GIT repo](https://bitbucket.org/fedoraqa/resultsdb_frontend)
-* ResultsDB Client Library - [Bitbucket GIT repo](https://bitbucket.org/fedoraqa/resultsdb_api)
+* ResultsDB Frontend - [GIT repo](https://pagure.io/taskotron/resultsdb_frontend)
+* ResultsDB Client Library - [GIT repo](https://pagure.io/taskotron/resultsdb_api)
 
 ## Quick development setup
 

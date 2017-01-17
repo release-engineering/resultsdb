@@ -4,7 +4,7 @@ Release:        1%{?dist}
 Summary:        Results store for automated tasks
 
 License:        GPLv2+
-URL:            https://bitbucket.org/fedoraqa/resultsdb
+URL:            https://pagure.io/taskotron/resultsdb
 Source0:        https://qa.fedoraproject.org/releases/%{name}/%{name}-%{version}.tar.gz
 
 BuildArch:      noarch
