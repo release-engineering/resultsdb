@@ -1,7 +1,9 @@
 import datetime
 import pytest
+import functools
 
 import resultsdb.controllers.api_v2 as apiv2
+import resultsdb.lib.helpers as helpers
 
 
 class MyRequest(object):
@@ -10,14 +12,67 @@ class MyRequest(object):
         self.url = url
 
 
-class TestDictOrStringType():
+class TestTypeHelpers():
 
-    def test_dict_or_string_type(self):
-        assert apiv2.dict_or_string_type('') == ''
-        assert apiv2.dict_or_string_type(u'') == u''
-        assert apiv2.dict_or_string_type({}) == {}
+    def test_dict_or_string(self):
+        assert helpers.dict_or_string('') == ''
+        assert helpers.dict_or_string(u'') == u''
+        assert helpers.dict_or_string({}) == {}
+        assert helpers.dict_or_string({"foo": "bar"}) == {"foo": "bar"}
         with pytest.raises(ValueError):
-            apiv2.dict_or_string_type([])
+            helpers.dict_or_string([])
+
+    def test_list_or_none(self):
+        assert helpers.list_or_none(None) is None
+        assert helpers.list_or_none([]) == []
+        assert helpers.list_or_none(["foo", "bar"]) == ["foo", "bar"]
+        with pytest.raises(ValueError):
+            assert helpers.list_or_none("")
+
+    def test_non_empty(self):
+        assert helpers.non_empty(basestring, "foobar") == "foobar"
+        assert helpers.non_empty(int, 0) == 0
+        assert helpers.non_empty(int, 1) == 1
+        assert helpers.non_empty(float, 0.0) == 0.0
+        assert helpers.non_empty(float, 1.0) == 1.0
+        assert helpers.non_empty(list, ["foo"]) == ["foo"]
+        assert helpers.non_empty(dict, {"foo": "bar"}) == {"foo": "bar"}
+
+        with pytest.raises(ValueError):
+            helpers.non_empty(basestring, "")
+        with pytest.raises(ValueError):
+            helpers.non_empty(list, [])
+        with pytest.raises(ValueError):
+            helpers.non_empty(dict, {})
+
+    def test_non_empty_with_lambda(self):
+        assert helpers.non_empty(helpers.list_or_none, ['foo']) == ['foo']
+        assert helpers.non_empty(functools.partial(helpers.non_empty, helpers.list_or_none), ['foo']) == ['foo']
+        with pytest.raises(ValueError):
+            helpers.non_empty(helpers.list_or_none, [])
+        with pytest.raises(ValueError):
+            helpers.non_empty(helpers.list_or_none, None)
+        with pytest.raises(ValueError):
+            helpers.non_empty(functools.partial(helpers.non_empty, helpers.list_or_none), [])
+
+
+class TestExtraDataValidation():
+    def test__validate_create_result_extra_data(self):
+        data = {"foobar": 0, "moo": "1"}
+        assert apiv2._validate_create_result_extra_data(None, data) == data
+        assert apiv2._validate_create_result_extra_data([], data) == data
+        assert apiv2._validate_create_result_extra_data(['foobar'], data) == data
+        assert apiv2._validate_create_result_extra_data(['moo'], data) == data
+        with pytest.raises(ValueError):
+            apiv2._validate_create_result_extra_data(['foobar'], None)
+        with pytest.raises(ValueError):
+            apiv2._validate_create_result_extra_data(['foobar'], {})
+        with pytest.raises(ValueError):
+            apiv2._validate_create_result_extra_data(['foobar'], {'foobar': None})
+        with pytest.raises(ValueError):
+            apiv2._validate_create_result_extra_data(['foobar'], {'foobar': ''})
+        with pytest.raises(ValueError):
+            apiv2._validate_create_result_extra_data(None, "")
 
 
 class TestPrevNextURL():
@@ -92,7 +147,6 @@ class TestPrevNextURL():
         assert data == [0]
         assert prev == 'URL&limit=1&page=0'
         assert next == 'URL&limit=1&page=2'
-
 
 class TestParseSince():
 

@@ -42,6 +42,15 @@ class Config(object):
     MESSAGE_BUS_PLUGIN = 'dummy'
     MESSAGE_BUS_KWARGS = {}
 
+    # Specify which fields are required (in addition to those already required)
+    #  when creating result/group/testcase.
+    # If you want to set some result's extra-data as required, you can do so by
+    #  prepending 'data.' to the name (e.g. 'data.arch').
+    REQUIRED_DATA = {
+        'create_result': [],
+        'create_group': [],
+        'create_testcase': [],
+        }
 
 class ProductionConfig(Config):
     DEBUG = False

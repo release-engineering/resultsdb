@@ -26,6 +26,7 @@ import copy
 import resultsdb
 import resultsdb.cli
 import resultsdb.messaging
+import resultsdb.controllers.api_v2 as api_v2
 
 
 class AboutTime(object):
@@ -106,6 +107,71 @@ class TestFuncApiV20():
     def teardown_method(self, method):
         # Reset this for each test.
         resultsdb.messaging.DummyPlugin.history = []
+    # =============== CONFIG ==================
+
+    def helper_setup_request_parser_from_config(self):
+        ref_data = dict(
+            outcome=self.ref_result_outcome,
+            testcase=self.ref_testcase,
+        )
+
+        r = self.app.post('/api/v2.0/results', data=json.dumps(ref_data), content_type='application/json')
+        assert r.status_code == 201
+
+        # Test setting optional value as required
+        resultsdb.app.config['REQUIRED_DATA'] = {"create_result": ["ref_url"]}
+        api_v2.setup_request_parser_from_config()
+
+        r = self.app.post('/api/v2.0/results', data=json.dumps(ref_data), content_type='application/json')
+        data = json.loads(r.data)
+        assert r.status_code == 400
+        assert data['message'] == 'Malformed Request'
+
+        ref_data['ref_url'] = ''
+        r = self.app.post('/api/v2.0/results', data=json.dumps(ref_data), content_type='application/json')
+        data = json.loads(r.data)
+        assert r.status_code == 400
+        assert data['message'] == 'Malformed Request'
+
+        ref_data['ref_url'] = self.ref_result_ref_url
+        r = self.app.post('/api/v2.0/results', data=json.dumps(ref_data), content_type='application/json')
+        assert r.status_code == 201
+
+        # Test setting result.data requirement
+        resultsdb.app.config['REQUIRED_DATA'] = {"create_result": ["data.foobar"]}
+        api_v2.setup_request_parser_from_config()
+
+        r = self.app.post('/api/v2.0/results', data=json.dumps(ref_data), content_type='application/json')
+        data = json.loads(r.data)
+        assert r.status_code == 400
+        assert data['message'] == 'Malformed Request'
+
+        ref_data['data'] = ['foo', 'bar']
+        r = self.app.post('/api/v2.0/results', data=json.dumps(ref_data), content_type='application/json')
+        data = json.loads(r.data)
+        assert r.status_code == 400
+        assert data['message'] == 'Malformed Request'
+
+        ref_data['data'] = {'foo': 'bar'}
+        r = self.app.post('/api/v2.0/results', data=json.dumps(ref_data), content_type='application/json')
+        data = json.loads(r.data)
+        assert r.status_code == 400
+        assert data['message'] == 'Malformed Request'
+
+        ref_data['data'] = {'foobar': 'bar'}
+        r = self.app.post('/api/v2.0/results', data=json.dumps(ref_data), content_type='application/json')
+        assert r.status_code == 201
+
+    def test_setup_request_parser_from_config(self):
+        bkp_config = copy.deepcopy(resultsdb.app.config)
+        bkp_request_parser = copy.deepcopy(api_v2.RP)
+        try:
+            self.helper_setup_request_parser_from_config()
+        except:
+            raise
+        finally:
+            api_v2.RP = bkp_request_parser
+            resultsdb.app.config = bkp_config
 
     # =============== TESTCASES ==================
 
