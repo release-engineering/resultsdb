@@ -4,6 +4,7 @@ import functools
 
 import resultsdb.controllers.api_v2 as apiv2
 import resultsdb.lib.helpers as helpers
+import resultsdb.messaging as messaging
 
 
 class MyRequest(object):
@@ -172,6 +173,30 @@ class TestParseSince():
         start, end = apiv2.parse_since(self.date_str + ',' + self.date_str)
         assert start == self.date_obj
         assert end == self.date_obj
+
+
+class TestMessaging():
+
+    def test_load_plugin(self):
+        plugin = messaging.load_messaging_plugin('dummy', {})
+        assert isinstance(plugin, messaging.DummyPlugin)
+        try:
+            plugin = messaging.load_messaging_plugin('fedmsg', {})
+        except KeyError as err:
+            if "not found" in err.message:
+                print """=============== HINT ===============
+This exception can be caused by the fact, that you did not run
+`python setup.py develop` before executing the testsuite.
+
+The messaging plugins are defined as setuptools entry-points, and those live in the
+.egg-info directory. If you're developing locally, that directory is usually present
+in pwd due to `python setup.py develop`.
+
+If you ran `python setup.py develop` and are still seeing this error, then:
+ - you might me missing the 'fedmsg' entrypoint in setup.py
+ - there can be an error in the plugin loading code"""
+            raise
+        assert isinstance(plugin, messaging.FedmsgPlugin), "check whether `fedmsg` entrypoint in setup.py points to resultsdb.messaging:FedmsgPlugin"
 
 
 class TestGetResultsParseArgs():

@@ -106,7 +106,8 @@ class FedmsgPlugin(MessagingPlugin):
 def load_messaging_plugin(name, kwargs):
     """ Instantiate and return the appropriate messaging plugin. """
     points = pkg_resources.iter_entry_points('resultsdb.messaging.plugins')
-    classes = dict([(point.name, point.load()) for point in points])
+    classes = {'dummy': DummyPlugin}
+    classes.update(dict([(point.name, point.load()) for point in points]))
 
     log.debug("Found the following installed messaging plugin %r" % classes)
     if name not in classes:
