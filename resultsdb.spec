@@ -1,5 +1,6 @@
 %global without_epel 0
 Name:           resultsdb
+# NOTE: if you update version, *make sure* to also update `resultsdb/__init__.py`
 Version:        2.0.2
 Release:        2%{?dist}
 Summary:        Results store for automated tasks
