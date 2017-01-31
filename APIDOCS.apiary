@@ -1,0 +1,614 @@
+[comment0]: # (Apiary only does GitHub synchronization. This is here so we can have the data outside of "closed" app. Also, feel free to post patches against this file for docs changes.)
+[comment1]: # (Last updated: Tue Jan 31, 17:55)
+
+FORMAT: 1A
+HOST: https://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/
+
+# ResultsDB 2.0
+
+ResultsDB is an independent system for storing results, originaly written as a part of [Taskotron](https://taskotron.fedoraproject.org/) automation tool.
+
+Source code: https://bitbucket.org/account/user/fedoraqa/projects/RES
+
+## Changes since 1.0
+
+* Removed `Jobs` and replaced with `Groups` to remove the "execution status" (originaly represented by `Job`) from ResultsDB, 
+  but keeping the ability to group `Results`, as it might make semantical sense
+    * `Result` can be a part of 0-n `Groups`
+    * UUID as a default `Group` identifier instead of `id`
+* In the response data:
+    *`href` (pointer to `self`) is only present in the resource's data, not in the general queries that return collections, since the 'search' queries' `href` was not permalink
+    * `ref_url` as a common "external url" attribute
+        * `Result.ref_url` instead of `Result.log_url`
+        * `Testcase.ref_url` instead of `Testcase.url`
+* Changes in the `Group` object
+    * `results` is an URL at which `Results` in that particular `Group` can be
+    * `name` renamed to `description`
+* Changes in the `Result` object
+    * `ref_url` instead of `log_url`
+    * `result_data` replaced with `data`
+    * `summary` replaced with `note`
+    * only `PASSED, FAILED, INFO, NEEDS_INSPECTION` are now valid `outcome` values
+    * `groups` is a list of `Group` uuids which the `Result` is part of
+    * When submitting new `Result`, `Testcase` and `Group` \[`resource`\] can be represented either by the unique identifier \[`uid`\] 
+      (`Testcase.name`, `Group.uuid`), or by `object` containing the `uid`, and any other applicable `resource`'s attributes
+        * `resource` is identified by `uid` and:
+            * exists -> `resource` is linked to the `Result`
+            * does _not_ exist -> `resource` is created. Other attributes are set to default values
+        * `resource` is identified by `object` and:
+            * exists -> relevant attributes of the `resource` are updated to the provided values
+            * does _not_ exist -> `resource` is created, relevant attributes are set to the provided values
+* Changes in the `Testcase` object
+    * `ref_url` instead of `url`
+* Changes in querying:
+    * `*` (star) used as a wildcard instead of `%` (percent sign) in the `like:` filters
+    * Result
+        * added `testcases` keyword to filter by `Testcase.name`
+            * `like` filter allowed
+            * multiple values can be provided, separate by commas to get `or` filter based on all the values provided: `...&testcases=name1,name2`
+    * Group
+        * `like` filter for `description`
+* `_auth` placeholder for the Authorization/Authenticaion data in the Request queries; Ignored at the moment
+ 
+ 
+# Results [/results]
+
+`Result` is the most common entry in the database. We try to keep ResultsDB pretty "stupid" and only enforce the minimal common subset of attributes on
+the `Result` object. For example, when creating a new `Result`, only `outcome` and `testcase` parameters are required. Also, no specific meaning is really
+assigned to any of the (other) parameters.
+
+The other common attributes are `note`, to provide a short digest of the testrun's details, and `ref_url` which usually points to log or artifacts.
+
+Should you need to store additional data use the `data` keyval store. The stored data can then be used to filter `Results` searches.
+For example in Taskotron, `item` and `type` are used to represent "what was tested", where `type` could be `koji_build`, `bodhi_update`, `compose`, `docker_image` ... 
+and `item` is then the (reasonable) identifier of said "item under test".
+
+We advise agaings using `_expand`, `_auth`, `_fields` and `_sort` as key names - although ResultsDB will store and return the data, these keys might not be 
+query-able for searching the `Results` collection, as these are reserved for the future API functionalities. (FIXME: reword to make more sense?)
+
+Through all the `Result` instances, there is a `href` attribute, that represents a link to self.
+
++ Attributes (Result GET)
+
+
+## Retrieve a Result [GET /results/{id}]
+
+Retrieve a single `Result` based on the `id`.
+
++ Request .../results/7484989
+    + Parameters
+        + id: 7484989
+
++ Response 200 (application/json)
+
+        {
+            "id": 7484989,
+            "outcome": "PASSED",
+            "testcase": {
+                "name": "dist.rpmlint",
+                "ref_url": "https://fedoraproject.org/wiki/Common_Rpmlint_issues",
+                "href": "http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/testcases/dist.rpmlint"
+            },
+            "note": "0 errors, 30 warnings",
+            "ref_url": "https://taskotron-dev.fedoraproject.org/artifacts/all/27f94e36-62ec-11e6-83fd-525400d7d6a4/task_output/koschei-1.7.2-1.fc24.log",
+            "submit_time": "2016-08-15T13:29:06",
+            "groups": ["27f94e36-62ec-11e6-83fd-525400d7d6a4"],
+            "data": {
+                "item": ["koschei-1.7.2-1.fc24"],
+                "type": ["koji_build"],
+                "arch": ["x86_64","noarch"]
+            },
+            "href": "http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results/7484989"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "message":"Result not found"
+        }
+        
+        
+## Browse the Results collection [GET /results{?page,limit,outcome,testcases,groups,since,keyval}]
+
+Collection of all the Results. Results are returned in paginated format, and references to the next and previous page (if applicable) are
+given as a part of the reponse.
+
+The search can be filtered by time, or the `outcome`, or any of the key-values in the `data` store.
+By default, the `data` values are matched for equality, but `like` filter is available to allow for wildcard searches.
+
+Examples are provided in the Parameters section of the documentation.
+
++ Parameters
+    + page: 8 (number, optional)
+        + Default: 0
+    + limit: 20 (number, optional)
+        + Default: 20
+    + outcome: PASSED (enum, optional)
+        Multiple values can be provided, separate by coma to get `or` filter based on all the values provided: `...&outcome=PASSED,FAILED`
+        + Members
+            + PASSED
+            + FAILED
+            + INFO
+            + NEEDS_INSPECTION
+    + testcases: dist.rpmlint (string, optional)
+        - Multiple values can be provided, separate by coma to get `or` filter based on all the values provided: `...&testcases=dist.rpmlint,dist.depcheck`
+        - `like` filter with `*` as wildcard: `...&testcases:like=dist.*`
+    + groups: `27f94e36-62ec-11e6-83fd-525400d7d6a4` (string, optional)
+        - Multiple values can be provided, separate by commas to get `or` filter based on all the values provided: `...&groups=uuid1,uuid2`
+    + since: `2016-08-15T13:00:00` (string)
+        Date (or datetime) in ISO8601 format.
+        To specify range, separate start and end date(time) by comma: `...&since=2016-08-14,2016-08-15T13:42:57`
+    + keyval (string)
+        - Any key-value pair in `Result.data`. Replace `keyval` with the key's name: `...&item=koschei-1.7.2-1.fc24`
+        - Multiple values can be provided, separate by commas to get `or` filter based on all the values provided: `...&arch=x86_64,noarch`
+        - `like` filter with `*` as wildcards: `...&item:like=koschei*fc24*`
+        - Multiple key-value pairs provide `and` filter, e.g. to search for all `Results` with `item` like `koschei*fc24*` and `arch` being either `noarch` or `x86_64`: `...&item:like=koschei*fc24*&arch=noarch`
+
++ Request .../results?item:like=koschei*fc24*&outcome=PASSED,FAILED&since=2016-08-15T13:00:00,2016-08-15T13:30:00
+    + Parameters
+        + `item:like`: koschei*fc24*
+        + outcome: PASSED,FAILED
+        + since: 2016-08-15T13:00:00
+
++ Response 200 (application/json)
+
+        {
+            "next":"http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results?item:like=koschei*fc24*&outcome=PASSED,FAILED&since=2016-08-15T13:00:00,2016-08-15T13:30:00&page=1",
+            "prev":null,
+            "data":[
+                {
+                    "id":7484989,
+                    "outcome":"PASSED",
+                    "testcase":{
+                        "name":"dist.rpmlint",
+                        "ref_url":"https://fedoraproject.org/wiki/Common_Rpmlint_issues",
+                        "href":"http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/testcases/dist.rpmlint"
+                    },
+                    "groups":["27f94e36-62ec-11e6-83fd-525400d7d6a4"],
+                    "note":"0 errors, 30 warnings",
+                    "submit_time":"2016-08-15T13:29:06",
+                    "ref_url":"https://taskotron-dev.fedoraproject.org/artifacts/all/27f94e36-62ec-11e6-83fd-525400d7d6a4/task_output/koschei-1.7.2-1.fc24.log",
+                    "data":{
+                        "item":["koschei-1.7.2-1.fc24"],
+                        "type":["koji_build"],
+                        "arch":["x86_64","noarch"]
+                    },
+                    "href":"http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results/7484989"
+                }
+            ]
+        }
+
+
+## Get a list of current Results for a specified filter _FIXME: reword to make more sense_ [GET /results/recent{?keyval,testcase,groups,since}]
+
+Especially with automation in mind, a simpe query to get the latest `Results` of all the `Testcases` based on a filter
+makes a lot of sense. For example Koji could be interested in data like "All current results for the `koji_build` `koschei-1.7.2-1.fc24`", without
+the need to browse the whole Results collection.
+
+This endpoint does just that - takes filter parameters, and returns the most recent result for all the relevant `Testcases`.
+Only `Testcases` with at least one `Result` that meet the filter are present - e.g. if ResultsDB contained `dist.rpmlint` and `dist.rpmgrill`
+`Testcases`, but there was only a `dist.rpmlint` `Result` for the `koschei-1.7.2-1.fc24` `koji_build`, just `dist.rpmlint`'s `Result` would be returned.
+
++ Parameters
+    + keyval (string)
+        - Any key-value pair in `Result.data`. Replace `keyval` with the key's name: `...&item=koschei-1.7.2-1.fc24`
+        - Multiple values can be provided, separate by commas to get `or` filter based on all the values provided: `...&arch=x86_64,noarch`
+        - `like` filter with `*` as wildcards: `...&item:like=koschei*fc24*`
+        - Multiple key-value pairs provide `and` filter, e.g. to search for all `Results` with `item` like `koschei*fc24*` and `arch` being either `noarch` or `x86_64`: `...&item:like=koschei*fc24*&arch=noarch`
+    + testcase (string, optional)
+        - Use to narrow down `Testcases` of interest. By default, all `Testcases` are searched for `Results`
+        - Multiple values can be provided, separate by coma to get `or` filter based on all the values provided: `...&testcase=dist.rpmlint,dist.depcheck`
+        - `like` filter with `*` as wildcards: `...&testcase:like=dist.*`
+    + groups: `27f94e36-62ec-11e6-83fd-525400d7d6a4` (string, optional)
+        - Multiple values can be provided, separate by commas to get `or` filter based on all the values provided: `...&group=uuid1,uuid2`
+    + since: `2016-08-15T13:00:00` (string)
+        Date (or datetime) in ISO8601 format.
+        To specify range, separate start and end date(time) by comma: `...&since=2016-08-14,2016-08-15T13:42:57`
+
++ Request `.../results/recent?item=koschei-1.7.2-1.fc24&type=koji_build`
+    + Parameters
+        + item: koschei-1.7.2-1.fc24
+        + type: koji_build
+
++ Response 200 (application/json)
+
+        {
+            "data":[
+                {
+                    "id":7484989,
+                    "outcome":"PASSED",
+                    "testcase":{
+                        "name":"dist.rpmlint",
+                        "ref_url":"https://fedoraproject.org/wiki/Common_Rpmlint_issues",
+                        "href":"http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/testcases/dist.rpmlint"
+                    },
+                    "groups":["27f94e36-62ec-11e6-83fd-525400d7d6a4"],
+                    "note":"0 errors, 30 warnings",
+                    "submit_time":"2016-08-15T13:29:06",
+                    "ref_url":"https://taskotron-dev.fedoraproject.org/artifacts/all/27f94e36-62ec-11e6-83fd-525400d7d6a4/task_output/koschei-1.7.2-1.fc24.log",
+                    "data":{
+                        "item":["koschei-1.7.2-1.fc24"],
+                        "type":["koji_build"],
+                        "arch":["x86_64","noarch"]
+                    },
+                    "href":"http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results/7484989"
+                }
+            ]
+        }
+
+## Create new Result [POST /results]
+
+To create new `Result`, simply provide a JSON object containing the `outcome` and `testcase` fields.
+Should you want to store more information, you can make use of `groups`, `note`, `ref_url` and `data` (the key-value store).
+
+When a new `Result` is created, it is assigned an unique `id` and `submit_time` (UTC time of the `Result` submission) by the API.
+
++ Attributes (Result POST)
+
++ Request Using just the testcase/group identifiers (application/json)
+
+        {
+            "outcome":"PASSED",
+            "testcase":"dist.rpmlint",
+            "groups":["27f94e36-62ec-11e6-83fd-525400d7d6a4"],
+            "note":"0 errors, 30 warnings",
+            "data":{
+                "item":"koschei-1.7.2-1.fc24",
+                "type":"koji_build",
+                "arch":["x86_64","noarch"]
+            },
+            "ref_url":"https://taskotron-dev.fedoraproject.org/artifacts/all/27f94e36-62ec-11e6-83fd-525400d7d6a4/task_output/koschei-1.7.2-1.fc24.log",
+            "_auth": null
+        }
+
++ Request Using the whole testcase/group objects (application/json)
+
+        {
+            "outcome":"PASSED",
+            "testcase":{"name":"dist.rpmlint", "ref_url": "https://fedoraproject.org/wiki/Common_Rpmlint_issues"},
+            "groups":[{"uuid":"27f94e36-62ec-11e6-83fd-525400d7d6a4", "description":"Taskotron job on koji_build koschei-1.7.2-1.fc24"}],
+            "note":"0 errors, 30 warnings",
+            "data":{
+                "item":"koschei-1.7.2-1.fc24",
+                "type":"koji_build",
+                "arch":["x86_64","noarch"]
+            },
+            "ref_url":"https://taskotron-dev.fedoraproject.org/artifacts/all/27f94e36-62ec-11e6-83fd-525400d7d6a4/task_output/koschei-1.7.2-1.fc24.log",
+            "_auth": null
+        }
+
++ Response 201 (application/json)
+
+        {
+            "id":7484989,
+            "outcome":"PASSED",
+            "testcase":{
+                "name":"dist.rpmlint",
+                "ref_url":"https://fedoraproject.org/wiki/Common_Rpmlint_issues",
+                "href":"http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/testcases/dist.rpmlint"
+            },
+            "groups":["27f94e36-62ec-11e6-83fd-525400d7d6a4"],
+            "note":"0 errors, 30 warnings",
+            "submit_time":"2016-08-15T13:29:06",
+            "ref_url":"https://taskotron-dev.fedoraproject.org/artifacts/all/27f94e36-62ec-11e6-83fd-525400d7d6a4/task_output/koschei-1.7.2-1.fc24.log",
+            "data":{
+                "item":["koschei-1.7.2-1.fc24"],
+                "type":["koji_build"],
+                "arch":["x86_64","noarch"]
+            },
+            "href":"http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results/7484989"
+        }
+
++ Response 400 (application/json)
+
+    When any of the required attributes is missing.
+    
+    + Body
+    
+            {
+                "message": "Missing data"
+            }
+        
+
+# Result Groups [/groups]
+
+As not all `Results` are necessarily standalone, the `Group` resource can be used to organize them into any number of groups. 
+
+Each group is identified by `uuid`, and when you create a new group, you can either provide your own UUID ([RFC4122](https://tools.ietf.org/html/rfc4122),
+[Wiki](https://en.wikipedia.org/wiki/Universally_unique_identifier)), or let ResultsDB create one for you.
+
+Groups can be either created in advance, using this resource's methods, or on the fly during the `Result` submission. If you use the latter,
+but still want to group several `Results` into a group, we suggest using UUID
+[Version 3](https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_3_.28MD5_hash_.26_namespace.29) or
+[Version 5](https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_5_.28SHA-1_hash_.26_namespace.29),
+and building your own namespaces in order to identify the groups with a predictable UUID.
+
+On top of `uuid`, the `Group` can also contain `description` to explain the `Group`'s purpose, and `ref_url` to point to outside resource
+like execution state, or a related documentation. 
+
+
++ Attributes (Group GET)
+
+
+## Retrieve a Group [GET /groups/{uuid}]
+
+Retrieve a single `Group` based on the `uuid`.
+
++ Request .../groups/27f94e36-62ec-11e6-83fd-525400d7d6a4
+    + Parameters
+        + uuid: 27f94e36-62ec-11e6-83fd-525400d7d6a4
+
++ Response 200 (application/json)
+
+        {
+            "uuid": "27f94e36-62ec-11e6-83fd-525400d7d6a4",
+            "description": "Taskotron job on koji_build koschei-1.7.2-1.fc24",
+            "ref_url": "https://taskotron-dev.fedoraproject.org/execdb/jobs/27f94e36-62ec-11e6-83fd-525400d7d6a4",
+            "results": "http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results?group=27f94e36-62ec-11e6-83fd-525400d7d6a4",
+            "results_count": 1,
+            "href": "http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/groups/27f94e36-62ec-11e6-83fd-525400d7d6a4"
+        }
+    
+
++ Response 404 (application/json)
+
+        {
+            "message":"Group not found"
+        }
+
+
+## Browse the Group collection [GET /groups{?page,limit,description,uuid}]
+
+Collection of all the `Groups`.
+`Groups` are returned in paginated format, and references to the next and previous page (if applicable) are given as a part of the reponse.
+
++ Parameters
+    + page: 8 (number, optional)
+        + Default: 0
+    + limit: 20 (number, optional)
+        + Default: 20
+    + description: `Taskotron job` (string, optional)
+        - Multiple values can be provided, separate by coma to get `or` filter based on all the values provided: `...&description=Taskotron job,OpenQA job`
+        - `like` filter with `*` as wildcards: `...&description:like=Taskotron*`
+    + uuid: `27f94e36-62ec-11e6-83fd-525400d7d6a4` (string, optional)
+        - Multiple values can be provided, separate by coma to get `or` filter based on all the values provided: `...&uuid=27f94e36-62ec-11e6-83fd-525400d7d6a4,...`
+
++ Response 200 (application/json)
+
+        {
+            "next":"http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/groups?page=1",
+            "prev":null,
+            "data":[
+                {
+                    "uuid": "27f94e36-62ec-11e6-83fd-525400d7d6a4",
+                    "description": "Taskotron job on koji_build koschei-1.7.2-1.fc24",
+                    "ref_url": "https://taskotron-dev.fedoraproject.org/execdb/jobs/27f94e36-62ec-11e6-83fd-525400d7d6a4",
+                    "results": "http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results?group=27f94e36-62ec-11e6-83fd-525400d7d6a4",
+                    "results_count": 1,
+                    "href": "http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/groups/27f94e36-62ec-11e6-83fd-525400d7d6a4"
+                }
+            ]
+        }
+
+
+## Create new Group [POST /groups]
+
+To create new `Group`, you can simply post an empty JSON object, and new `Group` with an unique UUID
+[Version 1](https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_1_.28date-time_.26_MAC_address.29)
+will be created. Should you want to store more information, you can make use of `description` and `ref_url`.
+
+You can also provide your own `uuid`, in which case we strongly suggest UUID
+[Version 3](https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_3_.28MD5_hash_.26_namespace.29) or
+[Version 5](https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_5_.28SHA-1_hash_.26_namespace.29),
+and building your own namespaces in order to identify the groups with a predictable, but non-conflicting UUID.
+
+Note that when an `uuid` already exists, new entry will not be created, but rather the old one will get updated with
+the new `description` or `ref_url`, if set in the JSON data.
+
++ Attributes (Group POST)
+
++ Request (application/json)
+
+        {
+            "uuid": "27f94e36-62ec-11e6-83fd-525400d7d6a4",
+            "description": "Taskotron job on koji_build koschei-1.7.2-1.fc24",
+            "ref_url": "https://taskotron-dev.fedoraproject.org/execdb/jobs/27f94e36-62ec-11e6-83fd-525400d7d6a4",
+        }
+
++ Response 201 (application/json)
+
+        {
+            "uuid": "27f94e36-62ec-11e6-83fd-525400d7d6a4",
+            "description": "Taskotron job on koji_build koschei-1.7.2-1.fc24",
+            "ref_url": "https://taskotron-dev.fedoraproject.org/execdb/jobs/27f94e36-62ec-11e6-83fd-525400d7d6a4",
+            "results": "http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results?group=27f94e36-62ec-11e6-83fd-525400d7d6a4",
+            "results_count": 0,
+            "href": "http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/groups/27f94e36-62ec-11e6-83fd-525400d7d6a4"
+        }
+
+
+# Testcases [/testcases]
+
+Each `Result` has to have one `Testcase` assigned.
+
+In ResultsDB, `Testcases` can be organized into namespaces using a separator in the `Testcase.name` attribute. Although you can use anything
+as a sepparator, we suggest `.` (dot) as it does not have to be URL-encoded, and is a fairly common separator for the usecase.
+
+ResultsDB is not (supposed to be) smart enough to assing any actual meaning to the `Testcase.name`, and thus can not decide on its own,
+what is a namespace, and what is a subcheck e.g. `dist.` is a namespace in Taskotron, but `dist.rpmgrill` is a checkname, which can then 
+contain subchecks, that get represented as `dist.rpmgrill.subcheck_foobar`. It is always the consumer's responsibility to make use of
+the (possible) namespacing in the way correct for the specific problem.
+
+That said, ResultsDB is able to perform namespace searches, and possibly other operations that are not implemented yet (e.g. auth-based
+ability to submit `Results` only for a limited subset of namespaces).
+
+Each `Testcase` is identified by its `name` attribute, which is unique in the ResultsDB. `ref_url` can be used to point to an outside
+resource like documentation, or a list of well-known issues for the `Testcase`
+
++ Attributes (Testcase GET)
+
+
+## Retrieve a Testcase [GET /testcases/{name}]
+
+Retrieve a single `Testcase` based on the `name`.
+
+
++ Request .../testcases/dist.rpmlint
+    + Parameters
+        + name: dist.rpmlint
+
++ Response 200 (application/json)
+
+        {
+            "name": "dist.rpmlint",
+            "ref_url": "https://fedoraproject.org/wiki/Common_Rpmlint_issues",
+            "href": "http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/testcases/dist.rpmlint"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "message":"Testcase not found"
+        }
+
+
+## Browse the Testcase collection [GET /testcases{?page,limit,name}]
+
+Collection of all the `Testcases`.
+`Testcases` are returned in paginated format, and references to the next and previous page (if applicable) are given as a part of the reponse.
+
++ Parameters
+    + page: 8 (number, optional)
+        + Default: 0
+    + limit: 20 (number, optional)
+        + Default: 20
+    + name: `dist.rpmlint` (string, optional)
+        - Multiple values can be provided, separate by coma to get `or` filter based on all the values provided: `...&name=dist.rpmlint,dist.rpmgrill`
+        - `like` filter with `*` as wildcards: `...&name:like=dist.rpmgrill.*`
+        
++ Request .../testcases?name:like=dist.rpmlint.*
+    + Parameters
+        + `name:like`: dist.rpmlint.*
+
++ Response 200 (application/json)
+
+        {
+            "next":"http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/testcases/name:like=dist.rpmlint.*&page=1",
+            "prev":null,
+            "data":[
+                {
+                    "name": "dist.rpmlint",
+                    "ref_url": "https://fedoraproject.org/wiki/Common_Rpmlint_issues",
+                    "href": "http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/testcases/dist.rpmlint"
+                }
+            ]
+        }
+
+
+## Create new Testcase [POST /testcases]
+
+To create new `Testcase`, post a JSON object containing the `name` parameter, and possibly also the `ref_url`.
+
+Note that when a `Testcase` with the `name` already exists, new entry will not be created, but rather the old one will
+get updated with the new `ref_url`, if set in the JSON data.
+
++ Attributes (Testcase POST)
+
++ Request (application/json)
+
+        {
+            "name": "dist.rpmlint",
+            "ref_url": "https://fedoraproject.org/wiki/Common_Rpmlint_issues",
+        }
+
++ Response 201 (application/json)
+
+        {
+            "name": "dist.rpmlint",
+            "ref_url": "https://fedoraproject.org/wiki/Common_Rpmlint_issues",
+            "href": "http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/testcases/dist.rpmlint"
+        }
+
+
+# Data Structures
+
+## OUTCOMES (enum)
+- PASSED
+- FAILED
+- INFO - represents a "soft pass" - use to treat as `"PASSED"` by automation/gating, and flag for human review
+- NEEDS_INSPECTION - use to treat as `"FAILED"` by automation/gating, and flag for human review
+
+## Result GET (object)
+- id: 7484989 (number, required) - Unique identifier. Assigned by API at the moment of creation.
+- testcase (required, Testcase GET) - The `Testcase` associated with the result.
+- outcome (OUTCOMES, required) - Represents the outcome of the testing.
+- note: `0 errors, 30 warnings` (string, optional, nullable) - Should be used as a _short_ summary of important information about the result. Detailed hints/logs should be accessible at the `ref_url` URL.
+- `ref_url`: `https://taskotron-dev.fedoraproject.org/artifacts/all/27f94e36-62ec-11e6-83fd-525400d7d6a4/task_output/koschei-1.7.2-1.fc24.log` (string, optional) - Use as a pointer to logs/artifacts/detailed information about the result.
+- submit_time: `2016-08-15T13:29:06` (string) - UTC time of the `Result` submission in ISO8601 format. Assigned by API at the moment of creation.
+- groups (array) - List of `Groups`'s UUIDs the result is part of.
+    - `27f94e36-62ec-11e6-83fd-525400d7d6a4` (string)
+- data (object) - Any number of key-value pairs. Used to store any additional information. In Taskotron `item` and `type` are the most common keys used to represent "what was tested".
+    - *key* (array[string], optional)
+- `href`: `http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results/7484989` (string) - Reference to self.
+
+## Result POST (object)
+- outcome (OUTCOMES, required)
+- testcase (enum, required)
+    `Testcase` can be represented either by `testcase.name`, or by `object` containing the `name`, and any other applicable attributes.
+    * When identified by `name` and:
+        * exists ->  is linked to the `Result`
+        * does _not_ exist ->  is created. Other attributes are set to default values
+    * When identified by `object` and:
+        * exists -> is linked to the `Result`, relevant attributes are updated to the provided values
+        * does _not_ exist -> is created, relevant attributes are set to the provided values
+    - Members
+        - (Testcase POST data)
+        - `dist.rpmlint` (string) - `testcase.name` - Unique identifier. Represents namespacing, using `.` (dot) as a namespace separator
+- groups (array, optional, nullable)
+    `Group`s can be represented either by `uuid`, or by `object` containing the `uuid`, and any other applicable attributes.
+    * When identified by `uuid` and:
+        * exists ->  is linked to the `Group`
+        * does _not_ exist ->  is created. Other attributes are set to default values
+    * When identified by `object` and:
+        * exists -> is linked to the `Group`, relevant attributes are updated to the provided values
+        * does _not_ exist -> is created, relevant attributes are set to the provided values
+    - Items
+        - (Group POST data) - foobar
+        - `27f94e36-62ec-11e6-83fd-525400d7d6a4` (string) - `Group.uuid` - Unique identifier
+- note: `0 errors, 30 warnings` (string, optional, nullable) - Should be used as a _short_ summary of important information about the result. Detailed hints/logs should be accessible at the `ref_url` URL.
+- `ref_url`: `https://taskotron-dev.fedoraproject.org/artifacts/all/27f94e36-62ec-11e6-83fd-525400d7d6a4/task_output/koschei-1.7.2-1.fc24.log` (string, optional, nullable) - Use as a pointer to logs/artifacts/detailed information about the result.
+- data (object, optional, nullable) - Any number of key-value pairs used to store any additional information. Note that colon `:` can not be a part of key's name, since it is used in the API as a filter separator (i.e. `:like`), and the key would be inaccessible.
+    - *key* (enum)
+        - `foo` (string) - Single value
+        - `foo`, `bar` (array[string]) - List of values
+- _auth (object, nullable, optional) - Placeholder for the future implemantation of Authentication/Authorization
+
+
+## Group POST data (object)
+`Group` object containing the relevant attributes
+### Properties
+- uuid: `27f94e36-62ec-11e6-83fd-525400d7d6a4` (string, optional) - UUID in one of the RFC4122 formats
+- description: `Taskotron job on koji_build koschei-1.7.2-1.fc24` (string, optional, nullable) - Short description of the group - intended to be consumed by humans.
+- `ref_url`: `https://taskotron-dev.fedoraproject.org/execdb/jobs/27f94e36-62ec-11e6-83fd-525400d7d6a4` (string, optional, nullable) - URL pointing to logs/execution status/...
+
+## Group POST (Group POST data)
+- uuid: `27f94e36-62ec-11e6-83fd-525400d7d6a4` (string, optional) - If not provided, ResultsDB will assign an UUID1 value to it
+- _auth (nullable, optional) - Placeholder for the future implemantation of Authentication/Authorization
+
+## Group GET (Group POST data)
+- results: `http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results?group=27f94e36-62ec-11e6-83fd-525400d7d6a4` (string) - URL to retrieve results in the `Group` via the `Result` resource
+- `results_count`: 1 (number) - Amount of `Results` in the `Group`
+- `href`: `http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/groups/27f94e36-62ec-11e6-83fd-525400d7d6a4` (string) - Reference to self.
+
+
+## Testcase POST data (object)
+`Testcase` object containing the relevant attributes
+### Properties
+- name: `dist.rpmlint` (string, required) - Unique identifier. Represents namespacing, using dot `.` as a namespace separator.
+- `ref_url`: `https://fedoraproject.org/wiki/Common_Rpmlint_issues` (string, optional, nullable) - URL pointing to the documentation or other reference material.
+
+## Testcase POST (Testcase POST data)
+- _auth (nullable, optional) - Placeholder for the future implemantation of Authentication/Authorization.
+
+## Testcase GET (Testcase POST data)
+- `href`: `http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/testcases/dist.rpmlint` (string) - Reference to self.
