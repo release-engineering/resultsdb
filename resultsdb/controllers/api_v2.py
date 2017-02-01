@@ -59,6 +59,8 @@ def not_found(error):
 # =============================================================================
 
 RE_PAGE = re.compile(r"([?&])page=([0-9]+)")
+RE_CALLBACK = re.compile(r"([?&])callback=[^&]*&?")
+RE_CLEAN_AMPERSANDS = re.compile(r'&+')
 
 # RP contains request parsers (reqparse.RequestParser).
 #    Parsers are added in each 'resource section' for better readability
@@ -175,6 +177,9 @@ def prev_next_urls(data, limit=QUERY_LIMIT):
         page = 0
     else:
         baseurl = RE_PAGE.sub("%spage=%s" % (flag, placeholder), request.url)
+
+    baseurl = RE_CALLBACK.sub(r"\1", baseurl)
+    baseurl = RE_CLEAN_AMPERSANDS.sub('&', baseurl)
 
     if page > 0:
         prev = baseurl.replace(placeholder, str(page - 1))
