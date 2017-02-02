@@ -28,7 +28,7 @@ Run the server:
     $ DEV=true python runapp.py
 
 The server is now running with a very simple frontend at <http://localhost:5001>.
-API calls can be sent to <http://localhost:5001/api/v1.0>. All data is stored
+API calls can be sent to <http://localhost:5001/api/v2.0>. All data is stored
 inside `/var/tmp/resultsdb_db.sqlite`.
 
 ## Adjusting configuration
@@ -43,7 +43,7 @@ You might want to use this tool together with libtaskotron. To use your own
 *ResultsDB* server in libtaskotron, edit `/etc/taskotron/taskotron.yaml` and
 set the following value::
 
-    resultsdb_server: http://localhost:5001/api/v1.0
+    resultsdb_server: http://localhost:5001/api/v2.0
 
 You might also need to adjust `reporting_enabled` and `report_to_resultsdb`,
 depending on your local settings.

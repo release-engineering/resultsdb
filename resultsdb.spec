@@ -1,7 +1,7 @@
 %global without_epel 0
 Name:           resultsdb
 # NOTE: if you update version, *make sure* to also update `resultsdb/__init__.py`
-Version:        2.0.3
+Version:        2.0.4
 Release:        1%{?dist}
 Summary:        Results store for automated tasks
 
@@ -82,6 +82,9 @@ install -p -m 0644 conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb
 %{_datadir}/resultsdb/*
 
 %changelog
+* Thu Feb 02 2017 Kamil Páral <kparal@redhat.com> - 2.0.4-1
+- setup.py: add missing modules
+
 * Thu Feb 02 2017 Kamil Páral <kparal@redhat.com> - 2.0.3-1
 - Fix pagination issue
 - Add config options to resultsdb for requiring fields
