@@ -76,7 +76,7 @@ def initialize_db(destructive):
     # if it does, we assume that the database is empty
     insp = reflection.Inspector.from_engine(db.engine)
     table_names = insp.get_table_names()
-    if 'group' not in table_names and 'Group' not in table_names:
+    if 'testcase' not in table_names and 'Testcase' not in table_names:
         print " - Creating tables"
         db.create_all()
         print " - Stamping alembic's current version to 'head'"

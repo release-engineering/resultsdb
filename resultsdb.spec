@@ -1,11 +1,13 @@
+%global without_epel 0
 Name:           resultsdb
-Version:        2.0.2
+# NOTE: if you update version, *make sure* to also update `resultsdb/__init__.py`
+Version:        2.0.3
 Release:        1%{?dist}
 Summary:        Results store for automated tasks
 
 License:        GPLv2+
-URL:            https://bitbucket.org/fedoraqa/resultsdb
-Source0:        https://qadevel.cloud.fedoraproject.org/releases/%{name}/%{name}-%{version}.tar.gz
+URL:            https://pagure.io/taskotron/resultsdb
+Source0:        https://qa.fedoraproject.org/releases/%{name}/%{name}-%{version}.tar.gz
 
 BuildArch:      noarch
 
@@ -17,6 +19,8 @@ Requires:       python-flask-sqlalchemy >= 2.0
 Requires:       python-iso8601 >= 0.1.10
 Requires:       python-six >= 1.9.0
 Requires:       python-sqlalchemy >= 0.9.8
+# when built on EL without EPEL sources, many of the deps are not available
+%if !0%{?without_epel}
 BuildRequires:  fedmsg >= 0.16.2
 BuildRequires:  python-alembic >= 0.8.3
 BuildRequires:  python-flask >= 0.10.1
@@ -25,7 +29,11 @@ BuildRequires:  python-flask-sqlalchemy >= 2.0
 BuildRequires:  python-iso8601 >= 0.1.10
 BuildRequires:  pytest
 BuildRequires:  python2-devel
+BuildRequires:  python2-setuptools
+%else
+BuildRequires:  python-devel
 BuildRequires:  python-setuptools
+%endif
 
 %description
 ResultsDB is a results store engine for, but not limited to, Fedora QA tools.
@@ -33,12 +41,13 @@ ResultsDB is a results store engine for, but not limited to, Fedora QA tools.
 %prep
 %setup -q
 
+%if !0%{?without_epel}
 %check
-# TODO remember to re-enable functional tests when they're fixed
-py.test testing
+PYTHONPATH=%{buildroot}%{python2_sitelib}/ py.test -F testing/
 # Remove compiled .py files after running unittests
 rm -f %{buildroot}%{_sysconfdir}/resultsdb/*.py{c,o}
 find %{buildroot}%{_datadir}/resultsdb/alembic -name '*.py[c,o]' -delete
+%endif
 
 %build
 %{__python2} setup.py build
@@ -73,6 +82,13 @@ install -p -m 0644 conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb
 %{_datadir}/resultsdb/*
 
 %changelog
+* Thu Feb 02 2017 Kamil Páral <kparal@redhat.com> - 2.0.3-1
+- Fix pagination issue
+- Add config options to resultsdb for requiring fields
+
+* Fri Jan 20 2017 Matt Prahl <mprahl@redhat.com> - 2.0.2-2
+- Add the ability to build on RHEL without EPEL by setting the "without_epel" variable to 1
+
 * Wed Dec 14 2016 Martin Krizek <mkrizek@fedoraproject.org> - 2.0.2-1
 - Make the migration less memory consuming (D1059)
 - Flexible messaging (D1061)

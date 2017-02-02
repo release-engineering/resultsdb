@@ -20,14 +20,13 @@
 
 import re
 import uuid
+from functools import partial
 
 from flask import Blueprint, jsonify, request, url_for
 from flask.ext.restful import reqparse
 
 from sqlalchemy.orm import exc as orm_exc
 from werkzeug.exceptions import HTTPException
-
-
 from werkzeug.exceptions import BadRequest as JSONBadRequest
 
 import iso8601
@@ -37,6 +36,7 @@ from resultsdb.serializers.api_v2 import Serializer
 from resultsdb.models.results import Group, Result, Testcase, ResultData
 from resultsdb.models.results import RESULT_OUTCOME
 from resultsdb.messaging import load_messaging_plugin
+from resultsdb.lib.helpers import non_empty, dict_or_string, list_or_none
 
 QUERY_LIMIT = 20
 
@@ -59,6 +59,8 @@ def not_found(error):
 # =============================================================================
 
 RE_PAGE = re.compile(r"([?&])page=([0-9]+)")
+RE_CALLBACK = re.compile(r"([?&])callback=[^&]*&?")
+RE_CLEAN_AMPERSANDS = re.compile(r'&+')
 
 # RP contains request parsers (reqparse.RequestParser).
 #    Parsers are added in each 'resource section' for better readability
@@ -66,30 +68,74 @@ RP = {}
 
 SERIALIZE = Serializer().serialize
 
+
+def _validate_create_result_extra_data(required_fields, data, *args, **kwargs):
+    """Check whether data dict contains required_fields as keys."""
+    if args or kwargs:
+        raise TypeError("Unexpected arguments")
+    if isinstance(data, dict) or data is None:
+        if required_fields:
+            if data is None:
+                raise ValueError("Expected dict, got None")
+            # check whether all required field are present in data
+            missing = set(required_fields) - set(data.keys())
+            if missing:
+                raise ValueError("Missing required fields in data: %s" % list(missing))
+            # check that the required fields have non-empty value
+            for field in required_fields:
+                try:
+                    non_empty(type(data[field]), data[field])
+                except ValueError:
+                    raise ValueError("Required field %r missing value (got %r)" % (field, data[field]))
+        return data
+    raise ValueError("Expected dict or None, got %r" % type(data))
+
+
+def setup_request_parser_from_config():
+    """
+    This makes sure the configuration in REQUIRED_DATA is applied.
+    For values set in the config, either the request parser is changed, to make
+    the value required. Or if the value is not yet in the request-parser (which now
+    realistically only applies to the `data.` values in result) it is added.
+    """
+    for key, values in app.config.get('REQUIRED_DATA', {}).iteritems():
+        if key not in RP:
+            app.logger.error("Error in config: REQUIRED_DATA contains unknown endpoint %r.", key)
+            continue
+
+        arguments = dict([(arg.name, arg) for arg in RP[key].args])
+
+        # handle data. for create_result (effectively results extra-data)
+        if key == 'create_result':
+            extra_data = [v for v in values if v.startswith('data.')]
+            values = list(set(values) - set(extra_data))
+
+            if extra_data:
+                required_values = [v[len('data.'):] for v in extra_data]
+                arg = arguments['data']
+                arg.type = partial(_validate_create_result_extra_data, required_values)
+                arg.required = True
+                app.logger.info("Seting %s in %r as required-non-empty" % (extra_data, key))
+
+        for value in values:
+            arg = arguments.get(value, None)
+            if arg is not None and not arg.required:
+                arg.required = True
+                arg.type = partial(non_empty, arg.type)
+                app.logger.info("Seting argument %r in %r as required-non-empty" % (value, key))
+            else:
+                app.logger.error(
+                    "Error in config: REQUIRED_DATA contains unknown value %r for endpoint %r.",
+                    value, key
+                    )
+
+
+@app.before_first_request
+def do_before_first_request():
+    setup_request_parser_from_config()
 # =============================================================================
 #                               GLOBAL METHODS
 # =============================================================================
-
-
-def dict_or_string_type(value, *args, **kwargs):
-    if args or kwargs:
-        raise TypeError("Unexpected arguments")
-    if isinstance(value, dict):
-        return value
-    if isinstance(value, basestring):
-        return value
-    raise ValueError("Expected dict or string, got %r" % type(value))
-
-
-def list_or_none_type(value, *args, **kwargs):
-    if args or kwargs:
-        raise TypeError("Unexpected arguments")
-    if isinstance(value, list):
-        return value
-    if value is None:
-        return value
-    raise ValueError("Expected list or None, got %r" % type(value))
-
 
 def pagination(q, page, limit):
     """
@@ -123,11 +169,17 @@ def prev_next_urls(data, limit=QUERY_LIMIT):
     next = None
     placeholder = "[!@#$%^&*PLACEHOLDER*&^%$#@!]"
 
-    if not page:
-        baseurl = "%s?page=%s" % (request.url, placeholder)
+    if page is None:
+        if "?" in request.url:
+            baseurl = "%s&page=%s" % (request.url, placeholder)
+        else:
+            baseurl = "%s?page=%s" % (request.url, placeholder)
         page = 0
     else:
         baseurl = RE_PAGE.sub("%spage=%s" % (flag, placeholder), request.url)
+
+    baseurl = RE_CALLBACK.sub(r"\1", baseurl)
+    baseurl = RE_CLEAN_AMPERSANDS.sub('&', baseurl)
 
     if page > 0:
         prev = baseurl.replace(placeholder, str(page - 1))
@@ -164,12 +216,12 @@ def parse_since(since):
 RP['get_groups'] = reqparse.RequestParser()
 RP['get_groups'].add_argument('page', default=0, type=int, location='args')
 RP['get_groups'].add_argument('limit', default=QUERY_LIMIT, type=int, location='args')
-RP['get_groups'].add_argument('uuid', default=None, type=str, location='args')
-RP['get_groups'].add_argument('description', default=None, type=str, location='args')
-RP['get_groups'].add_argument('description:like', default=None, type=str, location='args')
+RP['get_groups'].add_argument('uuid', default=None, location='args')
+RP['get_groups'].add_argument('description', default=None, location='args')
+RP['get_groups'].add_argument('description:like', default=None, location='args')
 # These two are ignored.  They're present so reqparse isn't confused by JSONP.
-RP['get_groups'].add_argument('callback', type=str, location='args')
-RP['get_groups'].add_argument('_', type=str, location='args')
+RP['get_groups'].add_argument('callback', location='args')
+RP['get_groups'].add_argument('_', location='args')
 
 
 @api.route('/groups', methods=['GET'])
@@ -177,7 +229,7 @@ def get_groups():
     try:
         args = RP['get_groups'].parse_args()
     except JSONBadRequest as error:
-        return jsonify({"message": "Malformed Request"}), error.code
+        return jsonify({"message": "Malformed Request: %s" % error.data['message']}), error.code
     except HTTPException as error:
         return jsonify(error.data), error.code
 
@@ -197,7 +249,6 @@ def get_groups():
             desc_filters.append(Group.description.like(description.replace("*", "%")))
     if desc_filters:
         q = q.filter(db.or_(*desc_filters))
-    print q
 
     # Filter by uuid
     if args['uuid']:
@@ -224,9 +275,9 @@ def get_group(group_id):
 
 
 RP['create_group'] = reqparse.RequestParser()
-RP['create_group'].add_argument('uuid', type=str, default=None, location='json')
-RP['create_group'].add_argument('ref_url', type=str, location='json')
-RP['create_group'].add_argument('description', type=str, default=None, location='json')
+RP['create_group'].add_argument('uuid', default=None, location='json')
+RP['create_group'].add_argument('ref_url', location='json')
+RP['create_group'].add_argument('description', default=None, location='json')
 
 
 @api.route('/groups', methods=['POST'])
@@ -234,7 +285,7 @@ def create_group():
     try:
         args = RP['create_group'].parse_args()
     except JSONBadRequest as error:
-        return jsonify({"message": "Malformed Request"}), error.code
+        return jsonify({"message": "Malformed Request: %s" % error.data['message']}), error.code
     except HTTPException as error:
         return jsonify(error.data), error.code
 
@@ -322,7 +373,7 @@ def __get_results_parse_args():
     try:
         args = RP['get_results'].parse_args()
     except JSONBadRequest as error:
-        retval["error"] = (jsonify({"message": "Malformed Request"}), error.code)
+        retval["error"] = (jsonify({"message": "Malformed Request: %s" % error.data['message']}), error.code)
         return retval
     except HTTPException as error:
         retval["error"] = (jsonify(error.data), error.code)
@@ -367,14 +418,14 @@ def __get_results_parse_args():
     return retval
 
 RP['get_results_latest'] = reqparse.RequestParser()
-RP['get_results_latest'].add_argument('since', type=str, location='args')
-RP['get_results_latest'].add_argument('groups', type=str, default="", location='args')
+RP['get_results_latest'].add_argument('since', location='args')
+RP['get_results_latest'].add_argument('groups', default="", location='args')
 # TODO - can this be done any better?
-RP['get_results_latest'].add_argument('testcases', type=str, default="", location='args')
-RP['get_results_latest'].add_argument('testcases:like', type=str, default="", location='args')
+RP['get_results_latest'].add_argument('testcases', default="", location='args')
+RP['get_results_latest'].add_argument('testcases:like', default="", location='args')
 # These two are ignored.  They're present so reqparse isn't confused by JSONP.
-RP['get_results_latest'].add_argument('callback', type=str, location='args')
-RP['get_results_latest'].add_argument('_', type=str, location='args')
+RP['get_results_latest'].add_argument('callback', location='args')
+RP['get_results_latest'].add_argument('_', location='args')
 
 
 @api.route('/results/latest', methods=['GET'])
@@ -408,15 +459,15 @@ def get_results_latest():
 RP['get_results'] = reqparse.RequestParser()
 RP['get_results'].add_argument('page', default=0, type=int, location='args')
 RP['get_results'].add_argument('limit', default=QUERY_LIMIT, type=int, location='args')
-RP['get_results'].add_argument('since', type=str, location='args')
-RP['get_results'].add_argument('outcome', type=str, location='args')
-RP['get_results'].add_argument('groups', type=str, default="", location='args')
+RP['get_results'].add_argument('since', location='args')
+RP['get_results'].add_argument('outcome', location='args')
+RP['get_results'].add_argument('groups', default="", location='args')
 # TODO - can this be done any better?
-RP['get_results'].add_argument('testcases', type=str, default="", location='args')
-RP['get_results'].add_argument('testcases:like', type=str, default="", location='args')
+RP['get_results'].add_argument('testcases', default="", location='args')
+RP['get_results'].add_argument('testcases:like', default="", location='args')
 # These two are ignored.  They're present so reqparse isn't confused by JSONP.
-RP['get_results'].add_argument('callback', type=str, location='args')
-RP['get_results'].add_argument('_', type=str, location='args')
+RP['get_results'].add_argument('callback', location='args')
+RP['get_results'].add_argument('_', location='args')
 
 
 @api.route('/results', methods=['GET'])
@@ -481,13 +532,12 @@ def get_result(result_id):
 
 
 RP['create_result'] = reqparse.RequestParser()
-RP['create_result'].add_argument('outcome', type=str, required=True, location='json')
-RP['create_result'].add_argument(
-    'testcase', type=dict_or_string_type, required=True, location='json')
-RP['create_result'].add_argument('groups', type=list_or_none_type, location='json')
-RP['create_result'].add_argument('note', type=str, location='json')
+RP['create_result'].add_argument('outcome', type=partial(non_empty, basestring), required=True, location='json')
+RP['create_result'].add_argument('testcase', type=dict_or_string, required=True, location='json')
+RP['create_result'].add_argument('groups', type=list_or_none, location='json')
+RP['create_result'].add_argument('note', location='json')
 RP['create_result'].add_argument('data', type=dict, location='json')
-RP['create_result'].add_argument('ref_url', type=str, location='json')
+RP['create_result'].add_argument('ref_url', location='json')
 
 
 @api.route('/results', methods=['POST'])
@@ -495,7 +545,7 @@ def create_result():
     try:
         args = RP['create_result'].parse_args()
     except JSONBadRequest as error:
-        return jsonify({"message": "Malformed Request"}), error.code
+        return jsonify({"message": "Malformed Request: %s" % error.data['message']}), error.code
     except HTTPException as error:
         return jsonify(error.data), error.code
 
@@ -513,6 +563,8 @@ def create_result():
     tc = args['testcase']
     if isinstance(tc, basestring):
         tc = dict(name=args['testcase'])
+        if not tc['name']:
+            return jsonify({'message': "testcase name not set"}), 400
     elif isinstance(tc, dict) and 'name' not in tc:
         return jsonify({'message': "testcase.name not set"}), 400
 
@@ -636,11 +688,11 @@ def select_testcases(args_name=None, args_name_like=None):
 RP['get_testcases'] = reqparse.RequestParser()
 RP['get_testcases'].add_argument('page', default=0, type=int, location='args')
 RP['get_testcases'].add_argument('limit', default=QUERY_LIMIT, type=int, location='args')
-RP['get_testcases'].add_argument('name', type=str, location='args')
-RP['get_testcases'].add_argument('name:like', type=str, location='args')
+RP['get_testcases'].add_argument('name', location='args')
+RP['get_testcases'].add_argument('name:like', location='args')
 # These two are ignored.  They're present so reqparse isn't confused by JSONP.
-RP['get_testcases'].add_argument('callback', type=str, location='args')
-RP['get_testcases'].add_argument('_', type=str, location='args')
+RP['get_testcases'].add_argument('callback', location='args')
+RP['get_testcases'].add_argument('_', location='args')
 
 
 @api.route('/testcases', methods=['GET'])
@@ -649,7 +701,7 @@ def get_testcases():  # page = None, limit = QUERY_LIMIT):
     try:
         args = RP['get_testcases'].parse_args()
     except JSONBadRequest as error:
-        return jsonify({"message": "Malformed Request"}), error.code
+        return jsonify({"message": "Malformed Request: %s" % error.data['message']}), error.code
     except HTTPException as error:
         return jsonify(error.data), error.code
 
@@ -675,8 +727,8 @@ def get_testcase(testcase_name):
 
 
 RP['create_testcase'] = reqparse.RequestParser()
-RP['create_testcase'].add_argument('name', type=str, required=True, location='json')
-RP['create_testcase'].add_argument('ref_url', type=str, required=False, location='json')
+RP['create_testcase'].add_argument('name', type=partial(non_empty, basestring), required=True, location='json')
+RP['create_testcase'].add_argument('ref_url', location='json')
 
 
 @api.route('/testcases', methods=['POST'])
@@ -684,7 +736,7 @@ def create_testcase():
     try:
         args = RP['create_testcase'].parse_args()
     except JSONBadRequest as error:
-        return jsonify({"message": "Malformed Request"}), error.code
+        return jsonify({"message": "Malformed Request: %s" % error.data['message']}), error.code
     except HTTPException as error:
         return jsonify(error.data), error.code
 

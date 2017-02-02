@@ -38,15 +38,23 @@ class Config(object):
     FEDMENU_URL = 'https://apps.fedoraproject.org/fedmenu'
     FEDMENU_DATA_URL = 'https://apps.fedoraproject.org/js/data.js'
 
-    MESSAGE_BUS_PUBLISH = False
+    MESSAGE_BUS_PUBLISH = True
     MESSAGE_BUS_PLUGIN = 'dummy'
     MESSAGE_BUS_KWARGS = {}
 
+    # Specify which fields are required (in addition to those already required)
+    #  when creating result/group/testcase.
+    # If you want to set some result's extra-data as required, you can do so by
+    #  prepending 'data.' to the name (e.g. 'data.arch').
+    REQUIRED_DATA = {
+        'create_result': [],
+        'create_group': [],
+        'create_testcase': [],
+        }
 
 class ProductionConfig(Config):
     DEBUG = False
     PRODUCTION = True
-    MESSAGE_BUS_PUBLISH = True
     MESSAGE_BUS_PLUGIN = 'fedmsg'
     MESSAGE_BUS_KWARGS = {'modname': 'resultsdb'}
 
@@ -55,7 +63,6 @@ class DevelopmentConfig(Config):
     TRAP_BAD_REQUEST_ERRORS = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:////var/tmp/resultsdb_db.sqlite'
     SHOW_DB_URI = True
-    MESSAGE_BUS_PUBLISH = True
 
 
 class TestingConfig(Config):
@@ -63,4 +70,3 @@ class TestingConfig(Config):
     TESTING = True
     FEDMENU_URL = 'https://apps.stg.fedoraproject.org/fedmenu'
     FEDMENU_DATA_URL = 'https://apps.stg.fedoraproject.org/js/data.js'
-    MESSAGE_BUS_PUBLISH = True
