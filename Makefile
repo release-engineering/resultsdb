@@ -34,10 +34,10 @@ TARGETDIST:=fc25
 BUILDTARGET=fedora-25-x86_64
 
 test: $(VENV)
-	sh -c "set -e; . $(VENV)/bin/activate; TEST='true' py.test --cov $(SRC); deactivate"
+	sh -c "set -e; . $(VENV)/bin/activate; python setup.py develop; TEST='true' py.test --cov $(SRC); deactivate"
 
 test-ci: $(VENV)
-	sh -c "set -e; . $(VENV)/bin/activate; TEST='true' py.test --cov-report xml --cov $(SRC); deactivate"
+	sh -c "set -e; . $(VENV)/bin/activate; python setup.py develop; TEST='true' py.test --cov-report xml --cov $(SRC); deactivate"
 
 pylint:
 	pylint -f parseable $(SRC) | tee pylint.out
