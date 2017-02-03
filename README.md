@@ -50,6 +50,11 @@ depending on your local settings.
 
 ## Running test suite
 
-You can run this test suite with the following command::
+You can run this test suite with the following command (with virtualenv active)::
 
-    $ py.test --functional testing/
+    $ pytest
+
+or with this command (without virtualenv active)::
+
+    $ make test
+
