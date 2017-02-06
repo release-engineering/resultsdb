@@ -19,7 +19,6 @@ Flask-SQLAlchemy == 2.1
 iso8601 == 0.1.11
 six == 1.10.0
 SQLAlchemy >= 0.9.8
-WTForms == 2.0
 
 # Test suite requirements
 
