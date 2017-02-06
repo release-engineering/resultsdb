@@ -1,6 +1,6 @@
 # This is a list of pypi packages to be installed into virtualenv. Alternatively,
 # you can install these as RPMs instead of pypi packages. Use
-# `rpmspec -q --requires resultsdb.spec`
+# `sudo dnf builddep resultsdb.spec`
 
 # A note for maintainers: Please keep this list in sync with resultsdb.spec.
 # You should require exact versions here (in order to define an exact working
@@ -11,7 +11,6 @@
 
 # This list is in the same order as the requirements in the specfile.
 
-
 fedmsg == 0.17.2
 alembic == 0.8.3
 Flask == 0.10.1
@@ -21,6 +20,8 @@ iso8601 == 0.1.11
 six == 1.10.0
 SQLAlchemy >= 0.9.8
 WTForms == 2.0
+
+# Test suite requirements
 
 pytest >= 2.4.2
 pytest-cov >= 1.6
