@@ -14,10 +14,10 @@ First, clone the repository.
 
 Then, setup a virtual environment for development:
 
-    $ sudo dnf install python-virtualenv
+    $ sudo dnf install python-virtualenv python-pip
     $ virtualenv --system-site-packages env_resultsdb
     $ source env_resultsdb/bin/activate
-    $ pip install -r requirements.txt
+    $ pip install --ignore-installed -r requirements.txt
 
 If you encounter any installation issues, it's possible that you don't have
 `gcc` and necessary C development headers installed to compile C extensions

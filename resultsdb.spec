@@ -2,7 +2,7 @@
 Name:           resultsdb
 # NOTE: if you update version, *make sure* to also update `resultsdb/__init__.py`
 Version:        2.0.4
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Results store for automated tasks
 
 License:        GPLv2+
@@ -27,7 +27,8 @@ BuildRequires:  python-flask >= 0.10.1
 BuildRequires:  python-flask-restful >= 0.2.11
 BuildRequires:  python-flask-sqlalchemy >= 2.0
 BuildRequires:  python-iso8601 >= 0.1.10
-BuildRequires:  pytest
+BuildRequires:  python2-pytest
+BuildRequires:  python-pytest-cov
 BuildRequires:  python2-devel
 BuildRequires:  python2-setuptools
 %else
@@ -43,8 +44,9 @@ ResultsDB is a results store engine for, but not limited to, Fedora QA tools.
 
 %if !0%{?without_epel}
 %check
-PYTHONPATH=%{buildroot}%{python2_sitelib}/ py.test -F testing/
-# Remove compiled .py files after running unittests
+PYTHONPATH=%{buildroot}%{python2_sitelib}/ py.test
+# This seems to be the only place where we can remove pyco files, see:
+# https://fedoraproject.org/wiki/Packaging:Python#Byte_compiling
 rm -f %{buildroot}%{_sysconfdir}/resultsdb/*.py{c,o}
 find %{buildroot}%{_datadir}/resultsdb/alembic -name '*.py[c,o]' -delete
 %endif
@@ -82,6 +84,10 @@ install -p -m 0644 conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb
 %{_datadir}/resultsdb/*
 
 %changelog
+* Fri Feb 10 2017 Kamil Páral <kparal@redhat.com> - 2.0.4-2
+- add python-pytest-cov builddep since it's needed for running the test suite
+  with our new tox.ini
+
 * Thu Feb 02 2017 Kamil Páral <kparal@redhat.com> - 2.0.4-1
 - setup.py: add missing modules
 

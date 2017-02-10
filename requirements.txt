@@ -1,6 +1,8 @@
 # This is a list of pypi packages to be installed into virtualenv. Alternatively,
-# you can install these as RPMs instead of pypi packages. Use
-# `sudo dnf builddep resultsdb.spec`
+# you can install these as RPMs instead of pypi packages. See the dependecies
+# with:
+# $ rpmspec -q --requires resultsdb.spec
+# $ rpmspec -q --buildrequires resultsdb.spec
 
 # A note for maintainers: Please keep this list in sync with resultsdb.spec.
 # You should require exact versions here (in order to define an exact working

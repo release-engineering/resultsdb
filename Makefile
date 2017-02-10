@@ -16,8 +16,6 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-.PHONY: test test-ci pylint pep8 docs clean virtualenv
-
 # general variables
 VENV=test_env
 SRC=resultsdb
@@ -101,4 +99,5 @@ virtualenv: $(VENV)
 .PHONY: $(VENV)
 $(VENV):
 	virtualenv --system-site-packages $(VENV)
-	sh -c "set -e; . $(VENV)/bin/activate; pip install -r requirements.txt; deactivate"
+	sh -c "set -e; . $(VENV)/bin/activate; \
+	       pip install --ignore-installed -r requirements.txt; deactivate"
