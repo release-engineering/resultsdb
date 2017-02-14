@@ -17,14 +17,13 @@ Then, setup a virtual environment for development:
     $ sudo dnf install python-virtualenv python-pip
     $ virtualenv --system-site-packages env_resultsdb
     $ source env_resultsdb/bin/activate
-    $ pip install --ignore-installed -r requirements.txt
+    $ pip install -r requirements.txt
 
 If you encounter any installation issues, it's possible that you don't have
 `gcc` and necessary C development headers installed to compile C extensions
 from PyPI. Either install those based on the error messages, or install
-the necessary packages directly to your system:
-
-    $ sudo dnf builddep resultsdb.spec
+the necessary packages directly to your system. See `requirements.txt` to
+learn how.
 
 Install the project:
 

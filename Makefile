@@ -100,4 +100,4 @@ virtualenv: $(VENV)
 $(VENV):
 	virtualenv --system-site-packages $(VENV)
 	sh -c "set -e; . $(VENV)/bin/activate; \
-	       pip install --ignore-installed -r requirements.txt; deactivate"
+	       pip install -r requirements.txt; deactivate"
