@@ -18,6 +18,7 @@
 #   Ralph Bean <rbean@redhat.com>
 
 import abc
+import json
 
 import pkg_resources
 
@@ -89,6 +90,64 @@ class FedmsgPlugin(MessagingPlugin):
                     'outcome': result.outcome,
                     'log_url': result.ref_url,
                 }
+            }
+        }
+
+        # For the v1 API
+        if hasattr(result, 'job'):
+            msg['msg']['result']['job_url'] = result.job.ref_url
+
+        # For the v2 API
+        if hasattr(result, 'group'):
+            msg['msg']['result']['group_url'] = result.group.ref_url
+
+        return msg
+
+
+class StompPlugin(MessagingPlugin):
+    def __init__(self, **kwargs):
+        # Ensure that we can import this at startup time.
+        import stomp
+        self.stomp = stomp
+
+        super(StompPlugin, self).__init__(**kwargs)
+
+        # Validate that some required config is present
+        required = ['connection', 'destination']
+        for attr in required:
+            if getattr(self, attr, None) is None:
+                raise ValueError("%r required for %r." % (attr, self))
+
+    def publish(self, msg):
+        msg = json.dumps(msg)
+        kwargs = dict(body=msg, headers={}, destination=self.destination)
+
+        if self.stomp.__version__[0] < 4:
+            kwargs['message'] = kwargs.pop('body')  # On EL7, different sig.
+
+        conn = self.stomp.Connection(**self.connection)
+        conn.start()
+        conn.connect(**self.credentials)
+        try:
+            conn.send(**kwargs)
+        finally:
+            conn.disconnect()
+
+    def create_message(self, result, prev_result):
+        task = dict(
+            (datum.key, datum.value)
+            for datum in result.data
+            if datum.key in ('item', 'type',)
+        )
+        task['name'] = result.testcase.name
+        msg = {
+            'task': task,
+            'result': {
+                'id': result.id,
+                'submit_time': result.submit_time.strftime("%Y-%m-%d %H:%M:%S UTC"),
+                'prev_outcome': prev_result.outcome if prev_result else None,
+                'outcome': result.outcome,
+                'log_url': result.ref_url,
             }
         }
 
