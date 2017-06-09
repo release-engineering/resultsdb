@@ -8,6 +8,7 @@ LABEL \
     vendor="ResultsDB developers" \
     license="GPLv2+" \
     build-date=""
+
 RUN yum -y install epel-release && yum -y clean all
 # The caller should build a resultsdb RPM package using and then pass it in this arg.
 ARG resultsdb_rpm
@@ -16,7 +17,8 @@ COPY $resultsdb_rpm /tmp
 RUN yum -y install --setopt=tsflags=nodocs \
         nss_wrapper python-psycopg2 \
         /tmp/$(basename $resultsdb_rpm) \
-    && yum clean all
+    && yum clean all \
+    && rm -f /tmp/$(basename $resultsdb_rpm)
 
 COPY runapp.py /usr/bin/run_resultsdb
 COPY openshift/run_app.sh /usr/bin/run_app
