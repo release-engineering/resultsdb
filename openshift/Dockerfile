@@ -15,7 +15,7 @@ ARG resultsdb_rpm
 COPY $resultsdb_rpm /tmp
 
 RUN yum -y install --setopt=tsflags=nodocs \
-        nss_wrapper python-psycopg2 \
+        python-psycopg2 \
         /tmp/$(basename $resultsdb_rpm) \
     && yum clean all \
     && rm -f /tmp/$(basename $resultsdb_rpm)
@@ -25,5 +25,6 @@ COPY openshift/run_app.sh /usr/bin/run_app
 
 RUN chmod 770 /usr/bin/run_resultsdb /usr/bin/run_app
 
+USER 1001
 EXPOSE 5001
 ENTRYPOINT run_app
