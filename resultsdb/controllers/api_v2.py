@@ -312,8 +312,19 @@ def create_group():
 #                                     RESULTS
 # =============================================================================
 
-def select_results(since_start=None, since_end=None, outcomes=None, groups=None, testcases=None, testcases_like=None, result_data=None):
-    q = db.session.query(Result).order_by(db.desc(Result.submit_time))
+def select_results(since_start=None, since_end=None, outcomes=None, groups=None, testcases=None, testcases_like=None, result_data=None, _sort=None):
+    # Checks if the sort parameter specified in the request is valid before querying.
+    # Sorts by submit_time in a descending order if the sort parameter is absent or invalid.
+    query_sorted = False
+    sort_match = re.match(r'^(?P<order>asc|desc):(?P<column>.+)$', _sort)
+    if sort_match:
+        if sort_match.group('column') == 'submit_time':
+            sort_order = {'asc': db.asc, 'desc': db.desc}[sort_match.group('order')]
+            sort_column = getattr(Result, sort_match.group('column'))
+            q = db.session.query(Result).order_by(sort_order(sort_column))
+            query_sorted = True
+    if not query_sorted:
+        q = db.session.query(Result).order_by(db.desc(Result.submit_time))
 
     # Time constraints
     if since_start:
@@ -421,6 +432,7 @@ RP['get_results_latest'] = reqparse.RequestParser()
 RP['get_results_latest'].add_argument('since', location='args')
 RP['get_results_latest'].add_argument('groups', default="", location='args')
 # TODO - can this be done any better?
+RP['get_results_latest'].add_argument('_sort', default="", location='args')
 RP['get_results_latest'].add_argument('testcases', default="", location='args')
 RP['get_results_latest'].add_argument('testcases:like', default="", location='args')
 # These two are ignored.  They're present so reqparse isn't confused by JSONP.
@@ -446,6 +458,7 @@ def get_results_latest():
             groups=args['groups'],
             testcases=[testcase.name],
             result_data=p['result_data'],
+            _sort=args['_sort'],
             )
         result = q.first()
         if result:
@@ -462,6 +475,7 @@ RP['get_results'].add_argument('limit', default=QUERY_LIMIT, type=int, location=
 RP['get_results'].add_argument('since', location='args')
 RP['get_results'].add_argument('outcome', location='args')
 RP['get_results'].add_argument('groups', default="", location='args')
+RP['get_results'].add_argument('_sort', default="", location='args')
 # TODO - can this be done any better?
 RP['get_results'].add_argument('testcases', default="", location='args')
 RP['get_results'].add_argument('testcases:like', default="", location='args')
@@ -490,6 +504,7 @@ def get_results(group_ids=None, testcase_names=None):
         testcases=testcases,
         testcases_like=args['testcases:like'],
         result_data=p['result_data'],
+        _sort=args['_sort'],
     )
 
     q = pagination(q, args['page'], args['limit'])
