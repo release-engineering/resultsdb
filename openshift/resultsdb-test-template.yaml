@@ -4,7 +4,7 @@
 # for Postgres data.
 #
 # To create an environment from the template, process and apply it:
-#   oc process -f openshift/resultsdb-test-template.yaml -p TEST_ID=123 -p RESULTSDB_APP_VERSION=latest | oc apply -f -
+#   oc process -f openshift/resultsdb-test-template.yaml -p TEST_ID=123 | oc apply -f -
 # To clean up the environment, use a selector on the environment label:
 #   oc delete dc,deploy,pod,configmap,secret,svc,route -l environment=test-123
 
@@ -18,14 +18,10 @@ parameters:
   displayName: Test id
   description: Short unique identifier for this test run (e.g. Jenkins job number)
   required: true
-- name: IMAGE_STREAM_NAMESPACE
-  displayName: ResultsDB ImageStream namespace
-  description: The namespace/project where the image for ResultsDB was pushed.
-  value: myproject
-  required: true
-- name: RESULTSDB_APP_VERSION
-  displayName: ResultsDB application version
-  description: Python version of the ResultsDB application being tested
+- name: RESULTSDB_IMAGE
+  displayName: ResultsDB container image
+  description: Image to be used for ResultsDB deployement
+  value: 172.30.1.1:5000/myproject/resultsdb:latest
   required: true
 - name: DATABASE_PASSWORD
   displayName: Database password
@@ -45,12 +41,12 @@ objects:
   stringData:
     database-password: "${DATABASE_PASSWORD}"
 - apiVersion: v1
-  kind: ConfigMap
+  kind: Secret
   metadata:
-    name: "resultsdb-test-${TEST_ID}-configmap"
+    name: "resultsdb-test-${TEST_ID}-config"
     labels:
       environment: "test-${TEST_ID}"
-  data:
+  stringData:
     settings.py: |-
       SECRET_KEY = '${RESULTSDB_SECRET_KEY}'
       SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://resultsdb:${DATABASE_PASSWORD}@resultsdb-test-${TEST_ID}-database:5432/resultsdb'
@@ -177,19 +173,14 @@ objects:
       spec:
         containers:
         - name: api
-          image: resultsdb
+          image: "${RESULTSDB_IMAGE}"
+          imagePullPolicy: Always
           ports:
           - containerPort: 5001
           volumeMounts:
           - name: config-volume
             mountPath: /etc/resultsdb
             readOnly: true
-          env:
-          - name: DATABASE_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: "resultsdb-test-${TEST_ID}-secret"
-                key: database-password
           readinessProbe:
             timeoutSeconds: 1
             initialDelaySeconds: 5
@@ -210,19 +201,7 @@ objects:
               memory: 384Mi
         volumes:
         - name: config-volume
-          configMap:
-            name: "resultsdb-test-${TEST_ID}-configmap"
-        - name: secret-volume
           secret:
-            secretName: "resultsdb-test-${TEST_ID}-secret"
+            secretName: "resultsdb-test-${TEST_ID}-config"
     triggers:
     - type: ConfigChange
-    - type: ImageChange
-      imageChangeParams:
-        automatic: true
-        containerNames:
-          - api
-        from:
-          kind: ImageStreamTag
-          namespace: ${IMAGE_STREAM_NAMESPACE}
-          name: "resultsdb:${RESULTSDB_APP_VERSION}"

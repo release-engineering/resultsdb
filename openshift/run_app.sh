@@ -5,4 +5,4 @@ set -e
 # initialize db (in a non-destructive manner)
 env resultsdb init_db
 # run ResultsDB
-env run_resultsdb
+env gunicorn --bind 0.0.0.0:5001 --access-logfile=- resultsdb.wsgi

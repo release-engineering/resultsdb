@@ -14,16 +14,19 @@ RUN yum -y install epel-release && yum -y clean all
 ARG resultsdb_rpm
 COPY $resultsdb_rpm /tmp
 
-RUN yum -y install --setopt=tsflags=nodocs \
+RUN yum -y update \
+    && yum -y install --setopt=tsflags=nodocs \
+        python-gunicorn \
         python-psycopg2 \
         /tmp/$(basename $resultsdb_rpm) \
     && yum clean all \
     && rm -f /tmp/$(basename $resultsdb_rpm)
 
-COPY runapp.py /usr/bin/run_resultsdb
 COPY openshift/run_app.sh /usr/bin/run_app
+# hack
+RUN ln -s /usr/share/resultsdb/resultsdb.wsgi /lib/python2.7/site-packages/resultsdb/wsgi.py
 
-RUN chmod 770 /usr/bin/run_resultsdb /usr/bin/run_app
+RUN chmod 770 /usr/bin/run_app
 
 USER 1001
 EXPOSE 5001
