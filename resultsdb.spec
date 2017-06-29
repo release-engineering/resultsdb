@@ -1,8 +1,8 @@
 %global without_epel 0
 Name:           resultsdb
 # NOTE: if you update version, *make sure* to also update `resultsdb/__init__.py`
-Version:        2.0.4
-Release:        2%{?dist}
+Version:        2.0.5
+Release:        1%{?dist}
 Summary:        Results store for automated tasks
 
 License:        GPLv2+
@@ -84,6 +84,10 @@ install -p -m 0644 conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb
 %{_datadir}/resultsdb/*
 
 %changelog
+* Thu Jun 29 2017 Martin Krizek <mkrizek@redhat.com> - 2.0.5-1
+- Sorting by key plugin for browse results collection (D1213)
+- A stomp messaging plugin (D1191)
+
 * Fri Feb 10 2017 Kamil Páral <kparal@redhat.com> - 2.0.4-2
 - add python-pytest-cov builddep since it's needed for running the test suite
   with our new tox.ini

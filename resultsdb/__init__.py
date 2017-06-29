@@ -30,7 +30,7 @@ import os
 
 
 # the version as used in setup.py
-__version__ = "2.0.4"
+__version__ = "2.0.5"
 
 
 # Flask App
