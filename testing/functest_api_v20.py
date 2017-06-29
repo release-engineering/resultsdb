@@ -659,6 +659,38 @@ class TestFuncApiV20():
         assert r.status_code == 200
         assert len(data['data']) == 2
 
+    def test_get_results_sorting_by_submit_time(self):
+        name1 = "aa_fake." + self.ref_testcase_name
+        self.helper_create_testcase(name=name1)
+
+        self.test_create_result()
+        self.helper_create_result(testcase=name1)
+
+        r1 = self.app.get('/api/v2.0/results?_sort=desc:submit_time')
+        data1 = json.loads(r1.data)
+
+        assert r1.status_code == 200
+        assert len(data1['data']) == 2
+
+        r2 = self.app.get('/api/v2.0/results?_sort=asc:submit_time')
+        data2 = json.loads(r2.data)
+
+        assert r2.status_code == 200
+        assert len(data2['data']) == 2
+
+        # Checks if the first result retrieved from a parameterless API call
+        # is the last result of an API call with the '_sort' parameter and vice-versa.
+        assert data1['data'][0]['submit_time'] == data2['data'][1]['submit_time']
+        assert data1['data'][1]['submit_time'] == data2['data'][0]['submit_time']
+
+        # Confirms if the results are in descending order.
+        assert data1['data'][0]['testcase']['name'] == name1
+        assert data1['data'][1]['testcase']['name'] == self.ref_testcase_name
+
+        # Confirms if the results are in ascending order.
+        assert data2['data'][0]['testcase']['name'] == self.ref_testcase_name
+        assert data2['data'][1]['testcase']['name'] == name1
+
     def test_get_results_by_since(self):
         self.test_create_result()
         before1 = (datetime.datetime.utcnow() - datetime.timedelta(seconds=100)).isoformat()

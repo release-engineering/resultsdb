@@ -5,6 +5,6 @@ WORKDIR /usr/src/resultsdb
 EXPOSE 5001
 ENV DEV true
 RUN pip install -r requirements.txt &&\
-    bash init_db.sh
+    python run_cli.py init_db
 
 CMD ["python", "runapp.py"]

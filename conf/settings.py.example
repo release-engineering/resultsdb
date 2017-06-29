@@ -23,6 +23,24 @@ MESSAGE_BUS_PLUGIN = 'fedmsg'
 #   <topic_prefix>.<environment>.<modname>.<topic>
 # e.g. org.fedoraproject.prod.taskotron.result.new
 MESSAGE_BUS_KWARGS = {'modname': 'resultsdb'}
+
+## Alternatively, you could use the 'stomp' messaging plugin.
+#MESSAGE_BUS_PLUGIN = 'stomp'
+#MESSAGE_BUS_KWARGS = {
+#    'destination': 'topic://VirtualTopic.eng.resultsdb.result.new',
+#    'connection': {
+#        'host_and_ports': [
+#            ('broker01', '61612'),
+#            ('broker02', '61612'),
+#        ],
+#        'use_ssl': True,
+#        'ssl_key_file': '/path/to/key/file',
+#        'ssl_cert_file': '/path/to/cert/file',
+#        'ssl_ca_certs': '/path/to/ca/certs',
+#    },
+#}
+
+
 # Specify which fields are required (in addition to those already required)
 #  when creating result/group/testcase.
 # If you want to set some result's extra-data as required, you can do so by

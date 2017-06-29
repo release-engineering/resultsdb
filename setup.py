@@ -32,6 +32,7 @@ setup(name='resultsdb',
           'resultsdb.messaging.plugins': [
               'dummy=resultsdb.messaging:DummyPlugin',
               'fedmsg=resultsdb.messaging:FedmsgPlugin',
+              'stomp=resultsdb.messaging:StompPlugin',
           ],
       },
       include_package_data=True,
