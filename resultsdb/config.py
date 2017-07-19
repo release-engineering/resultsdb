@@ -52,6 +52,16 @@ class Config(object):
         'create_testcase': [],
         }
 
+    # Supported module: "oidc"
+    AUTH_MODULE = 'none'
+
+    # OIDC Configuration
+    OIDC_ADMINS = ['tflink']
+    OIDC_CLIENT_SECRETS = 'client_secrets.json'
+    OIDC_AUD = 'My-Client-ID'
+    OIDC_SCOPE = 'https://pagure.io/taskotron/resultsdb/access'
+    OIDC_RESOURCE_SERVER_ONLY = True
+
 class ProductionConfig(Config):
     DEBUG = False
     PRODUCTION = True
