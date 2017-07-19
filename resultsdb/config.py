@@ -17,30 +17,24 @@
 # Authors:
 #   Josef Skladanka <jskladan@redhat.com>
 #   Ralph Bean <rbean@redhat.com>
+import os
 
 
 class Config(object):
     DEBUG = True
+    PRODUCTION = False
+    SECRET_KEY = 'replace-me-with-something-random'
+
+    HOST = '0.0.0.0'
+    PORT = 5001
+
     SQLALCHEMY_DATABASE_URI = 'sqlite://'
+    SHOW_DB_URI = True
 
     LOGFILE = '/var/log/resultsdb/resultsdb.log'
     FILE_LOGGING = False
     SYSLOG_LOGGING = False
     STREAM_LOGGING = True
-
-    HOST = '0.0.0.0'
-    PORT = 5001
-
-    PRODUCTION = False
-
-    SHOW_DB_URI = False
-
-    FEDMENU_URL = 'https://apps.fedoraproject.org/fedmenu'
-    FEDMENU_DATA_URL = 'https://apps.fedoraproject.org/js/data.js'
-
-    MESSAGE_BUS_PUBLISH = True
-    MESSAGE_BUS_PLUGIN = 'dummy'
-    MESSAGE_BUS_KWARGS = {}
 
     # Specify which fields are required (in addition to those already required)
     #  when creating result/group/testcase.
@@ -52,19 +46,53 @@ class Config(object):
         'create_testcase': [],
         }
 
-    # Supported module: "oidc"
-    AUTH_MODULE = 'none'
+    # Supported values: "oidc"
+    AUTH_MODULE = None
 
     # OIDC Configuration
-    OIDC_ADMINS = ['tflink']
-    OIDC_CLIENT_SECRETS = 'client_secrets.json'
+    OIDC_ADMINS = [] # should contain list of usernames that can do POSTs e.g. ['tflink', 'kparal']
+    OIDC_CLIENT_SECRETS = '/etc/resultsdb/oauth2_client_secrets.json'
     OIDC_AUD = 'My-Client-ID'
     OIDC_SCOPE = 'https://pagure.io/taskotron/resultsdb/access'
     OIDC_RESOURCE_SERVER_ONLY = True
 
+    FEDMENU_URL = 'https://apps.fedoraproject.org/fedmenu'
+    FEDMENU_DATA_URL = 'https://apps.fedoraproject.org/js/data.js'
+
+    # Set this to True or False to enable publishing to a message bus
+    MESSAGE_BUS_PUBLISH = True
+    # Name of the message bus plugin to use goes here.  'fedmsg' is installed by
+    # default, but you could create your own.
+    # Supported values: 'dummy', 'stomp', 'fedmsg'
+    MESSAGE_BUS_PLUGIN = 'dummy'
+    # You can pass extra arguments to your message bus plugin here.  For instance,
+    # the fedmsg plugin expects an extra `modname` argument that can be used to
+    # configure the topic, like this:
+    #   <topic_prefix>.<environment>.<modname>.<topic>
+    # e.g. org.fedoraproject.prod.taskotron.result.new
+    MESSAGE_BUS_KWARGS = {}
+
+    ## Alternatively, you could use the 'stomp' messaging plugin.
+    #MESSAGE_BUS_PLUGIN = 'stomp'
+    #MESSAGE_BUS_KWARGS = {
+    #    'destination': 'topic://VirtualTopic.eng.resultsdb.result.new',
+    #    'connection': {
+    #        'host_and_ports': [
+    #            ('broker01', '61612'),
+    #            ('broker02', '61612'),
+    #        ],
+    #        'use_ssl': True,
+    #        'ssl_key_file': '/path/to/key/file',
+    #        'ssl_cert_file': '/path/to/cert/file',
+    #        'ssl_ca_certs': '/path/to/ca/certs',
+    #    },
+    #}
+
+
 class ProductionConfig(Config):
     DEBUG = False
     PRODUCTION = True
+    SHOW_DB_URI = False
     MESSAGE_BUS_PLUGIN = 'fedmsg'
     MESSAGE_BUS_KWARGS = {'modname': 'resultsdb'}
 
@@ -72,11 +100,10 @@ class ProductionConfig(Config):
 class DevelopmentConfig(Config):
     TRAP_BAD_REQUEST_ERRORS = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:////var/tmp/resultsdb_db.sqlite'
-    SHOW_DB_URI = True
+    OIDC_CLIENT_SECRETS = os.getcwd() + '/conf/oauth2_client_secrets.json.example'
 
 
 class TestingConfig(Config):
     TRAP_BAD_REQUEST_ERRORS = True
-    TESTING = True
     FEDMENU_URL = 'https://apps.stg.fedoraproject.org/fedmenu'
     FEDMENU_DATA_URL = 'https://apps.stg.fedoraproject.org/js/data.js'

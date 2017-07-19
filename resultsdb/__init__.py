@@ -140,13 +140,15 @@ if app.config['AUTH_MODULE'] == 'oidc':
         if flask.request.method == 'POST':
             # We don't need to do auth for any non-POST
             # Prefer POSTed access token: they don't get into the httpd logs
-            token = flask.request.form.get('access_token')
+            token = flask.request.form.get('_auth_token')
             if token is None:
-                flask.request.args.get('access_token')
+                token = flask.request.args.get('_auth_token')
+            if token is None:
+                token = flask.request.json.get('_auth_token')
             if not token:
                 app.logger.error('No token submitted')
                 return False
-            validation = oidc.validate_token(token, app.config['OIDC_SCOPE'])
+            validity = oidc.validate_token(token, [app.config['OIDC_SCOPE']])
             if validity is not True:
                 app.logger.error('Token validation error: %s', validity)
                 return False

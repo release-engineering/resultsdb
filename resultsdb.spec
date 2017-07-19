@@ -14,6 +14,7 @@ BuildArch:      noarch
 Requires:       fedmsg >= 0.16.2
 Requires:       python-alembic >= 0.8.3
 Requires:       python-flask >= 0.10.1
+Requires:       python2-flask-oidc >= 1.1.1
 Requires:       python-flask-restful >= 0.2.11
 Requires:       python-flask-sqlalchemy >= 2.0
 Requires:       python-iso8601 >= 0.1.10

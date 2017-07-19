@@ -11,6 +11,7 @@ fedmsg >= 0.16.2
 alembic >= 0.8.3
 Flask >= 0.10.1
 # FIXME: Flask-RESTful 0.3.6 breaks tests, see https://phab.qa.fedoraproject.org/T961
+flask-oidc >= 1.1.1
 Flask-RESTful >= 0.2.11, <= 0.3.5
 Flask-SQLAlchemy >= 2.0
 iso8601 >= 0.1.10
