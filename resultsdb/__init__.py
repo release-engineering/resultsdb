@@ -162,6 +162,8 @@ if app.config['AUTH_MODULE'] == 'oidc':
                                  token_info.get('sub'))
                 return False
             return True
+        elif flask.request.method == 'GET':
+            return True
 
     def check_token():
         result = _check()
