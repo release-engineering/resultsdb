@@ -4,5 +4,12 @@ set -e
 
 # initialize db (in a non-destructive manner)
 env resultsdb init_db
-# run ResultsDB
-env gunicorn --bind 0.0.0.0:5001 --access-logfile=- resultsdb.wsgi
+
+exec mod_wsgi-express start-server /usr/share/resultsdb/resultsdb.wsgi \
+    --user apache --group apache \
+    --port 5001 --threads 5 \
+    --include-file /etc/httpd/conf.d/resultsdb.conf \
+    --log-level info \
+    --log-to-terminal \
+    --access-log \
+    --startup-log
