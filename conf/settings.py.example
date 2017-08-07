@@ -62,11 +62,11 @@ MESSAGE_BUS_KWARGS = {'modname': 'resultsdb'}
 ## Alternatively, you could use the 'stomp' messaging plugin.
 #MESSAGE_BUS_PLUGIN = 'stomp'
 #MESSAGE_BUS_KWARGS = {
-#    'destination': 'topic://VirtualTopic.eng.resultsdb.result.new',
+#    'destination': '/topic/VirtualTopic.eng.resultsdb.result.new',
 #    'connection': {
 #        'host_and_ports': [
-#            ('broker01', '61612'),
-#            ('broker02', '61612'),
+#            ('broker01', 61612),
+#            ('broker02', 61612),
 #        ],
 #        'use_ssl': True,
 #        'ssl_key_file': '/path/to/key/file',
