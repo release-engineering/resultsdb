@@ -49,7 +49,6 @@ PYTHONPATH=%{buildroot}%{python2_sitelib}/ py.test
 # This seems to be the only place where we can remove pyco files, see:
 # https://fedoraproject.org/wiki/Packaging:Python#Byte_compiling
 rm -f %{buildroot}%{_sysconfdir}/resultsdb/*.py{c,o}
-find %{buildroot}%{_datadir}/resultsdb/alembic -name '*.py[c,o]' -delete
 %endif
 
 %build
@@ -62,10 +61,6 @@ find %{buildroot}%{_datadir}/resultsdb/alembic -name '*.py[c,o]' -delete
 install -d %{buildroot}%{_datadir}/resultsdb/conf
 install -p -m 0644 conf/resultsdb.conf %{buildroot}%{_datadir}/resultsdb/conf/
 install -p -m 0644 conf/resultsdb.wsgi %{buildroot}%{_datadir}/resultsdb/
-
-# alembic config and data
-cp -r --preserve=timestamps alembic %{buildroot}%{_datadir}/resultsdb/
-install -p -m 0644 alembic.ini %{buildroot}%{_datadir}/resultsdb/
 
 # resultsdb config
 install -d %{buildroot}%{_sysconfdir}/resultsdb
