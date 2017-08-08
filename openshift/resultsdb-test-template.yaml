@@ -62,15 +62,27 @@ objects:
 - apiVersion: v1
   kind: ConfigMap
   metadata:
-    name: "resultsdb-test-${TEST_ID}-httpd-config"
+    name: "resultsdb-test-${TEST_ID}-public-httpd-config"
     labels:
       environment: "test-${TEST_ID}"
   data:
     resultsdb.conf: |-
       <Location "/">
         <RequireAny>
+          # allow only GET
           Require method GET
         </RequireAny>
+      </Location>
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: "resultsdb-test-${TEST_ID}-internal-httpd-config"
+    labels:
+      environment: "test-${TEST_ID}"
+  data:
+    resultsdb.conf: |-
+      <Location "/">
+      # allow all methods
       </Location>
 - apiVersion: v1
   kind: Service
@@ -238,7 +250,7 @@ objects:
             secretName: "resultsdb-test-${TEST_ID}-config"
         - name: httpd-config-volume
           configMap:
-            name: "resultsdb-test-${TEST_ID}-httpd-config"
+            name: "resultsdb-test-${TEST_ID}-public-httpd-config"
     triggers:
     - type: ConfigChange
 - apiVersion: v1
@@ -269,6 +281,9 @@ objects:
           - name: config-volume
             mountPath: /etc/resultsdb
             readOnly: true
+          - name: httpd-config-volume
+            mountPath: /etc/httpd/conf.d
+            readOnly: true
           readinessProbe:
             timeoutSeconds: 1
             initialDelaySeconds: 5
@@ -291,5 +306,8 @@ objects:
         - name: config-volume
           secret:
             secretName: "resultsdb-test-${TEST_ID}-config"
+        - name: httpd-config-volume
+          configMap:
+            name: "resultsdb-test-${TEST_ID}-internal-httpd-config"
     triggers:
     - type: ConfigChange
