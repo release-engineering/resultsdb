@@ -64,3 +64,9 @@ You can run the test suite with the following command (with virtualenv
 active)::
 
     $ pytest
+
+## Deployment
+
+If you're trying to deploy ResultsDB, you might find some helpful instructions
+in the
+[Fedora infra docs](https://pagure.io/infra-docs/blob/master/f/docs/sysadmin-guide/sops/resultsdb.rst).
