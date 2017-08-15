@@ -568,6 +568,19 @@ class TestFuncApiV20():
         assert len(data['data']) == 1
         assert data['data'][0] == self.ref_result
 
+    def test_get_results_sorted_by_submit_time_desc_by_default(self):
+        r1 = self.helper_create_result()
+        r2 = self.helper_create_result()
+
+        r = self.app.get('/api/v2.0/results')
+        data = json.loads(r.data)
+
+        assert r.status_code == 200
+        assert len(data['data']) == 2
+
+        assert data['data'][0]['id']== r2[1]['id']
+        assert data['data'][1]['id'] == r1[1]['id']
+
     def test_get_results_by_group(self):
         uuid2 = '1c26effb-7c07-4d90-9428-86aac053288c'
         self.helper_create_group(uuid=uuid2)
