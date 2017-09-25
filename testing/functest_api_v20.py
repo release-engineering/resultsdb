@@ -788,9 +788,9 @@ class TestFuncApiV20():
         data = json.loads(r.data)
 
         assert len(data['data']) == 2
-        assert data['data'][0]['testcase']['name'] == self.ref_testcase_name
-        assert data['data'][0]['outcome'] == "FAILED"
-        assert data['data'][1]['testcase']['name'] == self.ref_testcase_name + ".1"
+        assert data['data'][0]['testcase']['name'] == self.ref_testcase_name + ".1"
+        assert data['data'][1]['testcase']['name'] == self.ref_testcase_name
+        assert data['data'][1]['outcome'] == "FAILED"
 
     def test_get_results_latest_modifiers(self):
         self.helper_create_testcase()
@@ -818,28 +818,28 @@ class TestFuncApiV20():
         data = json.loads(r.data)
 
         assert len(data['data']) == 2
-        assert data['data'][0]['testcase']['name'] == self.ref_testcase_name
+        assert data['data'][0]['testcase']['name'] == self.ref_testcase_name + ".1"
         assert data['data'][0]['outcome'] == "FAILED"
-        assert data['data'][1]['testcase']['name'] == self.ref_testcase_name + ".1"
+        assert data['data'][1]['testcase']['name'] == self.ref_testcase_name
         assert data['data'][1]['outcome'] == "FAILED"
 
         r = self.app.get('/api/v2.0/results/latest?testcases:like=*')
         data = json.loads(r.data)
 
         assert len(data['data']) == 2
-        assert data['data'][0]['testcase']['name'] == self.ref_testcase_name
+        assert data['data'][0]['testcase']['name'] == self.ref_testcase_name + ".1"
         assert data['data'][0]['outcome'] == "FAILED"
-        assert data['data'][1]['testcase']['name'] == self.ref_testcase_name + ".1"
+        assert data['data'][1]['testcase']['name'] == self.ref_testcase_name
         assert data['data'][1]['outcome'] == "FAILED"
 
         r = self.app.get('/api/v2.0/results/latest?groups=%s' % self.ref_group_uuid)
         data = json.loads(r.data)
 
         assert len(data['data']) == 2
-        assert data['data'][0]['testcase']['name'] == self.ref_testcase_name
-        assert data['data'][0]['outcome'] == "FAILED"
-        assert data['data'][1]['testcase']['name'] == self.ref_testcase_name + ".1"
-        assert data['data'][1]['outcome'] == "PASSED"
+        assert data['data'][0]['testcase']['name'] == self.ref_testcase_name + ".1"
+        assert data['data'][0]['outcome'] == "PASSED"
+        assert data['data'][1]['testcase']['name'] == self.ref_testcase_name
+        assert data['data'][1]['outcome'] == "FAILED"
 
     def test_message_publication(self):
         self.helper_create_result()

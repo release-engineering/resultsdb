@@ -316,13 +316,14 @@ def select_results(since_start=None, since_end=None, outcomes=None, groups=None,
     # Checks if the sort parameter specified in the request is valid before querying.
     # Sorts by submit_time in a descending order if the sort parameter is absent or invalid.
     query_sorted = False
-    sort_match = re.match(r'^(?P<order>asc|desc):(?P<column>.+)$', _sort)
-    if sort_match:
-        if sort_match.group('column') == 'submit_time':
-            sort_order = {'asc': db.asc, 'desc': db.desc}[sort_match.group('order')]
-            sort_column = getattr(Result, sort_match.group('column'))
-            q = db.session.query(Result).order_by(sort_order(sort_column))
-            query_sorted = True
+    if _sort:
+        sort_match = re.match(r'^(?P<order>asc|desc):(?P<column>.+)$', _sort)
+        if sort_match:
+            if sort_match.group('column') == 'submit_time':
+                sort_order = {'asc': db.asc, 'desc': db.desc}[sort_match.group('order')]
+                sort_column = getattr(Result, sort_match.group('column'))
+                q = db.session.query(Result).order_by(sort_order(sort_column))
+                query_sorted = True
     if not query_sorted:
         q = db.session.query(Result).order_by(db.desc(Result.submit_time))
 
@@ -447,22 +448,35 @@ def get_results_latest():
         return p['error']
 
     args = p['args']
-    q = select_testcases(','.join(args['testcases']), ','.join(args['testcases:like']))
-    testcases = q.all()
 
-    results = []
-    for testcase in testcases:
-        q = select_results(
-            since_start=args['since']['start'],
-            since_end=args['since']['end'],
-            groups=args['groups'],
-            testcases=[testcase.name],
-            result_data=p['result_data'],
-            _sort=args['_sort'],
-            )
-        result = q.first()
-        if result:
-            results.append(result)
+    q = select_results(
+        since_start=args['since']['start'],
+        since_end=args['since']['end'],
+        groups=args['groups'],
+        testcases=args['testcases'],
+        testcases_like=args['testcases:like'],
+        result_data=p['result_data'],
+        _sort=args['_sort'],
+    )
+
+    # Produce a subquery with the same filter criteria as above *except*
+    # test case name, which we group by and join on.
+    sq = select_results(
+        since_start=args['since']['start'],
+        since_end=args['since']['end'],
+        groups=args['groups'],
+        result_data=p['result_data'],
+        )\
+        .order_by(None)\
+        .with_entities(
+            Result.testcase_name.label('testcase_name'),
+            db.func.max(Result.submit_time).label('max_submit_time'))\
+        .group_by(Result.testcase_name)\
+        .subquery()
+    q = q.join(sq, db.and_(Result.testcase_name == sq.c.testcase_name,
+                           Result.submit_time == sq.c.max_submit_time))
+
+    results = q.all()
 
     return jsonify(dict(
         data=[SERIALIZE(o) for o in results],
