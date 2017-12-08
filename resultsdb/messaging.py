@@ -127,7 +127,7 @@ class StompPlugin(MessagingPlugin):
 
         conn = self.stomp.Connection(**self.connection)
         conn.start()
-        conn.connect(**self.credentials)
+        conn.connect()
         try:
             conn.send(**kwargs)
         finally:
