@@ -1,5 +1,9 @@
 # ResultsDB
 
+![logo of ResultsDB](https://pagure.io/taskotron/resultsdb/raw/develop/f/logo.png)
+
+## What is ResultsDB
+
 ResultsDB is a results store engine for (not only) Fedora QA tools. The API
 documentation can be found at <http://docs.resultsdb20.apiary.io/>.
 
