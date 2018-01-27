@@ -75,7 +75,6 @@ class FedmsgPlugin(MessagingPlugin):
         task = dict(
             (datum.key, datum.value)
             for datum in result.data
-            if datum.key in ('item', 'type',)
         )
         task['name'] = result.testcase.name
         msg = {
@@ -137,7 +136,6 @@ class StompPlugin(MessagingPlugin):
         task = dict(
             (datum.key, datum.value)
             for datum in result.data
-            if datum.key in ('item', 'type',)
         )
         task['name'] = result.testcase.name
         msg = {
