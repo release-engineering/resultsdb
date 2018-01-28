@@ -678,14 +678,14 @@ def create_result():
 
 def get_prev_result(result):
     """
-    Find previous result with the same testcase, item, type, and arch.
-    Return None if no result is found.
+    Find previous result with the same testcase, item, type, arch and
+    scenario. Return None if no result is found.
     """
     q = db.session.query(Result).filter(Result.id != result.id)
     q = q.filter_by(testcase_name=result.testcase_name)
 
     for result_data in result.data:
-        if result_data.key in ['item', 'type', 'arch']:
+        if result_data.key in ['item', 'type', 'arch', 'scenario']:
             alias = db.aliased(ResultData)
             q = q.join(alias).filter(
                 db.and_(alias.key == result_data.key, alias.value == result_data.value))

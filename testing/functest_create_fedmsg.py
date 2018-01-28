@@ -88,10 +88,12 @@ class TestFuncCreateFedmsg():
         self.ref_result_item = 'perl-Specio-0.25-1.fc26'
         self.ref_result_type = 'koji_build'
         self.ref_result_arch = 'x86_64'
+        self.ref_result_scenario = 'x86_64.efi'
         self.ref_result_data = {
             'item': self.ref_result_item,
             'type': self.ref_result_type,
             'arch': self.ref_result_arch,
+            'scenario': self.ref_result_scenario,
             'moo': ['boo', 'woof'],
         }
         self.ref_result_ref_url = 'http://example.com/testing.result'
@@ -144,6 +146,8 @@ class TestFuncCreateFedmsg():
                 assert result_data.value == self.ref_result_type
             if result_data.key == 'arch':
                 assert result_data.value == self.ref_result_arch
+            if result_data.key == 'scenario':
+                assert result_data.value == self.ref_result_scenario
 
         self.helper_create_result()
         prev_result = apiv2.get_prev_result(self.ref_result_obj)
@@ -158,6 +162,8 @@ class TestFuncCreateFedmsg():
                 assert result_data.value == self.ref_result_type
             if result_data.key == 'arch':
                 assert result_data.value == self.ref_result_arch
+            if result_data.key == 'scenario':
+                assert result_data.value == self.ref_result_scenario
 
         ref_outcome = 'FAILED'
         if self.ref_result_outcome == ref_outcome:
@@ -175,6 +181,8 @@ class TestFuncCreateFedmsg():
                 assert result_data.value == self.ref_result_type
             if result_data.key == 'arch':
                 assert result_data.value == self.ref_result_arch
+            if result_data.key == 'scenario':
+                assert result_data.value == self.ref_result_scenario
 
     def test_get_prev_result_different_item(self):
         data = copy.deepcopy(self.ref_result_data)
@@ -195,6 +203,14 @@ class TestFuncCreateFedmsg():
     def test_get_prev_result_different_arch(self):
         data = copy.deepcopy(self.ref_result_data)
         data['arch'] = data['arch'] + '.fake'
+        self.helper_create_result(data=data)
+
+        prev_result = apiv2.get_prev_result(self.ref_result_obj)
+        assert prev_result is None
+
+    def test_get_prev_result_different_scenario(self):
+        data = copy.deepcopy(self.ref_result_data)
+        data['scenario'] = data['scenario'] + '.fake'
         self.helper_create_result(data=data)
 
         prev_result = apiv2.get_prev_result(self.ref_result_obj)
