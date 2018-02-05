@@ -2,7 +2,7 @@
 Name:           resultsdb
 # NOTE: if you update version, *make sure* to also update `resultsdb/__init__.py`
 Version:        2.0.5
-Release:        1%{?dist}
+Release:        3%{?dist}
 Summary:        Results store for automated tasks
 
 License:        GPLv2+
@@ -12,24 +12,23 @@ Source0:        https://qa.fedoraproject.org/releases/%{name}/%{name}-%{version}
 BuildArch:      noarch
 
 Requires:       fedmsg >= 0.16.2
-Requires:       python-alembic >= 0.8.3
-Requires:       python-flask >= 0.10.1
-Requires:       python2-flask-oidc >= 1.1.1
-Requires:       python-flask-restful >= 0.2.11
-Requires:       python-flask-sqlalchemy >= 2.0
-Requires:       python-iso8601 >= 0.1.10
-Requires:       python-six >= 1.9.0
-Requires:       python-sqlalchemy >= 0.9.8
+Requires:       python2-alembic >= 0.8.3
+Requires:       python2-flask >= 0.10.1
+Requires:       python2-flask-restful >= 0.2.11
+Requires:       python2-flask-sqlalchemy >= 2.0
+Requires:       python2-iso8601 >= 0.1.10
+Requires:       python2-six >= 1.9.0
+Requires:       python2-sqlalchemy >= 0.9.8
 # when built on EL without EPEL sources, many of the deps are not available
 %if !0%{?without_epel}
 BuildRequires:  fedmsg >= 0.16.2
-BuildRequires:  python-alembic >= 0.8.3
-BuildRequires:  python-flask >= 0.10.1
-BuildRequires:  python-flask-restful >= 0.2.11
-BuildRequires:  python-flask-sqlalchemy >= 2.0
-BuildRequires:  python-iso8601 >= 0.1.10
+BuildRequires:  python2-alembic >= 0.8.3
+BuildRequires:  python2-flask >= 0.10.1
+BuildRequires:  python2-flask-restful >= 0.2.11
+BuildRequires:  python2-flask-sqlalchemy >= 2.0
+BuildRequires:  python2-iso8601 >= 0.1.10
 BuildRequires:  python2-pytest
-BuildRequires:  python-pytest-cov
+BuildRequires:  python2-pytest-cov
 BuildRequires:  python2-devel
 BuildRequires:  python2-setuptools
 %else
@@ -49,6 +48,7 @@ PYTHONPATH=%{buildroot}%{python2_sitelib}/ py.test
 # This seems to be the only place where we can remove pyco files, see:
 # https://fedoraproject.org/wiki/Packaging:Python#Byte_compiling
 rm -f %{buildroot}%{_sysconfdir}/resultsdb/*.py{c,o}
+find %{buildroot}%{_datadir}/resultsdb/alembic -name '*.py[c,o]' -delete
 %endif
 
 %build
@@ -61,6 +61,10 @@ rm -f %{buildroot}%{_sysconfdir}/resultsdb/*.py{c,o}
 install -d %{buildroot}%{_datadir}/resultsdb/conf
 install -p -m 0644 conf/resultsdb.conf %{buildroot}%{_datadir}/resultsdb/conf/
 install -p -m 0644 conf/resultsdb.wsgi %{buildroot}%{_datadir}/resultsdb/
+
+# alembic config and data
+cp -r --preserve=timestamps alembic %{buildroot}%{_datadir}/resultsdb/
+install -p -m 0644 alembic.ini %{buildroot}%{_datadir}/resultsdb/
 
 # resultsdb config
 install -d %{buildroot}%{_sysconfdir}/resultsdb
@@ -80,9 +84,19 @@ install -p -m 0644 conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb
 %{_datadir}/resultsdb/*
 
 %changelog
+* Wed Jan 31 2018 Iryna Shcherbina <ishcherb@redhat.com> - 2.0.5-3
+- Update Python 2 dependency declarations to new packaging standards
+  (See https://fedoraproject.org/wiki/FinalizingFedoraSwitchtoPython3)
+
+* Thu Jul 27 2017 Fedora Release Engineering <releng@fedoraproject.org> - 2.0.5-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_27_Mass_Rebuild
+
 * Thu Jun 29 2017 Martin Krizek <mkrizek@redhat.com> - 2.0.5-1
 - Sorting by key plugin for browse results collection (D1213)
 - A stomp messaging plugin (D1191)
+
+* Sat Feb 11 2017 Fedora Release Engineering <releng@fedoraproject.org> - 2.0.4-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_26_Mass_Rebuild
 
 * Fri Feb 10 2017 Kamil Páral <kparal@redhat.com> - 2.0.4-2
 - add python-pytest-cov builddep since it's needed for running the test suite
