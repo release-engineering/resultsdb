@@ -580,11 +580,13 @@ def create_result():
 
     outcome = args['outcome'].strip().upper()
     if outcome not in RESULT_OUTCOME:
+        app.logger.warning("Invalid result outcome submitted: %s", outcome)
         return jsonify({'message': "outcome must be one of %r" % (RESULT_OUTCOME,)}), 400
 
     if args['data']:
         invalid_keys = [key for key in args['data'].iterkeys() if ':' in key]
         if invalid_keys:
+            app.logger.warning("Colon not allowed in key name: %s", invalid_keys)
             return jsonify({'message': "Colon not allowed in key name: %r" % invalid_keys}), 400
 
     # args[testcase] can be either string or object
@@ -593,12 +595,15 @@ def create_result():
     if isinstance(tc, basestring):
         tc = dict(name=args['testcase'])
         if not tc['name']:
+            app.logger.warning("Result submitted without valid testcase.name: %s", tc)
             return jsonify({'message': "testcase name not set"}), 400
     elif isinstance(tc, dict) and 'name' not in tc:
+        app.logger.warning("Result submitted without testcase.name: %s", tc)
         return jsonify({'message': "testcase.name not set"}), 400
 
     testcase = Testcase.query.filter_by(name=tc['name']).first()
     if not testcase:
+        app.logger.debug("Testcase %s does not exist yet. Creating", tc['name'])
         testcase = Testcase(name=tc['name'])
     testcase.ref_url = tc.get('ref_url', testcase.ref_url)
     db.session.add(testcase)
@@ -660,8 +665,10 @@ def create_result():
     db.session.commit()
 
     db.session.add(result)
+    app.logger.debug("Created new result for testcase %s with outcome %s", testcase.name, outcome)
 
     if app.config['MESSAGE_BUS_PUBLISH']:
+        app.logger.debug("Preparing to publish message for result id %d", result.id)
         prev_result = get_prev_result(result)
         # result is considered duplicate of prev_result when
         # outcomes are the same.
@@ -671,6 +678,8 @@ def create_result():
                 kwargs=app.config['MESSAGE_BUS_KWARGS'],
             )
             plugin.publish(plugin.create_message(result, prev_result))
+        else:
+            app.logger.debug("Skipping messaging, result %d outcome has not changed", result.id)
 
 
     return jsonify(SERIALIZE(result)), 201

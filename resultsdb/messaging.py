@@ -129,6 +129,7 @@ class StompPlugin(MessagingPlugin):
         conn.connect()
         try:
             conn.send(**kwargs)
+            log.debug("Published message through stomp: %s", msg)
         finally:
             conn.disconnect()
 
