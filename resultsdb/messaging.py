@@ -153,11 +153,11 @@ class StompPlugin(MessagingPlugin):
 
         # For the v1 API
         if hasattr(result, 'job'):
-            msg['msg']['result']['job_url'] = result.job.ref_url
+            msg['result']['job_url'] = result.job.ref_url
 
         # For the v2 API
         if hasattr(result, 'group'):
-            msg['msg']['result']['group_url'] = result.group.ref_url
+            msg['result']['group_url'] = result.group.ref_url
 
         return msg
 
