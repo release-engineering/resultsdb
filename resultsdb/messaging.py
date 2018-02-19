@@ -69,7 +69,7 @@ class FedmsgPlugin(MessagingPlugin):
     """ A fedmsg plugin, used to publish to the fedmsg bus. """
 
     def publish(self, message):
-        fedmsg.publish(**message)
+        fedmsg.publish(topic='result.new', modname=self.modname, msg=message)
 
     def create_message(self, result, prev_result):
         task = dict(
@@ -79,27 +79,23 @@ class FedmsgPlugin(MessagingPlugin):
         )
         task['name'] = result.testcase.name
         msg = {
-            'topic': 'result.new',
-            'modname': self.modname,
-            'msg': {
-                'task': task,
-                'result': {
-                    'id': result.id,
-                    'submit_time': result.submit_time.strftime("%Y-%m-%d %H:%M:%S UTC"),
-                    'prev_outcome': prev_result.outcome if prev_result else None,
-                    'outcome': result.outcome,
-                    'log_url': result.ref_url,
-                }
+            'task': task,
+            'result': {
+                'id': result.id,
+                'submit_time': result.submit_time.strftime("%Y-%m-%d %H:%M:%S UTC"),
+                'prev_outcome': prev_result.outcome if prev_result else None,
+                'outcome': result.outcome,
+                'log_url': result.ref_url,
             }
         }
 
         # For the v1 API
         if hasattr(result, 'job'):
-            msg['msg']['result']['job_url'] = result.job.ref_url
+            msg['result']['job_url'] = result.job.ref_url
 
         # For the v2 API
         if hasattr(result, 'group'):
-            msg['msg']['result']['group_url'] = result.group.ref_url
+            msg['result']['group_url'] = result.group.ref_url
 
         return msg
 
