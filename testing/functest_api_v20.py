@@ -845,4 +845,4 @@ class TestFuncApiV20():
         self.helper_create_result()
         plugin = resultsdb.messaging.DummyPlugin
         assert len(plugin.history) == 1, plugin.history
-        assert plugin.history == [{'id': 1}]
+        assert plugin.history[0]['result']['id'] == 1

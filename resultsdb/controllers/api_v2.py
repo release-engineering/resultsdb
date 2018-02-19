@@ -35,7 +35,7 @@ from resultsdb import app, db
 from resultsdb.serializers.api_v2 import Serializer
 from resultsdb.models.results import Group, Result, Testcase, ResultData
 from resultsdb.models.results import RESULT_OUTCOME
-from resultsdb.messaging import load_messaging_plugin
+from resultsdb.messaging import load_messaging_plugin, create_message
 from resultsdb.lib.helpers import non_empty, dict_or_string, list_or_none
 
 QUERY_LIMIT = 20
@@ -677,7 +677,7 @@ def create_result():
                 name=app.config['MESSAGE_BUS_PLUGIN'],
                 kwargs=app.config['MESSAGE_BUS_KWARGS'],
             )
-            plugin.publish(plugin.create_message(result, prev_result))
+            plugin.publish(create_message(result, prev_result))
         else:
             app.logger.debug("Skipping messaging, result %d outcome has not changed", result.id)
 

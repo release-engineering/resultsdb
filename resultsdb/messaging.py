@@ -28,11 +28,39 @@ import logging
 log = logging.getLogger(__name__)
 
 
+def create_message(result, prev_result=None):
+    task = dict(
+        (datum.key, datum.value)
+        for datum in result.data
+        if datum.key in ('item', 'type',)
+    )
+    task['name'] = result.testcase.name
+    msg = {
+        'task': task,
+        'result': {
+            'id': result.id,
+            'submit_time': result.submit_time.strftime("%Y-%m-%d %H:%M:%S UTC"),
+            'prev_outcome': prev_result.outcome if prev_result else None,
+            'outcome': result.outcome,
+            'log_url': result.ref_url,
+        }
+    }
+
+    # For the v1 API
+    if hasattr(result, 'job'):
+        msg['result']['job_url'] = result.job.ref_url
+
+    # For the v2 API
+    if hasattr(result, 'group'):
+        msg['result']['group_url'] = result.group.ref_url
+
+    return msg
+
+
 class MessagingPlugin(object):
     """ Abstract base class that messaging plugins must extend.
 
-    Two abstract methods are declared which must be implemented:
-        - create_message(result, prev_result=None)
+    One abstract method is declared which must be implemented:
         - publish(message)
 
     """
@@ -41,10 +69,6 @@ class MessagingPlugin(object):
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             setattr(self, key, value)
-
-    @abc.abstractmethod
-    def create_message(self, result, prev_result=None):
-        pass
 
     @abc.abstractmethod
     def publish(self, message):
@@ -61,43 +85,12 @@ class DummyPlugin(MessagingPlugin):
         self.history.append(message)
         log.info("%r->%r" % (self, message))
 
-    def create_message(self, result, prev_result):
-        return dict(id=result.id)
-
 
 class FedmsgPlugin(MessagingPlugin):
     """ A fedmsg plugin, used to publish to the fedmsg bus. """
 
     def publish(self, message):
         fedmsg.publish(topic='result.new', modname=self.modname, msg=message)
-
-    def create_message(self, result, prev_result):
-        task = dict(
-            (datum.key, datum.value)
-            for datum in result.data
-            if datum.key in ('item', 'type',)
-        )
-        task['name'] = result.testcase.name
-        msg = {
-            'task': task,
-            'result': {
-                'id': result.id,
-                'submit_time': result.submit_time.strftime("%Y-%m-%d %H:%M:%S UTC"),
-                'prev_outcome': prev_result.outcome if prev_result else None,
-                'outcome': result.outcome,
-                'log_url': result.ref_url,
-            }
-        }
-
-        # For the v1 API
-        if hasattr(result, 'job'):
-            msg['result']['job_url'] = result.job.ref_url
-
-        # For the v2 API
-        if hasattr(result, 'group'):
-            msg['result']['group_url'] = result.group.ref_url
-
-        return msg
 
 
 class StompPlugin(MessagingPlugin):
@@ -129,34 +122,6 @@ class StompPlugin(MessagingPlugin):
             log.debug("Published message through stomp: %s", msg)
         finally:
             conn.disconnect()
-
-    def create_message(self, result, prev_result):
-        task = dict(
-            (datum.key, datum.value)
-            for datum in result.data
-            if datum.key in ('item', 'type',)
-        )
-        task['name'] = result.testcase.name
-        msg = {
-            'task': task,
-            'result': {
-                'id': result.id,
-                'submit_time': result.submit_time.strftime("%Y-%m-%d %H:%M:%S UTC"),
-                'prev_outcome': prev_result.outcome if prev_result else None,
-                'outcome': result.outcome,
-                'log_url': result.ref_url,
-            }
-        }
-
-        # For the v1 API
-        if hasattr(result, 'job'):
-            msg['result']['job_url'] = result.job.ref_url
-
-        # For the v2 API
-        if hasattr(result, 'group'):
-            msg['result']['group_url'] = result.group.ref_url
-
-        return msg
 
 
 def load_messaging_plugin(name, kwargs):

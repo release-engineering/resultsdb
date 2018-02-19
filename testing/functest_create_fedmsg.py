@@ -205,9 +205,3 @@ class TestFuncCreateFedmsg():
 
         prev_result = apiv2.get_prev_result(self.ref_result_obj)
         assert prev_result is None
-
-    def test_message_publication(self):
-        self.helper_create_result()
-        plugin = resultsdb.messaging.DummyPlugin
-        assert len(plugin.history) == 1, plugin.history
-        assert plugin.history == [{'id': 1}]
