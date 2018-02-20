@@ -70,3 +70,13 @@ class TestFuncApiV10(object):
         # Check that the result was stored in the database.
         result = db.session.query(Result).get(result_id)
         assert result.outcome == 'FAILED'
+
+        # Check that a message was emitted.
+        plugin = resultsdb.messaging.DummyPlugin
+        assert len(plugin.history) == 1, plugin.history
+        assert plugin.history[0]['task']['item'] == 'openfst-1.6.6-1.fc28'
+        assert plugin.history[0]['task']['type'] == 'koji_build'
+        assert plugin.history[0]['result']['id'] == 1
+        assert plugin.history[0]['result']['outcome'] == 'FAILED'
+        assert plugin.history[0]['result']['log_url'] == 'https://taskotron.example.com/artifacts/'
+        assert plugin.history[0]['result']['job_url'] == 'https://taskotron.example.com/execdb/'

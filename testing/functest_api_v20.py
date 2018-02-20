@@ -845,4 +845,8 @@ class TestFuncApiV20():
         self.helper_create_result()
         plugin = resultsdb.messaging.DummyPlugin
         assert len(plugin.history) == 1, plugin.history
+        assert plugin.history[0]['task']['item'] == self.ref_result_item
+        assert plugin.history[0]['task']['type'] == self.ref_result_type
         assert plugin.history[0]['result']['id'] == 1
+        assert plugin.history[0]['result']['outcome'] == self.ref_result_outcome
+        assert plugin.history[0]['result']['log_url'] == self.ref_result_ref_url

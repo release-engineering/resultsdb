@@ -573,7 +573,7 @@ def create_result():
                 name=app.config['MESSAGE_BUS_PLUGIN'],
                 kwargs=app.config['MESSAGE_BUS_KWARGS'],
             )
-            plugin.publish(create_message(result, prev_result))
+            plugin.publish(create_message(result, prev_result, include_job_url=True))
 
     return jsonify(SERIALIZE(result)), 201
 

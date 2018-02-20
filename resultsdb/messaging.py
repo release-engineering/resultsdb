@@ -28,7 +28,7 @@ import logging
 log = logging.getLogger(__name__)
 
 
-def create_message(result, prev_result=None):
+def create_message(result, prev_result=None, include_job_url=False):
     task = dict(
         (datum.key, datum.value)
         for datum in result.data
@@ -46,13 +46,8 @@ def create_message(result, prev_result=None):
         }
     }
 
-    # For the v1 API
-    if hasattr(result, 'job'):
-        msg['result']['job_url'] = result.job.ref_url
-
-    # For the v2 API
-    if hasattr(result, 'group'):
-        msg['result']['group_url'] = result.group.ref_url
+    if include_job_url:  # only in the v1 API
+        msg['result']['job_url'] = result.groups[0].ref_url if result.groups else None
 
     return msg
 
