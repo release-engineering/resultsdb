@@ -314,7 +314,7 @@ def create_job():
     except HTTPException as error:
         return jsonify(error.data), error.code
 
-    if not args['iuuid']:
+    if not args['uuid']:
         args['uuid'] = str(uuid.uuid1())
 
     job = Group(args['uuid'], args['ref_url'], args['name'])
