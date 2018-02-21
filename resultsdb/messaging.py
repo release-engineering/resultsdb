@@ -24,11 +24,59 @@ import pkg_resources
 
 import fedmsg
 
+from resultsdb import db
+from resultsdb.models.results import Result, ResultData
+from resultsdb.serializers.api_v2 import Serializer
+
 import logging
 log = logging.getLogger(__name__)
 
 
-def create_message(result, prev_result=None, include_job_url=False):
+SERIALIZE = Serializer().serialize
+
+
+def get_prev_result(result):
+    """
+    Find previous result with the same testcase, item, type, and arch.
+    Return None if no result is found.
+
+    Note that this logic is Taskotron-specific: it does not consider the 
+    possibility that a result may be distinguished by other keys in the data 
+    (for example 'scenario' which is used in OpenQA results). But this is only 
+    used for publishing Taskotron compatibility messages, thus we keep this 
+    logic as is.
+    """
+    q = db.session.query(Result).filter(Result.id != result.id)
+    q = q.filter_by(testcase_name=result.testcase_name)
+
+    for result_data in result.data:
+        if result_data.key in ['item', 'type', 'arch']:
+            alias = db.aliased(ResultData)
+            q = q.join(alias).filter(
+                db.and_(alias.key == result_data.key, alias.value == result_data.value))
+
+    q = q.order_by(db.desc(Result.submit_time))
+    return q.first()
+
+
+def publish_taskotron_message(result, include_job_url=False):
+    """
+    Publish a fedmsg on the taskotron topic with Taskotron-compatible structure.
+
+    These messages are deprecated, consumers should consume from the resultsdb 
+    topic instead.
+    """
+    prev_result = get_prev_result(result)
+    if prev_result is not None and prev_result.outcome == result.outcome:
+        # If the previous result had the same outcome, skip publishing 
+        # a message for this new result.
+        # This was intended as a workaround to avoid spammy messages from the 
+        # dist.depcheck task, which tends to produce a very large number of 
+        # identical results for any given build, because of the way that it is 
+        # designed.
+        log.debug("Skipping Taskotron message for result %d, outcome has not changed", result.id)
+        return
+
     task = dict(
         (datum.key, datum.value)
         for datum in result.data
@@ -49,7 +97,12 @@ def create_message(result, prev_result=None, include_job_url=False):
     if include_job_url:  # only in the v1 API
         msg['result']['job_url'] = result.groups[0].ref_url if result.groups else None
 
-    return msg
+    fedmsg.publish(topic='result.new', modname='taskotron', msg=msg)
+
+
+def create_message(result):
+    # Re-use the same structure as in the HTTP API v2.
+    return SERIALIZE(result)
 
 
 class MessagingPlugin(object):

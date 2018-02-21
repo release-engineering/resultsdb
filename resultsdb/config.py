@@ -69,7 +69,7 @@ class Config(object):
     # the fedmsg plugin expects an extra `modname` argument that can be used to
     # configure the topic, like this:
     #   <topic_prefix>.<environment>.<modname>.<topic>
-    # e.g. org.fedoraproject.prod.taskotron.result.new
+    # e.g. org.fedoraproject.prod.resultsdb.result.new
     MESSAGE_BUS_KWARGS = {}
 
     ## Alternatively, you could use the 'stomp' messaging plugin.
@@ -87,6 +87,9 @@ class Config(object):
     #        'ssl_ca_certs': '/path/to/ca/certs',
     #    },
     #}
+
+    # Publish Taskotron-compatible fedmsgs on the 'taskotron' topic
+    MESSAGE_BUS_PUBLISH_TASKOTRON = False
 
 
 class ProductionConfig(Config):

@@ -38,7 +38,7 @@ from resultsdb import app, db
 from resultsdb.serializers.api_v1 import Serializer
 from resultsdb.models.results import Group, Result, Testcase, ResultData
 from resultsdb.models.results import JOB_STATUS, RESULT_OUTCOME
-from resultsdb.messaging import load_messaging_plugin, create_message
+from resultsdb.messaging import load_messaging_plugin, create_message, publish_taskotron_message
 
 QUERY_LIMIT = 20
 
@@ -565,40 +565,16 @@ def create_result():
     db.session.add(result)
 
     if app.config['MESSAGE_BUS_PUBLISH']:
-        prev_result = get_prev_result(result)
-        # result is considered duplicate of prev_result when
-        # outcomes are the same.
-        if not prev_result or prev_result.outcome != result.outcome:
-            plugin = load_messaging_plugin(
-                name=app.config['MESSAGE_BUS_PLUGIN'],
-                kwargs=app.config['MESSAGE_BUS_KWARGS'],
-            )
-            plugin.publish(create_message(result, prev_result, include_job_url=True))
+        plugin = load_messaging_plugin(
+            name=app.config['MESSAGE_BUS_PLUGIN'],
+            kwargs=app.config['MESSAGE_BUS_KWARGS'],
+        )
+        plugin.publish(create_message(result))
+
+    if app.config['MESSAGE_BUS_PUBLISH_TASKOTRON']:
+        publish_taskotron_message(result)
 
     return jsonify(SERIALIZE(result)), 201
-
-
-def get_prev_result(result):
-    '''
-    Find previous result with the same:
-    item, testcase, outcome and arch.
-
-    Return None if no result is found.
-    '''
-    q = db.session.query(Result).filter(Result.id != result.id)
-
-    alias = db.aliased(Testcase)
-    q = q.join(alias).filter(alias.name == result.testcase.name)
-
-    for result_data in result.data:
-        if result_data.key in ['item', 'arch']:
-            alias = db.aliased(ResultData)
-            q = q.join(alias).filter(
-                db.and_(alias.key == result_data.key, alias.value == result_data.value))
-
-    q = q.order_by(db.desc(Result.submit_time))
-
-    return q.first()
 
 
 # =============================================================================

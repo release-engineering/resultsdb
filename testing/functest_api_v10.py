@@ -51,6 +51,7 @@ class TestFuncApiV10(object):
         r = self.app.post('/api/v1.0/jobs', data=json.dumps(job_data), content_type='application/json')
         assert r.status_code == 201
         job_id = json.loads(r.data)['id']
+        job_uuid = json.loads(r.data)['uuid']
 
         result_data = {
             'job_id': job_id,
@@ -74,9 +75,11 @@ class TestFuncApiV10(object):
         # Check that a message was emitted.
         plugin = resultsdb.messaging.DummyPlugin
         assert len(plugin.history) == 1, plugin.history
-        assert plugin.history[0]['task']['item'] == 'openfst-1.6.6-1.fc28'
-        assert plugin.history[0]['task']['type'] == 'koji_build'
-        assert plugin.history[0]['result']['id'] == 1
-        assert plugin.history[0]['result']['outcome'] == 'FAILED'
-        assert plugin.history[0]['result']['log_url'] == 'https://taskotron.example.com/artifacts/'
-        assert plugin.history[0]['result']['job_url'] == 'https://taskotron.example.com/execdb/'
+        assert plugin.history[0]['data']['item'] == ['openfst-1.6.6-1.fc28']
+        assert plugin.history[0]['data']['type'] == ['koji_build']
+        assert plugin.history[0]['id'] == 1
+        assert plugin.history[0]['outcome'] == 'FAILED'
+        assert plugin.history[0]['groups'] == [job_uuid]
+        assert plugin.history[0]['note'] == '78 errors, 150 warnings'
+        assert plugin.history[0]['ref_url'] == 'https://taskotron.example.com/artifacts/'
+        assert plugin.history[0]['testcase']['name'] == 'dist.rpmlint'
