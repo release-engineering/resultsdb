@@ -38,7 +38,7 @@ class MyResultData(object):
 
 class MyResult(object):
 
-    def __init__(self, id, testcase_name, outcome, item, item_type, arch, scenario):
+    def __init__(self, id, testcase_name, outcome, item, item_type, arch):
         self.id = id
         self.testcase_name = testcase_name
         self.outcome = outcome
@@ -46,7 +46,6 @@ class MyResult(object):
             MyResultData('item', item),
             MyResultData('type', item_type),
             MyResultData('arch', arch),
-            MyResultData('scenario', scenario),
         ]
 
 
@@ -97,8 +96,7 @@ class TestFuncCreateFedmsg():
         }
         self.ref_result_ref_url = 'http://example.com/testing.result'
         self.ref_result_obj = MyResult(
-            0, self.ref_testcase_name, self.ref_result_outcome, self.ref_result_item,
-            self.ref_result_type, self.ref_result_arch, self.ref_result_scenario)
+            0, self.ref_testcase_name, self.ref_result_outcome, self.ref_result_item, self.ref_result_type, self.ref_result_arch)
 
     def teardown_method(self, method):
         # Reset this for each test.
