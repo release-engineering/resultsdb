@@ -779,5 +779,6 @@ def landing_page():
                     "documentation": "http://docs.resultsdb20.apiary.io/",
                     "groups": url_for('.get_groups', _external=True),
                     "results": url_for('.get_results', _external=True),
-                    "testcases": url_for('.get_testcases', _external=True)
+                    "testcases": url_for('.get_testcases', _external=True),
+                    "outcomes": RESULT_OUTCOME,
                     }), 300

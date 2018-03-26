@@ -853,3 +853,27 @@ class TestFuncApiV20():
         assert plugin.history[0]['groups'] == [self.ref_group_uuid]
         assert plugin.history[0]['note'] == self.ref_result_note
         assert plugin.history[0]['testcase']['name'] == self.ref_testcase_name
+
+    def test_create_result_custom_outcome(self):
+        self.test_create_group()
+        self.test_create_testcase()
+        ref_result = copy.deepcopy(self.ref_result)
+        ref_result['outcome'] = 'AMAZING'
+
+        r, data = self.helper_create_result(outcome='AMAZING')
+
+        assert r.status_code == 201
+        assert data == ref_result
+
+        ref_result = copy.deepcopy(self.ref_result)
+        ref_result['outcome'] = 'SILLY'
+
+        r, data = self.helper_create_result(outcome='SILLY')
+
+        assert r.status_code == 400
+
+    def test_get_outcomes_on_landing_page(self):
+        r = self.app.get('/api/v2.0/')
+        data = json.loads(r.data)
+        assert r.status_code == 300
+        assert data['outcomes'] == ['PASSED', 'INFO', 'FAILED', 'NEEDS_INSPECTION', 'AMAZING']
