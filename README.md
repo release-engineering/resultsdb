@@ -1,5 +1,9 @@
 # ResultsDB
 
+![logo of ResultsDB](https://pagure.io/taskotron/resultsdb/raw/develop/f/logo.png)
+
+## What is ResultsDB
+
 ResultsDB is a results store engine for (not only) Fedora QA tools. The API
 documentation can be found at <http://docs.resultsdb20.apiary.io/>.
 
@@ -58,9 +62,31 @@ set the following value::
 You might also need to adjust `reporting_enabled` and `report_to_resultsdb`,
 depending on your local settings.
 
+## Using real-life data from Fedora Infra dumps
+
+Sometimes, you might want to check some performance tweaks with real-life data.
+The easy solution might be using our daily dumps and a Postgres instance in Docker::
+
+    docker run --name postgres_resultsdb -e POSTGRES_USER=resultsdb -e POSTGRES_PASSWORD=resultsdb -d -p 65432:5432 postgres
+    wget https://infrastructure.fedoraproject.org/infra/db-dumps/resultsdb.dump.xz
+    xzcat resultsdb.dump.xz | docker exec -i postgres_resultsdb psql -Uresultsdb
+
+Then just change your config (for DEV environment, you can use `conf/settings.py` file)
+to contain this db connector::
+
+    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://resultsdb:resultsdb@localhost:65432/resultsdb'
+
+And run as usual.
+
 ## Running test suite
 
 You can run the test suite with the following command (with virtualenv
 active)::
 
     $ pytest
+
+## Deployment
+
+If you're trying to deploy ResultsDB, you might find some helpful instructions
+in the
+[Fedora infra docs](https://pagure.io/infra-docs/blob/master/f/docs/sysadmin-guide/sops/resultsdb.rst).

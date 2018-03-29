@@ -28,8 +28,8 @@ VERSION:=$(shell rpmspec -q --queryformat="%{VERSION}\n" $(SPECFILE) | uniq)
 RELEASE:=$(subst $(DIST),,$(shell rpmspec -q --queryformat="%{RELEASE}\n" $(SPECFILE) | uniq))
 NVR:=$(SRC)-$(VERSION)-$(RELEASE)
 GITBRANCH:=$(shell git rev-parse --abbrev-ref HEAD)
-TARGETDIST:=fc25
-BUILDTARGET=fedora-25-x86_64
+TARGETDIST:=fc27
+BUILDTARGET=fedora-27-x86_64
 
 .PHONY: test
 test: $(VENV)

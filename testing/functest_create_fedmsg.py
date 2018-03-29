@@ -25,7 +25,6 @@ import copy
 
 import resultsdb
 import resultsdb.cli
-import resultsdb.controllers.api_v2 as apiv2
 import resultsdb.messaging
 
 
@@ -127,12 +126,12 @@ class TestFuncCreateFedmsg():
         return r, data
 
     def test_get_prev_result_no_results(self):
-        prev_result = apiv2.get_prev_result(self.ref_result_obj)
+        prev_result = resultsdb.messaging.get_prev_result(self.ref_result_obj)
         assert prev_result is None
 
     def test_get_prev_result_exists(self):
         self.helper_create_result()
-        prev_result = apiv2.get_prev_result(self.ref_result_obj)
+        prev_result = resultsdb.messaging.get_prev_result(self.ref_result_obj)
 
         assert prev_result.id == 1
         assert prev_result.outcome == self.ref_result_outcome
@@ -146,7 +145,7 @@ class TestFuncCreateFedmsg():
                 assert result_data.value == self.ref_result_arch
 
         self.helper_create_result()
-        prev_result = apiv2.get_prev_result(self.ref_result_obj)
+        prev_result = resultsdb.messaging.get_prev_result(self.ref_result_obj)
 
         assert prev_result.id == 2
         assert prev_result.outcome == self.ref_result_outcome
@@ -163,7 +162,7 @@ class TestFuncCreateFedmsg():
         if self.ref_result_outcome == ref_outcome:
             ref_outcome = 'PASSED'
         self.helper_create_result(outcome=ref_outcome)
-        prev_result = apiv2.get_prev_result(self.ref_result_obj)
+        prev_result = resultsdb.messaging.get_prev_result(self.ref_result_obj)
 
         assert prev_result.id == 3
         assert prev_result.outcome == ref_outcome
@@ -181,7 +180,7 @@ class TestFuncCreateFedmsg():
         data['item'] = data['item'] + '.fake'
         self.helper_create_result(data=data)
 
-        prev_result = apiv2.get_prev_result(self.ref_result_obj)
+        prev_result = resultsdb.messaging.get_prev_result(self.ref_result_obj)
         assert prev_result is None
 
     def test_get_prev_result_different_type(self):
@@ -189,7 +188,7 @@ class TestFuncCreateFedmsg():
         data['type'] = data['type'] + '.fake'
         self.helper_create_result(data=data)
 
-        prev_result = apiv2.get_prev_result(self.ref_result_obj)
+        prev_result = resultsdb.messaging.get_prev_result(self.ref_result_obj)
         assert prev_result is None
 
     def test_get_prev_result_different_arch(self):
@@ -197,17 +196,11 @@ class TestFuncCreateFedmsg():
         data['arch'] = data['arch'] + '.fake'
         self.helper_create_result(data=data)
 
-        prev_result = apiv2.get_prev_result(self.ref_result_obj)
+        prev_result = resultsdb.messaging.get_prev_result(self.ref_result_obj)
         assert prev_result is None
 
     def test_get_prev_result_different_testcase_name(self):
         self.helper_create_result(testcase={'name': self.ref_testcase_name + '.fake'})
 
-        prev_result = apiv2.get_prev_result(self.ref_result_obj)
+        prev_result = resultsdb.messaging.get_prev_result(self.ref_result_obj)
         assert prev_result is None
-
-    def test_message_publication(self):
-        self.helper_create_result()
-        plugin = resultsdb.messaging.DummyPlugin
-        assert len(plugin.history) == 1, plugin.history
-        assert plugin.history == [{'id': 1}]

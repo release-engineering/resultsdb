@@ -24,15 +24,91 @@ import pkg_resources
 
 import fedmsg
 
+from resultsdb import db
+from resultsdb.models.results import Result, ResultData
+from resultsdb.serializers.api_v2 import Serializer
+
 import logging
 log = logging.getLogger(__name__)
+
+
+SERIALIZE = Serializer().serialize
+
+
+def get_prev_result(result):
+    """
+    Find previous result with the same testcase, item, type, and arch.
+    Return None if no result is found.
+
+    Note that this logic is Taskotron-specific: it does not consider the 
+    possibility that a result may be distinguished by other keys in the data 
+    (for example 'scenario' which is used in OpenQA results). But this is only 
+    used for publishing Taskotron compatibility messages, thus we keep this 
+    logic as is.
+    """
+    q = db.session.query(Result).filter(Result.id != result.id)
+    q = q.filter_by(testcase_name=result.testcase_name)
+
+    for result_data in result.data:
+        if result_data.key in ['item', 'type', 'arch']:
+            alias = db.aliased(ResultData)
+            q = q.join(alias).filter(
+                db.and_(alias.key == result_data.key, alias.value == result_data.value))
+
+    q = q.order_by(db.desc(Result.submit_time))
+    return q.first()
+
+
+def publish_taskotron_message(result, include_job_url=False):
+    """
+    Publish a fedmsg on the taskotron topic with Taskotron-compatible structure.
+
+    These messages are deprecated, consumers should consume from the resultsdb 
+    topic instead.
+    """
+    prev_result = get_prev_result(result)
+    if prev_result is not None and prev_result.outcome == result.outcome:
+        # If the previous result had the same outcome, skip publishing 
+        # a message for this new result.
+        # This was intended as a workaround to avoid spammy messages from the 
+        # dist.depcheck task, which tends to produce a very large number of 
+        # identical results for any given build, because of the way that it is 
+        # designed.
+        log.debug("Skipping Taskotron message for result %d, outcome has not changed", result.id)
+        return
+
+    task = dict(
+        (datum.key, datum.value)
+        for datum in result.data
+        if datum.key in ('item', 'type',)
+    )
+    task['name'] = result.testcase.name
+    msg = {
+        'task': task,
+        'result': {
+            'id': result.id,
+            'submit_time': result.submit_time.strftime("%Y-%m-%d %H:%M:%S UTC"),
+            'prev_outcome': prev_result.outcome if prev_result else None,
+            'outcome': result.outcome,
+            'log_url': result.ref_url,
+        }
+    }
+
+    if include_job_url:  # only in the v1 API
+        msg['result']['job_url'] = result.groups[0].ref_url if result.groups else None
+
+    fedmsg.publish(topic='result.new', modname='taskotron', msg=msg)
+
+
+def create_message(result):
+    # Re-use the same structure as in the HTTP API v2.
+    return SERIALIZE(result)
 
 
 class MessagingPlugin(object):
     """ Abstract base class that messaging plugins must extend.
 
-    Two abstract methods are declared which must be implemented:
-        - create_message(result, prev_result=None)
+    One abstract method is declared which must be implemented:
         - publish(message)
 
     """
@@ -41,10 +117,6 @@ class MessagingPlugin(object):
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             setattr(self, key, value)
-
-    @abc.abstractmethod
-    def create_message(self, result, prev_result=None):
-        pass
 
     @abc.abstractmethod
     def publish(self, message):
@@ -61,47 +133,12 @@ class DummyPlugin(MessagingPlugin):
         self.history.append(message)
         log.info("%r->%r" % (self, message))
 
-    def create_message(self, result, prev_result):
-        return dict(id=result.id)
-
 
 class FedmsgPlugin(MessagingPlugin):
     """ A fedmsg plugin, used to publish to the fedmsg bus. """
 
     def publish(self, message):
-        fedmsg.publish(**message)
-
-    def create_message(self, result, prev_result):
-        task = dict(
-            (datum.key, datum.value)
-            for datum in result.data
-            if datum.key in ('item', 'type',)
-        )
-        task['name'] = result.testcase.name
-        msg = {
-            'topic': 'result.new',
-            'modname': self.modname,
-            'msg': {
-                'task': task,
-                'result': {
-                    'id': result.id,
-                    'submit_time': result.submit_time.strftime("%Y-%m-%d %H:%M:%S UTC"),
-                    'prev_outcome': prev_result.outcome if prev_result else None,
-                    'outcome': result.outcome,
-                    'log_url': result.ref_url,
-                }
-            }
-        }
-
-        # For the v1 API
-        if hasattr(result, 'job'):
-            msg['msg']['result']['job_url'] = result.job.ref_url
-
-        # For the v2 API
-        if hasattr(result, 'group'):
-            msg['msg']['result']['group_url'] = result.group.ref_url
-
-        return msg
+        fedmsg.publish(topic='result.new', modname=self.modname, msg=message)
 
 
 class StompPlugin(MessagingPlugin):
@@ -127,39 +164,12 @@ class StompPlugin(MessagingPlugin):
 
         conn = self.stomp.Connection(**self.connection)
         conn.start()
-        conn.connect(**self.credentials)
+        conn.connect()
         try:
             conn.send(**kwargs)
+            log.debug("Published message through stomp: %s", msg)
         finally:
             conn.disconnect()
-
-    def create_message(self, result, prev_result):
-        task = dict(
-            (datum.key, datum.value)
-            for datum in result.data
-            if datum.key in ('item', 'type',)
-        )
-        task['name'] = result.testcase.name
-        msg = {
-            'task': task,
-            'result': {
-                'id': result.id,
-                'submit_time': result.submit_time.strftime("%Y-%m-%d %H:%M:%S UTC"),
-                'prev_outcome': prev_result.outcome if prev_result else None,
-                'outcome': result.outcome,
-                'log_url': result.ref_url,
-            }
-        }
-
-        # For the v1 API
-        if hasattr(result, 'job'):
-            msg['msg']['result']['job_url'] = result.job.ref_url
-
-        # For the v2 API
-        if hasattr(result, 'group'):
-            msg['msg']['result']['group_url'] = result.group.ref_url
-
-        return msg
 
 
 def load_messaging_plugin(name, kwargs):

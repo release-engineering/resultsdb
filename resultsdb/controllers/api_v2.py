@@ -35,7 +35,7 @@ from resultsdb import app, db
 from resultsdb.serializers.api_v2 import Serializer
 from resultsdb.models.results import Group, Result, Testcase, ResultData
 from resultsdb.models.results import RESULT_OUTCOME
-from resultsdb.messaging import load_messaging_plugin
+from resultsdb.messaging import load_messaging_plugin, create_message, publish_taskotron_message
 from resultsdb.lib.helpers import non_empty, dict_or_string, list_or_none
 
 QUERY_LIMIT = 20
@@ -229,7 +229,7 @@ def get_groups():
     try:
         args = RP['get_groups'].parse_args()
     except JSONBadRequest as error:
-        return jsonify({"message": "Malformed Request: %s" % error.data['message']}), error.code
+        return jsonify({"message": "Malformed Request: %s" % error}), error.code
     except HTTPException as error:
         return jsonify(error.data), error.code
 
@@ -285,7 +285,7 @@ def create_group():
     try:
         args = RP['create_group'].parse_args()
     except JSONBadRequest as error:
-        return jsonify({"message": "Malformed Request: %s" % error.data['message']}), error.code
+        return jsonify({"message": "Malformed Request: %s" % error}), error.code
     except HTTPException as error:
         return jsonify(error.data), error.code
 
@@ -316,13 +316,14 @@ def select_results(since_start=None, since_end=None, outcomes=None, groups=None,
     # Checks if the sort parameter specified in the request is valid before querying.
     # Sorts by submit_time in a descending order if the sort parameter is absent or invalid.
     query_sorted = False
-    sort_match = re.match(r'^(?P<order>asc|desc):(?P<column>.+)$', _sort)
-    if sort_match:
-        if sort_match.group('column') == 'submit_time':
-            sort_order = {'asc': db.asc, 'desc': db.desc}[sort_match.group('order')]
-            sort_column = getattr(Result, sort_match.group('column'))
-            q = db.session.query(Result).order_by(sort_order(sort_column))
-            query_sorted = True
+    if _sort:
+        sort_match = re.match(r'^(?P<order>asc|desc):(?P<column>.+)$', _sort)
+        if sort_match:
+            if sort_match.group('column') == 'submit_time':
+                sort_order = {'asc': db.asc, 'desc': db.desc}[sort_match.group('order')]
+                sort_column = getattr(Result, sort_match.group('column'))
+                q = db.session.query(Result).order_by(sort_order(sort_column))
+                query_sorted = True
     if not query_sorted:
         q = db.session.query(Result).order_by(db.desc(Result.submit_time))
 
@@ -384,7 +385,7 @@ def __get_results_parse_args():
     try:
         args = RP['get_results'].parse_args()
     except JSONBadRequest as error:
-        retval["error"] = (jsonify({"message": "Malformed Request: %s" % error.data['message']}), error.code)
+        retval["error"] = (jsonify({"message": "Malformed Request: %s" % error}), error.code)
         return retval
     except HTTPException as error:
         retval["error"] = (jsonify(error.data), error.code)
@@ -447,22 +448,35 @@ def get_results_latest():
         return p['error']
 
     args = p['args']
-    q = select_testcases(','.join(args['testcases']), ','.join(args['testcases:like']))
-    testcases = q.all()
 
-    results = []
-    for testcase in testcases:
-        q = select_results(
-            since_start=args['since']['start'],
-            since_end=args['since']['end'],
-            groups=args['groups'],
-            testcases=[testcase.name],
-            result_data=p['result_data'],
-            _sort=args['_sort'],
-            )
-        result = q.first()
-        if result:
-            results.append(result)
+    q = select_results(
+        since_start=args['since']['start'],
+        since_end=args['since']['end'],
+        groups=args['groups'],
+        testcases=args['testcases'],
+        testcases_like=args['testcases:like'],
+        result_data=p['result_data'],
+        _sort=args['_sort'],
+    )
+
+    # Produce a subquery with the same filter criteria as above *except*
+    # test case name, which we group by and join on.
+    sq = select_results(
+        since_start=args['since']['start'],
+        since_end=args['since']['end'],
+        groups=args['groups'],
+        result_data=p['result_data'],
+        )\
+        .order_by(None)\
+        .with_entities(
+            Result.testcase_name.label('testcase_name'),
+            db.func.max(Result.submit_time).label('max_submit_time'))\
+        .group_by(Result.testcase_name)\
+        .subquery()
+    q = q.join(sq, db.and_(Result.testcase_name == sq.c.testcase_name,
+                           Result.submit_time == sq.c.max_submit_time))
+
+    results = q.all()
 
     return jsonify(dict(
         data=[SERIALIZE(o) for o in results],
@@ -560,17 +574,19 @@ def create_result():
     try:
         args = RP['create_result'].parse_args()
     except JSONBadRequest as error:
-        return jsonify({"message": "Malformed Request: %s" % error.data['message']}), error.code
+        return jsonify({"message": "Malformed Request: %s" % error}), error.code
     except HTTPException as error:
         return jsonify(error.data), error.code
 
     outcome = args['outcome'].strip().upper()
     if outcome not in RESULT_OUTCOME:
+        app.logger.warning("Invalid result outcome submitted: %s", outcome)
         return jsonify({'message': "outcome must be one of %r" % (RESULT_OUTCOME,)}), 400
 
     if args['data']:
         invalid_keys = [key for key in args['data'].iterkeys() if ':' in key]
         if invalid_keys:
+            app.logger.warning("Colon not allowed in key name: %s", invalid_keys)
             return jsonify({'message': "Colon not allowed in key name: %r" % invalid_keys}), 400
 
     # args[testcase] can be either string or object
@@ -579,12 +595,15 @@ def create_result():
     if isinstance(tc, basestring):
         tc = dict(name=args['testcase'])
         if not tc['name']:
+            app.logger.warning("Result submitted without valid testcase.name: %s", tc)
             return jsonify({'message': "testcase name not set"}), 400
     elif isinstance(tc, dict) and 'name' not in tc:
+        app.logger.warning("Result submitted without testcase.name: %s", tc)
         return jsonify({'message': "testcase.name not set"}), 400
 
     testcase = Testcase.query.filter_by(name=tc['name']).first()
     if not testcase:
+        app.logger.debug("Testcase %s does not exist yet. Creating", tc['name'])
         testcase = Testcase(name=tc['name'])
     testcase.ref_url = tc.get('ref_url', testcase.ref_url)
     db.session.add(testcase)
@@ -646,38 +665,21 @@ def create_result():
     db.session.commit()
 
     db.session.add(result)
+    app.logger.debug("Created new result for testcase %s with outcome %s", testcase.name, outcome)
 
     if app.config['MESSAGE_BUS_PUBLISH']:
-        prev_result = get_prev_result(result)
-        # result is considered duplicate of prev_result when
-        # outcomes are the same.
-        if not prev_result or prev_result.outcome != result.outcome:
-            plugin = load_messaging_plugin(
-                name=app.config['MESSAGE_BUS_PLUGIN'],
-                kwargs=app.config['MESSAGE_BUS_KWARGS'],
-            )
-            plugin.publish(plugin.create_message(result, prev_result))
+        app.logger.debug("Preparing to publish message for result id %d", result.id)
+        plugin = load_messaging_plugin(
+            name=app.config['MESSAGE_BUS_PLUGIN'],
+            kwargs=app.config['MESSAGE_BUS_KWARGS'],
+        )
+        plugin.publish(create_message(result))
 
+    if app.config['MESSAGE_BUS_PUBLISH_TASKOTRON']:
+        app.logger.debug("Preparing to publish Taskotron message for result id %d", result.id)
+        publish_taskotron_message(result)
 
     return jsonify(SERIALIZE(result)), 201
-
-
-def get_prev_result(result):
-    """
-    Find previous result with the same testcase, item, type, and arch.
-    Return None if no result is found.
-    """
-    q = db.session.query(Result).filter(Result.id != result.id)
-    q = q.filter_by(testcase_name=result.testcase_name)
-
-    for result_data in result.data:
-        if result_data.key in ['item', 'type', 'arch']:
-            alias = db.aliased(ResultData)
-            q = q.join(alias).filter(
-                db.and_(alias.key == result_data.key, alias.value == result_data.value))
-
-    q = q.order_by(db.desc(Result.submit_time))
-    return q.first()
 
 
 # =============================================================================
@@ -716,7 +718,7 @@ def get_testcases():  # page = None, limit = QUERY_LIMIT):
     try:
         args = RP['get_testcases'].parse_args()
     except JSONBadRequest as error:
-        return jsonify({"message": "Malformed Request: %s" % error.data['message']}), error.code
+        return jsonify({"message": "Malformed Request: %s" % error}), error.code
     except HTTPException as error:
         return jsonify(error.data), error.code
 
@@ -751,7 +753,7 @@ def create_testcase():
     try:
         args = RP['create_testcase'].parse_args()
     except JSONBadRequest as error:
-        return jsonify({"message": "Malformed Request: %s" % error.data['message']}), error.code
+        return jsonify({"message": "Malformed Request: %s" % error}), error.code
     except HTTPException as error:
         return jsonify(error.data), error.code
 

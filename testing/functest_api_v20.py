@@ -568,6 +568,19 @@ class TestFuncApiV20():
         assert len(data['data']) == 1
         assert data['data'][0] == self.ref_result
 
+    def test_get_results_sorted_by_submit_time_desc_by_default(self):
+        r1 = self.helper_create_result()
+        r2 = self.helper_create_result()
+
+        r = self.app.get('/api/v2.0/results')
+        data = json.loads(r.data)
+
+        assert r.status_code == 200
+        assert len(data['data']) == 2
+
+        assert data['data'][0]['id']== r2[1]['id']
+        assert data['data'][1]['id'] == r1[1]['id']
+
     def test_get_results_by_group(self):
         uuid2 = '1c26effb-7c07-4d90-9428-86aac053288c'
         self.helper_create_group(uuid=uuid2)
@@ -775,9 +788,9 @@ class TestFuncApiV20():
         data = json.loads(r.data)
 
         assert len(data['data']) == 2
-        assert data['data'][0]['testcase']['name'] == self.ref_testcase_name
-        assert data['data'][0]['outcome'] == "FAILED"
-        assert data['data'][1]['testcase']['name'] == self.ref_testcase_name + ".1"
+        assert data['data'][0]['testcase']['name'] == self.ref_testcase_name + ".1"
+        assert data['data'][1]['testcase']['name'] == self.ref_testcase_name
+        assert data['data'][1]['outcome'] == "FAILED"
 
     def test_get_results_latest_modifiers(self):
         self.helper_create_testcase()
@@ -805,31 +818,38 @@ class TestFuncApiV20():
         data = json.loads(r.data)
 
         assert len(data['data']) == 2
-        assert data['data'][0]['testcase']['name'] == self.ref_testcase_name
+        assert data['data'][0]['testcase']['name'] == self.ref_testcase_name + ".1"
         assert data['data'][0]['outcome'] == "FAILED"
-        assert data['data'][1]['testcase']['name'] == self.ref_testcase_name + ".1"
+        assert data['data'][1]['testcase']['name'] == self.ref_testcase_name
         assert data['data'][1]['outcome'] == "FAILED"
 
         r = self.app.get('/api/v2.0/results/latest?testcases:like=*')
         data = json.loads(r.data)
 
         assert len(data['data']) == 2
-        assert data['data'][0]['testcase']['name'] == self.ref_testcase_name
+        assert data['data'][0]['testcase']['name'] == self.ref_testcase_name + ".1"
         assert data['data'][0]['outcome'] == "FAILED"
-        assert data['data'][1]['testcase']['name'] == self.ref_testcase_name + ".1"
+        assert data['data'][1]['testcase']['name'] == self.ref_testcase_name
         assert data['data'][1]['outcome'] == "FAILED"
 
         r = self.app.get('/api/v2.0/results/latest?groups=%s' % self.ref_group_uuid)
         data = json.loads(r.data)
 
         assert len(data['data']) == 2
-        assert data['data'][0]['testcase']['name'] == self.ref_testcase_name
-        assert data['data'][0]['outcome'] == "FAILED"
-        assert data['data'][1]['testcase']['name'] == self.ref_testcase_name + ".1"
-        assert data['data'][1]['outcome'] == "PASSED"
+        assert data['data'][0]['testcase']['name'] == self.ref_testcase_name + ".1"
+        assert data['data'][0]['outcome'] == "PASSED"
+        assert data['data'][1]['testcase']['name'] == self.ref_testcase_name
+        assert data['data'][1]['outcome'] == "FAILED"
 
     def test_message_publication(self):
         self.helper_create_result()
         plugin = resultsdb.messaging.DummyPlugin
         assert len(plugin.history) == 1, plugin.history
-        assert plugin.history == [{'id': 1}]
+        assert plugin.history[0]['data']['item'] == [self.ref_result_item]
+        assert plugin.history[0]['data']['type'] == [self.ref_result_type]
+        assert plugin.history[0]['id'] == 1
+        assert plugin.history[0]['outcome'] == self.ref_result_outcome
+        assert plugin.history[0]['ref_url'] == self.ref_result_ref_url
+        assert plugin.history[0]['groups'] == [self.ref_group_uuid]
+        assert plugin.history[0]['note'] == self.ref_result_note
+        assert plugin.history[0]['testcase']['name'] == self.ref_testcase_name

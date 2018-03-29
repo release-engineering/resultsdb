@@ -33,11 +33,8 @@ from sqlalchemy.engine import reflection
 def get_alembic_config():
     # the location of the alembic ini file and alembic scripts changes when
     # installed via package
-    if os.path.exists("./alembic.ini"):
-        alembic_cfg = Config("./alembic.ini")
-    else:
-        alembic_cfg = Config("/usr/share/resultsdb/alembic.ini",
-                             ini_section='alembic-packaged')
+    alembic_cfg = Config()
+    alembic_cfg.set_main_option('script_location', 'resultsdb:alembic')
     return alembic_cfg
 
 

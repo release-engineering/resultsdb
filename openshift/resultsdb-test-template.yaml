@@ -1,0 +1,313 @@
+
+# Template to produce a new test environment in OpenShift. Uses OpenID Connect
+# against iddev.fedorainfracloud.org for authentication, and ephemeral storage
+# for Postgres data.
+#
+# To create an environment from the template, process and apply it:
+#   oc process -f openshift/resultsdb-test-template.yaml -p TEST_ID=123 | oc apply -f -
+# To clean up the environment, use a selector on the environment label:
+#   oc delete dc,deploy,pod,configmap,secret,svc,route -l environment=test-123
+
+---
+apiVersion: v1
+kind: Template
+metadata:
+  name: resultsdb-test-template
+parameters:
+- name: TEST_ID
+  displayName: Test id
+  description: Short unique identifier for this test run (e.g. Jenkins job number)
+  required: true
+- name: RESULTSDB_IMAGE
+  displayName: ResultsDB container image
+  description: Image to be used for ResultsDB deployement
+  value: 172.30.1.1:5000/myproject/resultsdb:latest
+  required: true
+- name: DATABASE_PASSWORD
+  displayName: Database password
+  generate: expression
+  from: "[\\w]{32}"
+- name: RESULTSDB_SECRET_KEY
+  displayName: Secret Key for ResultsDB
+  generate: expression
+  from: "[\\w]{32}"
+objects:
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: "resultsdb-test-${TEST_ID}-secret"
+    labels:
+      environment: "test-${TEST_ID}"
+  stringData:
+    database-password: "${DATABASE_PASSWORD}"
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: "resultsdb-test-${TEST_ID}-config"
+    labels:
+      environment: "test-${TEST_ID}"
+  stringData:
+    settings.py: |-
+      SECRET_KEY = '${RESULTSDB_SECRET_KEY}'
+      SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://resultsdb:${DATABASE_PASSWORD}@resultsdb-test-${TEST_ID}-database:5432/resultsdb'
+      FILE_LOGGING = False
+      LOGFILE = '/var/log/resultsdb/resultsdb.log'
+      SYSLOG_LOGGING = False
+      STREAM_LOGGING = True
+      RUN_HOST= '0.0.0.0'
+      RUN_PORT = 5001
+      MESSAGE_BUS_PUBLISH = False
+      MESSAGE_BUS_PLUGIN = 'fedmsg'
+      MESSAGE_BUS_KWARGS = {'modname': 'resultsdb'}
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: "resultsdb-test-${TEST_ID}-public-httpd-config"
+    labels:
+      environment: "test-${TEST_ID}"
+  data:
+    resultsdb.conf: |-
+      <Location "/">
+        <RequireAny>
+          # allow only GET
+          Require method GET
+        </RequireAny>
+      </Location>
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: "resultsdb-test-${TEST_ID}-internal-httpd-config"
+    labels:
+      environment: "test-${TEST_ID}"
+  data:
+    resultsdb.conf: |-
+      <Location "/">
+      # allow all methods
+      </Location>
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: "resultsdb-test-${TEST_ID}-database"
+    labels:
+      environment: "test-${TEST_ID}"
+  spec:
+    selector:
+      environment: "test-${TEST_ID}"
+      service: database
+    ports:
+    - name: postgresql
+      port: 5432
+      targetPort: 5432
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    name: "resultsdb-test-${TEST_ID}-database"
+    labels:
+      environment: "test-${TEST_ID}"
+      service: database
+  spec:
+    replicas: 1
+    strategy:
+      type: Recreate
+    selector:
+      environment: "test-${TEST_ID}"
+      service: database
+    template:
+      metadata:
+        labels:
+          environment: "test-${TEST_ID}"
+          service: database
+      spec:
+        containers:
+        - name: postgresql
+          image: registry.access.redhat.com/rhscl/postgresql-95-rhel7:latest
+          imagePullPolicy: Always
+          ports:
+          - containerPort: 5432
+          readinessProbe:
+            timeoutSeconds: 1
+            initialDelaySeconds: 5
+            exec:
+              command: [ /bin/sh, -i, -c, "psql -h 127.0.0.1 -U $POSTGRESQL_USER -q -d $POSTGRESQL_DATABASE -c 'SELECT 1'" ]
+          livenessProbe:
+            timeoutSeconds: 1
+            initialDelaySeconds: 30
+            tcpSocket:
+              port: 5432
+          env:
+          - name: POSTGRESQL_USER
+            value: resultsdb
+          - name: POSTGRESQL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: "resultsdb-test-${TEST_ID}-secret"
+                key: database-password
+          - name: POSTGRESQL_DATABASE
+            value: resultsdb
+    triggers:
+    - type: ConfigChange
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: "resultsdb-test-${TEST_ID}-api"
+    labels:
+      environment: "test-${TEST_ID}"
+    annotations:
+      service.alpha.openshift.io/dependencies: |-
+        [{"name": "resultsdb-test-${TEST_ID}-database", "kind": "Service"}]
+  spec:
+    selector:
+      environment: "test-${TEST_ID}"
+      service: api
+    ports:
+    - name: api
+      port: 5001
+      targetPort: 5001
+- apiVersion: v1
+  kind: Route
+  metadata:
+    name: "resultsdb-test-${TEST_ID}-api"
+    labels:
+      environment: "test-${TEST_ID}"
+  spec:
+    port:
+      targetPort: api
+    to:
+      kind: Service
+      name: "resultsdb-test-${TEST_ID}-api"
+    tls:
+      termination: edge
+      insecureEdgeTerminationPolicy: Redirect
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: "resultsdb-test-${TEST_ID}-internal-api"
+    labels:
+      environment: "test-${TEST_ID}"
+    annotations:
+      service.alpha.openshift.io/dependencies: |-
+        [{"name": "resultsdb-test-${TEST_ID}-database", "kind": "Service"}]
+  spec:
+    selector:
+      environment: "test-${TEST_ID}"
+      service: internal-api
+    ports:
+    - name: api
+      port: 5001
+      targetPort: 5001
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    name: "resultsdb-test-${TEST_ID}-api"
+    labels:
+      environment: "test-${TEST_ID}"
+      service: api
+  spec:
+    replicas: 1
+    selector:
+      environment: "test-${TEST_ID}"
+      service: api
+    template:
+      metadata:
+        labels:
+          environment: "test-${TEST_ID}"
+          service: api
+      spec:
+        containers:
+        - name: api
+          image: "${RESULTSDB_IMAGE}"
+          imagePullPolicy: Always
+          ports:
+          - containerPort: 5001
+          volumeMounts:
+          - name: config-volume
+            mountPath: /etc/resultsdb
+            readOnly: true
+          - name: httpd-config-volume
+            mountPath: /etc/httpd/conf.d
+            readOnly: true
+          readinessProbe:
+            timeoutSeconds: 1
+            initialDelaySeconds: 5
+            httpGet:
+              path: /api/v2.0/
+              port: 5001
+          livenessProbe:
+            timeoutSeconds: 1
+            initialDelaySeconds: 30
+            httpGet:
+              path: /api/v2.0/
+              port: 5001
+          # Limit to 384MB memory. This is probably *not* enough but it is
+          # necessary in the current environment to allow for 2 replicas and
+          # rolling updates, without hitting the (very aggressive) memory quota.
+          resources:
+            limits:
+              memory: 384Mi
+        volumes:
+        - name: config-volume
+          secret:
+            secretName: "resultsdb-test-${TEST_ID}-config"
+        - name: httpd-config-volume
+          configMap:
+            name: "resultsdb-test-${TEST_ID}-public-httpd-config"
+    triggers:
+    - type: ConfigChange
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    name: "resultsdb-test-${TEST_ID}-internal-api"
+    labels:
+      environment: "test-${TEST_ID}"
+      service: internal-api
+  spec:
+    replicas: 1
+    selector:
+      environment: "test-${TEST_ID}"
+      service: internal-api
+    template:
+      metadata:
+        labels:
+          environment: "test-${TEST_ID}"
+          service: internal-api
+      spec:
+        containers:
+        - name: api
+          image: "${RESULTSDB_IMAGE}"
+          imagePullPolicy: Always
+          ports:
+          - containerPort: 5001
+          volumeMounts:
+          - name: config-volume
+            mountPath: /etc/resultsdb
+            readOnly: true
+          - name: httpd-config-volume
+            mountPath: /etc/httpd/conf.d
+            readOnly: true
+          readinessProbe:
+            timeoutSeconds: 1
+            initialDelaySeconds: 5
+            httpGet:
+              path: /api/v2.0/
+              port: 5001
+          livenessProbe:
+            timeoutSeconds: 1
+            initialDelaySeconds: 30
+            httpGet:
+              path: /api/v2.0/
+              port: 5001
+          # Limit to 384MB memory. This is probably *not* enough but it is
+          # necessary in the current environment to allow for 2 replicas and
+          # rolling updates, without hitting the (very aggressive) memory quota.
+          resources:
+            limits:
+              memory: 384Mi
+        volumes:
+        - name: config-volume
+          secret:
+            secretName: "resultsdb-test-${TEST_ID}-config"
+        - name: httpd-config-volume
+          configMap:
+            name: "resultsdb-test-${TEST_ID}-internal-httpd-config"
+    triggers:
+    - type: ConfigChange

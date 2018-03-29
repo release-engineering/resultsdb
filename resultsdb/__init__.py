@@ -131,6 +131,52 @@ if app.config['SHOW_DB_URI']:
 # database
 db = SQLAlchemy(app)
 
+# Register auth
+if app.config['AUTH_MODULE'] == 'oidc':
+    from flask.ext.oidc import OpenIDConnect
+    oidc = OpenIDConnect(app)
+
+    def _check():
+        if flask.request.method == 'POST':
+            # We don't need to do auth for any non-POST
+            # Prefer POSTed access token: they don't get into the httpd logs
+            token = flask.request.form.get('_auth_token')
+            if token is None:
+                token = flask.request.args.get('_auth_token')
+            if token is None:
+                token = flask.request.json.get('_auth_token')
+            if not token:
+                app.logger.error('No token submitted')
+                return False
+            validity = oidc.validate_token(token, [app.config['OIDC_SCOPE']])
+            if validity is not True:
+                app.logger.error('Token validation error: %s', validity)
+                return False
+            try:
+                token_info = oidc._get_token_info(token)
+            except Exception as ex:
+                app.logger.error('get_token failed: %s' % ex)
+                return False
+            if token_info.get('sub') not in app.config['OIDC_ADMINS']:
+                app.logger.error('Subject %s is not admin' %
+                                 token_info.get('sub'))
+                return False
+            return True
+        elif flask.request.method == 'GET':
+            return True
+
+    def check_token():
+        result = _check()
+        if result is None:
+            return flask.jsonify({'error': 'server_error'})
+        elif result is False:
+            return flask.jsonify({'error': 'invalid_token',
+                                  'error_description': 'Invalid or no token'})
+        # If the check passed, we fall through. This returns None, telling
+        # Flask that it can proceed further with the request
+
+    app.before_request(check_token)
+
 # register blueprints
 from resultsdb.controllers.main import main
 app.register_blueprint(main)
@@ -140,3 +186,5 @@ app.register_blueprint(api_v1, url_prefix="/api/v1.0")
 
 from resultsdb.controllers.api_v2 import api as api_v2
 app.register_blueprint(api_v2, url_prefix="/api/v2.0")
+
+app.logger.debug("Finished ResultsDB initialization")
