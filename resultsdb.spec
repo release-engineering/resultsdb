@@ -1,8 +1,8 @@
 %global without_epel 0
 Name:           resultsdb
 # NOTE: if you update version, *make sure* to also update `resultsdb/__init__.py`
-Version:        2.0.5
-Release:        4%{?dist}
+Version:        2.1.0
+Release:        1%{?dist}
 Summary:        Results store for automated tasks
 
 License:        GPLv2+
@@ -79,6 +79,13 @@ install -p -m 0644 conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb
 %{_datadir}/resultsdb/*
 
 %changelog
+* Thu Mar 29 2018 Frantisek Zatloukal <fzatlouk@redhat.com> - 2.1.0-1
+- Add OpenID Connect auth module for POST requests
+- Allow GET requests to just pass without auth
+- Publish more metadata in bus messages
+- Update Python 2 dependency declarations
+- generic message format which matches the HTTP API v2
+
 * Fri Feb 09 2018 Fedora Release Engineering <releng@fedoraproject.org> - 2.0.5-4
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_28_Mass_Rebuild
 
