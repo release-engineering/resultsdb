@@ -106,6 +106,9 @@ class Result(db.Model, DBSerialize):
         db.Index('result_fk_testcase_name', 'testcase_name',
                  postgresql_ops={'testcase_name': 'text_pattern_ops'}),
         db.Index('result_submit_time', 'submit_time'),
+        db.Index('result_idx_outcome', 'outcome',
+                 postgresql_ops={'outcome': 'text_pattern_ops'},
+                 ),
     )
 
     def __init__(self, testcase, outcome, groups=None, ref_url=None, note=None):

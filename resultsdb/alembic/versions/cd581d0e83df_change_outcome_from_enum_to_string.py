@@ -17,14 +17,11 @@ import sqlalchemy as sa
 
 
 def upgrade():
-    op.execute(
-        "ALTER TABLE result "
-        "ALTER COLUMN outcome "
-        "TYPE VARCHAR(32)")
+    op.alter_column('result', 'outcome', type_=sa.String(32))
+    op.create_index('result_idx_outcome', 'result', [
+                    'outcome'], unique=False, postgresql_ops={'outcome': 'text_pattern_ops'})
 
 
 def downgrade():
-    op.execute(
-        "ALTER TABLE result "
-        "ALTER COLUMN outcome "
-        "TYPE resultoutcome USING outcome::resultoutcome")
+    op.execute("ALTER TABLE result ALTER COLUMN outcome TYPE resultoutcome USING outcome::resultoutcome;")
+    op.drop_index('result_idx_outcome', table_name='result')
