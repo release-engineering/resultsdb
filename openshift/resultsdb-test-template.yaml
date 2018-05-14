@@ -38,6 +38,7 @@ objects:
     name: "resultsdb-test-${TEST_ID}-secret"
     labels:
       environment: "test-${TEST_ID}"
+      app: resultsdb
   stringData:
     database-password: "${DATABASE_PASSWORD}"
 - apiVersion: v1
@@ -46,6 +47,7 @@ objects:
     name: "resultsdb-test-${TEST_ID}-config"
     labels:
       environment: "test-${TEST_ID}"
+      app: resultsdb
   stringData:
     settings.py: |-
       SECRET_KEY = '${RESULTSDB_SECRET_KEY}'
@@ -65,13 +67,14 @@ objects:
     name: "resultsdb-test-${TEST_ID}-public-httpd-config"
     labels:
       environment: "test-${TEST_ID}"
+      app: resultsdb
   data:
     resultsdb.conf: |-
       <Location "/">
-        <RequireAny>
-          # allow only GET
-          Require method GET
-        </RequireAny>
+        # <RequireAny>
+        #   # allow only GET
+        #   Require method GET
+        # </RequireAny>
       </Location>
 - apiVersion: v1
   kind: ConfigMap
@@ -79,6 +82,7 @@ objects:
     name: "resultsdb-test-${TEST_ID}-internal-httpd-config"
     labels:
       environment: "test-${TEST_ID}"
+      app: resultsdb
   data:
     resultsdb.conf: |-
       <Location "/">
@@ -90,8 +94,10 @@ objects:
     name: "resultsdb-test-${TEST_ID}-database"
     labels:
       environment: "test-${TEST_ID}"
+      app: resultsdb
   spec:
     selector:
+      app: resultsdb
       environment: "test-${TEST_ID}"
       service: database
     ports:
@@ -105,11 +111,13 @@ objects:
     labels:
       environment: "test-${TEST_ID}"
       service: database
+      app: resultsdb
   spec:
     replicas: 1
     strategy:
       type: Recreate
     selector:
+      app: resultsdb
       environment: "test-${TEST_ID}"
       service: database
     template:
@@ -117,6 +125,7 @@ objects:
         labels:
           environment: "test-${TEST_ID}"
           service: database
+          app: resultsdb
       spec:
         containers:
         - name: postgresql
@@ -152,11 +161,13 @@ objects:
     name: "resultsdb-test-${TEST_ID}-api"
     labels:
       environment: "test-${TEST_ID}"
+      app: resultsdb
     annotations:
       service.alpha.openshift.io/dependencies: |-
         [{"name": "resultsdb-test-${TEST_ID}-database", "kind": "Service"}]
   spec:
     selector:
+      app: resultsdb
       environment: "test-${TEST_ID}"
       service: api
     ports:
@@ -169,6 +180,7 @@ objects:
     name: "resultsdb-test-${TEST_ID}-api"
     labels:
       environment: "test-${TEST_ID}"
+      app: resultsdb
   spec:
     port:
       targetPort: api
@@ -184,11 +196,13 @@ objects:
     name: "resultsdb-test-${TEST_ID}-internal-api"
     labels:
       environment: "test-${TEST_ID}"
+      app: resultsdb
     annotations:
       service.alpha.openshift.io/dependencies: |-
         [{"name": "resultsdb-test-${TEST_ID}-database", "kind": "Service"}]
   spec:
     selector:
+      app: resultsdb
       environment: "test-${TEST_ID}"
       service: internal-api
     ports:
@@ -202,9 +216,11 @@ objects:
     labels:
       environment: "test-${TEST_ID}"
       service: api
+      app: resultsdb
   spec:
     replicas: 1
     selector:
+      app: resultsdb
       environment: "test-${TEST_ID}"
       service: api
     template:
@@ -212,6 +228,7 @@ objects:
         labels:
           environment: "test-${TEST_ID}"
           service: api
+          app: resultsdb
       spec:
         containers:
         - name: api
@@ -260,9 +277,11 @@ objects:
     labels:
       environment: "test-${TEST_ID}"
       service: internal-api
+      app: resultsdb
   spec:
     replicas: 1
     selector:
+      app: resultsdb
       environment: "test-${TEST_ID}"
       service: internal-api
     template:
@@ -270,6 +289,7 @@ objects:
         labels:
           environment: "test-${TEST_ID}"
           service: internal-api
+          app: resultsdb
       spec:
         containers:
         - name: api
