@@ -42,9 +42,17 @@ QUERY_LIMIT = 20
 
 api = Blueprint('api_v2', __name__)
 
+try:
+    basestring
+except NameError:
+    basestring = (str, bytes)
+
+try:
+    unicode
+except NameError:
+    unicode = str
+
 # TODO: find out why error handler works for 404 but not for 400
-
-
 @app.errorhandler(400)
 def bad_request(error):
     return jsonify({"message": "Bad request"}), 400
@@ -98,7 +106,7 @@ def setup_request_parser_from_config():
     the value required. Or if the value is not yet in the request-parser (which now
     realistically only applies to the `data.` values in result) it is added.
     """
-    for key, values in app.config.get('REQUIRED_DATA', {}).iteritems():
+    for key, values in app.config.get('REQUIRED_DATA', {}).items():
         if key not in RP:
             app.logger.error("Error in config: REQUIRED_DATA contains unknown endpoint %r.", key)
             continue
@@ -354,7 +362,7 @@ def select_results(since_start=None, since_end=None, outcomes=None, groups=None,
 
     # Filter by result_data
     if result_data is not None:
-        for key, values in result_data.iteritems():
+        for key, values in result_data.items():
             try:
                 key, modifier = key.split(':')
             except ValueError:  # no : in key
@@ -417,8 +425,8 @@ def __get_results_parse_args():
 
     # req_args is a dict of lists, where keys are param names and values are param values
     #  the value is a list even if only one param value was specified
-    results_data = {key: req_args[key] for key in req_args.iterkeys() if key not in args}
-    for param, values in results_data.iteritems():
+    results_data = {key: req_args[key] for key in req_args.keys() if key not in args}
+    for param, values in results_data.items():
         for i, value in enumerate(values):
             results_data[param][i] = value.split(',')
         # flatten the list
@@ -584,7 +592,7 @@ def create_result():
         return jsonify({'message': "outcome must be one of %r" % (RESULT_OUTCOME,)}), 400
 
     if args['data']:
-        invalid_keys = [key for key in args['data'].iterkeys() if ':' in key]
+        invalid_keys = [key for key in args['data'].keys() if ':' in key]
         if invalid_keys:
             app.logger.warning("Colon not allowed in key name: %s", invalid_keys)
             return jsonify({'message': "Colon not allowed in key name: %r" % invalid_keys}), 400

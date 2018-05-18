@@ -44,9 +44,13 @@ QUERY_LIMIT = 20
 
 api = Blueprint('api_v1', __name__)
 
+try:
+    unicode
+except NameError:
+    unicode = str
+
+
 # TODO: find out why error handler works for 404 but not fot 400
-
-
 @app.errorhandler(400)
 def bad_request(error):
     return jsonify({"message": "Bad request"}), 400
@@ -203,7 +207,7 @@ def select_results(since_start=None, since_end=None, outcome=None, since_source=
 
     # Filter by result_data
     if result_data is not None:
-        for key, values in result_data.iteritems():
+        for key, values in result_data.items():
             try:
                 key, modifier = key.split(':')
             except ValueError:  # no : in key
@@ -408,7 +412,7 @@ def __get_results_parse_args():
     #
     req_args = dict(request.args)  # this is important, do not delete ;)
     extra_data = {k: req_args[k] for k in req_args if k not in args}
-    for k, v in extra_data.iteritems():
+    for k, v in extra_data.items():
         for i, s in enumerate(v):
             extra_data[k][i] = s.split(',')
         # flatten the list

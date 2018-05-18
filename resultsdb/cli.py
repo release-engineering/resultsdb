@@ -39,7 +39,7 @@ def get_alembic_config():
 
 
 def upgrade_db(*args):
-    print "Upgrading Database to Latest Revision"
+    print("Upgrading Database to Latest Revision")
     alembic_cfg = get_alembic_config()
     al_command.upgrade(alembic_cfg, "head")
 
@@ -53,20 +53,20 @@ def init_alembic(*args):
     current_rev = context.get_current_revision()
 
     if not current_rev:
-        print "Initializing alembic"
-        print " - Setting the current version to the first revision"
+        print("Initializing alembic")
+        print(" - Setting the current version to the first revision")
         al_command.stamp(alembic_cfg, "15f5eeb9f635")
     else:
-        print "Alembic already initialized"
+        print("Alembic already initialized")
 
 
 def initialize_db(destructive):
     alembic_cfg = get_alembic_config()
 
-    print "Initializing database"
+    print("Initializing database")
 
     if destructive:
-        print " - Dropping all tables"
+        print(" - Dropping all tables")
         db.drop_all()
 
     # check whether the table 'group' exists
@@ -74,9 +74,9 @@ def initialize_db(destructive):
     insp = reflection.Inspector.from_engine(db.engine)
     table_names = insp.get_table_names()
     if 'testcase' not in table_names and 'Testcase' not in table_names:
-        print " - Creating tables"
+        print(" - Creating tables")
         db.create_all()
-        print " - Stamping alembic's current version to 'head'"
+        print(" - Stamping alembic's current version to 'head'")
         al_command.stamp(alembic_cfg, "head")
 
     # check to see if the db has already been initialized by checking for an
@@ -84,18 +84,18 @@ def initialize_db(destructive):
     context = MigrationContext.configure(db.engine.connect())
     current_rev = context.get_current_revision()
     if current_rev:
-        print " - Database is currently at rev %s" % current_rev
+        print(" - Database is currently at rev %s" % current_rev)
         upgrade_db(destructive)
     else:
-        print "WARN: You need to have your db stamped with an alembic revision"
-        print "      Run 'init_alembic' sub-command first."
+        print("WARN: You need to have your db stamped with an alembic revision")
+        print("      Run 'init_alembic' sub-command first.")
 
 
 def mock_data(destructive):
-    print "Populating tables with mock-data"
+    print("Populating tables with mock-data")
 
     if destructive or not db.session.query(Testcase).count():
-        print " - Testcase, Job, Result, ResultData"
+        print(" - Testcase, Job, Result, ResultData")
         tc1 = Testcase(ref_url="http://example.com/depcheck", name="depcheck")
         tc2 = Testcase(ref_url="http://example.com/rpmlint", name="rpmlint")
 
@@ -130,7 +130,7 @@ def mock_data(destructive):
 
         db.session.commit()
     else:
-        print " - skipped Testcase, Job, Result, ResultData"
+        print(" - skipped Testcase, Job, Result, ResultData")
 
 
 def main():
@@ -146,9 +146,9 @@ def main():
     (options, args) = parser.parse_args()
 
     if len(args) != 1 or args[0] not in possible_commands:
-        print usage
+        print(usage)
         print
-        print 'Please use one of the following commands: %s' % str(possible_commands)
+        print('Please use one of the following commands: %s' % str(possible_commands))
         sys.exit(1)
 
     command = {
@@ -159,8 +159,7 @@ def main():
     }[args[0]]
 
     if not options.destructive:
-        print "Proceeding in non-destructive mode. To perform destructive "\
-              "steps use -d option."
+        print("Proceeding in non-destructive mode. To perform destructive steps use -d option.")
 
     command(options.destructive)
 

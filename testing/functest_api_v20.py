@@ -28,6 +28,11 @@ import resultsdb.cli
 import resultsdb.messaging
 import resultsdb.controllers.api_v2 as api_v2
 
+try:
+    basestring
+except NameError:
+    basestring = (str, bytes)
+
 
 class AboutTime(object):
 
@@ -100,7 +105,7 @@ class TestFuncApiV20():
             'outcome': self.ref_result_outcome,
             'note': self.ref_result_note,
             'ref_url': self.ref_result_ref_url,
-            'data': dict(((key, [value] if isinstance(value, basestring) else value) for key, value in self.ref_result_data.iteritems())),
+            'data': dict(((key, [value] if isinstance(value, basestring) else value) for key, value in self.ref_result_data.items())),
             'href': self.ref_url_prefix + '/results/1',
         }
 

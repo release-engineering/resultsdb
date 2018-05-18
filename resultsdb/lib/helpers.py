@@ -1,5 +1,11 @@
 import numbers
 
+try:
+    basestring
+except NameError:
+    basestring = (str, bytes)
+
+
 
 def non_empty(typ, value, *args, **kwargs):
     if args or kwargs:

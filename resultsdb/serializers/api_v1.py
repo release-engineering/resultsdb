@@ -42,7 +42,7 @@ class Serializer(BaseSerializer):
         if job_load_results:
             rv['results'] = o.results
 
-        return {key: self.serialize(value) for key, value in rv.iteritems()}
+        return {key: self.serialize(value) for key, value in rv.items()}
 
     def _serialize_Testcase(self, o, **kwargs):
         rv = dict(
@@ -51,7 +51,7 @@ class Serializer(BaseSerializer):
             href=self.get_uri(o)
         )
 
-        return {key: self.serialize(value) for key, value in rv.iteritems()}
+        return {key: self.serialize(value) for key, value in rv.items()}
 
     def _serialize_Result(self, o, **kwargs):
         result_data = {}
@@ -73,7 +73,7 @@ class Serializer(BaseSerializer):
             href=self.get_uri(o),
         )
 
-        return {key: self.serialize(value) for key, value in rv.iteritems()}
+        return {key: self.serialize(value) for key, value in rv.items()}
 
     def _serialize_ResultData(self, o, **kwargs):
         rv = dict(
@@ -81,4 +81,4 @@ class Serializer(BaseSerializer):
             value=o.value,
         )
 
-        return {key: self.serialize(value) for key, value in rv.iteritems()}
+        return {key: self.serialize(value) for key, value in rv.items()}
