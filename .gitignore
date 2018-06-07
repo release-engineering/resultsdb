@@ -15,3 +15,5 @@ htmlcov/
 .cache
 .idea
 test_env
+.pytest_cache
+.tox
