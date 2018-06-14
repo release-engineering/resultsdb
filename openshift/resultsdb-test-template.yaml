@@ -162,9 +162,6 @@ objects:
     labels:
       environment: "test-${TEST_ID}"
       app: resultsdb
-    annotations:
-      service.alpha.openshift.io/dependencies: |-
-        [{"name": "resultsdb-test-${TEST_ID}-database", "kind": "Service"}]
   spec:
     selector:
       app: resultsdb
@@ -197,9 +194,6 @@ objects:
     labels:
       environment: "test-${TEST_ID}"
       app: resultsdb
-    annotations:
-      service.alpha.openshift.io/dependencies: |-
-        [{"name": "resultsdb-test-${TEST_ID}-database", "kind": "Service"}]
   spec:
     selector:
       app: resultsdb
@@ -284,6 +278,31 @@ objects:
       app: resultsdb
       environment: "test-${TEST_ID}"
       service: internal-api
+    strategy:
+      type: Rolling
+      rollingParams:
+        pre:
+          failurePolicy: Abort
+          execNewPod:
+            containerName: api
+            command:
+              - /bin/sh
+              - -i
+              - -c
+              - |
+                # try for 10 minutes (600 seconds)
+                e=$(( $(date +%s) + 600 ))
+                i=0
+                while [ $(date +%s) -lt $e ]; do
+                  echo 'TRY #'$((++i))
+                  if resultsdb init_db ; then
+                    exit 0
+                  fi
+                done
+                exit 1
+            volumes:
+            - config-volume
+            - httpd-config-volume
     template:
       metadata:
         labels:
