@@ -23,7 +23,7 @@ import uuid
 from functools import partial
 
 from flask import Blueprint, jsonify, request, url_for
-from flask.ext.restful import reqparse
+from flask_restful import reqparse
 
 from sqlalchemy.orm import exc as orm_exc
 from werkzeug.exceptions import HTTPException
@@ -779,5 +779,6 @@ def landing_page():
                     "documentation": "http://docs.resultsdb20.apiary.io/",
                     "groups": url_for('.get_groups', _external=True),
                     "results": url_for('.get_results', _external=True),
-                    "testcases": url_for('.get_testcases', _external=True)
+                    "testcases": url_for('.get_testcases', _external=True),
+                    "outcomes": RESULT_OUTCOME,
                     }), 300

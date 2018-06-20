@@ -179,7 +179,7 @@ Examples are provided in the Parameters section of the documentation.
         }
 
 
-## Get a list of current Results for a specified filter _FIXME: reword to make more sense_ [GET /results/recent{?keyval,testcase,groups,since}]
+## Get a list of current Results for a specified filter _FIXME: reword to make more sense_ [GET /results/latest{?keyval,testcase,groups,since}]
 
 Especially with automation in mind, a simpe query to get the latest `Results` of all the `Testcases` based on a filter
 makes a lot of sense. For example Koji could be interested in data like "All current results for the `koji_build` `koschei-1.7.2-1.fc24`", without
@@ -205,7 +205,7 @@ Only `Testcases` with at least one `Result` that meet the filter are present - e
         Date (or datetime) in ISO8601 format.
         To specify range, separate start and end date(time) by comma: `...&since=2016-08-14,2016-08-15T13:42:57`
 
-+ Request `.../results/recent?item=koschei-1.7.2-1.fc24&type=koji_build`
++ Request `.../results/latest?item=koschei-1.7.2-1.fc24&type=koji_build`
     + Parameters
         + item: koschei-1.7.2-1.fc24
         + type: koji_build

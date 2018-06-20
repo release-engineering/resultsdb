@@ -22,7 +22,7 @@ import re
 import uuid
 
 from flask import Blueprint, jsonify, request, url_for
-from flask.ext.restful import reqparse
+from flask_restful import reqparse
 
 from sqlalchemy.orm import exc as orm_exc
 from sqlalchemy import exc as sqlalchemy_exc
@@ -683,5 +683,6 @@ def landing_page():
                     "documentation": "http://docs.resultsdb.apiary.io/",
                     "jobs": url_for('.get_jobs', _external=True),
                     "results": url_for('.get_results', _external=True),
-                    "testcases": url_for('.get_testcases', _external=True)
+                    "testcases": url_for('.get_testcases', _external=True),
+                    "outcomes": RESULT_OUTCOME,
                     }), 300

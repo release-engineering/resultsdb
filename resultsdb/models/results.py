@@ -20,14 +20,14 @@
 import datetime
 import uuid as lib_uuid
 
-from resultsdb import db
+from resultsdb import db, app
 from resultsdb.serializers import DBSerialize
 
 
 __all__ = ['Testcase', 'Group', 'Result', 'ResultData', 'GroupsToResults', 'RESULT_OUTCOME']
 
-
-RESULT_OUTCOME = ('PASSED', 'INFO', 'FAILED', 'NEEDS_INSPECTION')
+PRESET_OUTCOMES = ('PASSED', 'INFO', 'FAILED', 'NEEDS_INSPECTION')
+RESULT_OUTCOME = PRESET_OUTCOMES + app.config.get('ADDITIONAL_RESULT_OUTCOMES', [])
 JOB_STATUS = []
 
 
@@ -95,7 +95,7 @@ class Result(db.Model, DBSerialize):
     testcase_name = db.Column(db.Text, db.ForeignKey('testcase.name'))
 
     submit_time = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    outcome = db.Column(db.Enum(*RESULT_OUTCOME, name='resultoutcome'))
+    outcome = db.Column(db.String(32))
     note = db.Column(db.Text)
     ref_url = db.Column(db.Text)
 
@@ -106,6 +106,9 @@ class Result(db.Model, DBSerialize):
         db.Index('result_fk_testcase_name', 'testcase_name',
                  postgresql_ops={'testcase_name': 'text_pattern_ops'}),
         db.Index('result_submit_time', 'submit_time'),
+        db.Index('result_idx_outcome', 'outcome',
+                 postgresql_ops={'outcome': 'text_pattern_ops'},
+                 ),
     )
 
     def __init__(self, testcase, outcome, groups=None, ref_url=None, note=None):

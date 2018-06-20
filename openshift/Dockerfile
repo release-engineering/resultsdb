@@ -2,7 +2,7 @@
 # Build should be triggered from repo root like:
 # docker build -f openshift/Dockerfile --tag 172.30.1.1:5000/myproject/resultsdb:latest --build-arg resultsdb_rpm=resultsdb-2.0.2-1.fc25.noarch.rpm .
 
-FROM centos/httpd:latest
+FROM registry.fedoraproject.org/f27/httpd:latest
 LABEL \
     name="ResultsDB application" \
     vendor="ResultsDB developers" \
@@ -10,8 +10,6 @@ LABEL \
     build-date=""
 
 USER 0
-
-RUN yum -y install epel-release && yum -y clean all
 
 # The caller should build a resultsdb RPM package using and then pass it in this arg.
 ARG resultsdb_rpm

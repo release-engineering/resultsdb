@@ -46,6 +46,9 @@ class Config(object):
         'create_testcase': [],
         }
 
+    # Extend the list of allowed outcomes.
+    ADDITIONAL_RESULT_OUTCOMES = ()
+
     # Supported values: "oidc"
     AUTH_MODULE = None
 
@@ -110,3 +113,4 @@ class TestingConfig(Config):
     TRAP_BAD_REQUEST_ERRORS = True
     FEDMENU_URL = 'https://apps.stg.fedoraproject.org/fedmenu'
     FEDMENU_DATA_URL = 'https://apps.stg.fedoraproject.org/js/data.js'
+    ADDITIONAL_RESULT_OUTCOMES = ('AMAZING',)

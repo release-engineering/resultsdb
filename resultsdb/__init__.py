@@ -22,7 +22,7 @@ from resultsdb import proxy
 
 import flask
 from flask import Flask
-from flask.ext.sqlalchemy import SQLAlchemy
+from flask_sqlalchemy import SQLAlchemy
 
 import logging
 import logging.handlers
@@ -30,7 +30,7 @@ import os
 
 
 # the version as used in setup.py
-__version__ = "2.0.5"
+__version__ = "2.1.1"
 
 
 # Flask App
@@ -133,7 +133,7 @@ db = SQLAlchemy(app)
 
 # Register auth
 if app.config['AUTH_MODULE'] == 'oidc':
-    from flask.ext.oidc import OpenIDConnect
+    from flask_oidc import OpenIDConnect
     oidc = OpenIDConnect(app)
 
     def _check():
