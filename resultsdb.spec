@@ -1,7 +1,7 @@
 %global without_epel 0
 Name:           resultsdb
 # NOTE: if you update version, *make sure* to also update `resultsdb/__init__.py`
-Version:        2.1.0
+Version:        2.1.1
 Release:        1%{?dist}
 Summary:        Results store for automated tasks
 
@@ -79,6 +79,10 @@ install -p -m 0644 conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb
 %{_datadir}/resultsdb/*
 
 %changelog
+* Wed Jun 20 2018 Frantisek Zatloukal <fzatlouk@redhat.com> - 2.1.1-1
+- Fix deprecated flask imports
+- Make the list of allowed outcomes configurable
+
 * Thu Mar 29 2018 Frantisek Zatloukal <fzatlouk@redhat.com> - 2.1.0-1
 - Add OpenID Connect auth module for POST requests
 - Allow GET requests to just pass without auth
