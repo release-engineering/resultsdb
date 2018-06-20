@@ -22,7 +22,7 @@ import re
 import uuid
 
 from flask import Blueprint, jsonify, request, url_for
-from flask.ext.restful import reqparse
+from flask_restful import reqparse
 
 from sqlalchemy.orm import exc as orm_exc
 from sqlalchemy import exc as sqlalchemy_exc

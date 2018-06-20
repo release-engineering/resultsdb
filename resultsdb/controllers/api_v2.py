@@ -23,7 +23,7 @@ import uuid
 from functools import partial
 
 from flask import Blueprint, jsonify, request, url_for
-from flask.ext.restful import reqparse
+from flask_restful import reqparse
 
 from sqlalchemy.orm import exc as orm_exc
 from werkzeug.exceptions import HTTPException
