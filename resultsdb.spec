@@ -1,8 +1,7 @@
-%global without_epel 0
 Name:           resultsdb
 # NOTE: if you update version, *make sure* to also update `resultsdb/__init__.py`
 Version:        2.1.1
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Results store for automated tasks
 
 License:        GPLv2+
@@ -11,6 +10,7 @@ Source0:        https://qa.fedoraproject.org/releases/%{name}/%{name}-%{version}
 
 BuildArch:      noarch
 
+%if 0%{?fedora}
 Requires:       fedmsg >= 0.16.2
 Requires:       python2-alembic >= 0.8.3
 Requires:       python2-flask >= 0.10.1
@@ -19,8 +19,18 @@ Requires:       python2-flask-sqlalchemy >= 2.0
 Requires:       python2-iso8601 >= 0.1.10
 Requires:       python2-six >= 1.9.0
 Requires:       python2-sqlalchemy >= 0.9.8
-# when built on EL without EPEL sources, many of the deps are not available
-%if !0%{?without_epel}
+%else
+Requires:       fedmsg >= 0.16.2
+Requires:       python-alembic >= 0.8.3
+Requires:       python-flask >= 0.10.1
+Requires:       python-flask-restful >= 0.2.11
+Requires:       python-flask-sqlalchemy >= 2.0
+Requires:       python2-iso8601 >= 0.1.10
+Requires:       python2-six >= 1.9.0
+Requires:       python-sqlalchemy >= 0.9.8
+%endif
+
+%if 0%{?fedora}
 BuildRequires:  fedmsg >= 0.16.2
 BuildRequires:  python2-alembic >= 0.8.3
 BuildRequires:  python2-flask >= 0.10.1
@@ -32,8 +42,16 @@ BuildRequires:  python2-pytest-cov
 BuildRequires:  python2-devel
 BuildRequires:  python2-setuptools
 %else
-BuildRequires:  python-devel
-BuildRequires:  python-setuptools
+BuildRequires:  fedmsg >= 0.16.2
+BuildRequires:  python-alembic >= 0.8.3
+BuildRequires:  python-flask >= 0.10.1
+BuildRequires:  python-flask-restful >= 0.2.11
+BuildRequires:  python-flask-sqlalchemy >= 2.0
+BuildRequires:  python2-iso8601 >= 0.1.10
+BuildRequires:  python2-pytest
+BuildRequires:  python2-pytest-cov
+BuildRequires:  python2-devel
+BuildRequires:  python2-setuptools
 %endif
 
 %description
@@ -42,13 +60,11 @@ ResultsDB is a results store engine for, but not limited to, Fedora QA tools.
 %prep
 %setup -q
 
-%if !0%{?without_epel}
 %check
 PYTHONPATH=%{buildroot}%{python2_sitelib}/ py.test
 # This seems to be the only place where we can remove pyco files, see:
 # https://fedoraproject.org/wiki/Packaging:Python#Byte_compiling
 rm -f %{buildroot}%{_sysconfdir}/resultsdb/*.py{c,o}
-%endif
 
 %build
 %{__python2} setup.py build
@@ -79,6 +95,9 @@ install -p -m 0644 conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb
 %{_datadir}/resultsdb/*
 
 %changelog
+* Sun Jul 01 2018 Frantisek Zatloukal <fzatlouk@redhat.com> - 2.1.1-2
+- Fix building on EPEL 7
+
 * Wed Jun 20 2018 Frantisek Zatloukal <fzatlouk@redhat.com> - 2.1.1-1
 - Fix deprecated flask imports
 - Make the list of allowed outcomes configurable
