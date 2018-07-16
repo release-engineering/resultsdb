@@ -11,14 +11,15 @@ Source0:        https://qa.fedoraproject.org/releases/%{name}/%{name}-%{version}
 BuildArch:      noarch
 
 %if 0%{?fedora}
-Requires:       fedmsg >= 0.16.2
-Requires:       python2-alembic >= 0.8.3
-Requires:       python2-flask >= 0.10.1
-Requires:       python2-flask-restful >= 0.2.11
-Requires:       python2-flask-sqlalchemy >= 2.0
-Requires:       python2-iso8601 >= 0.1.10
-Requires:       python2-six >= 1.9.0
-Requires:       python2-sqlalchemy >= 0.9.8
+Requires:       fedmsg
+Requires:       python3-fedmsg
+Requires:       python3-alembic
+Requires:       python3-flask
+Requires:       python3-flask-restful
+Requires:       python3-flask-sqlalchemy
+Requires:       python3-iso8601
+Requires:       python3-six
+Requires:       python3-sqlalchemy
 %else
 Requires:       fedmsg >= 0.16.2
 Requires:       python-alembic >= 0.8.3
@@ -31,16 +32,17 @@ Requires:       python-sqlalchemy >= 0.9.8
 %endif
 
 %if 0%{?fedora}
-BuildRequires:  fedmsg >= 0.16.2
-BuildRequires:  python2-alembic >= 0.8.3
-BuildRequires:  python2-flask >= 0.10.1
-BuildRequires:  python2-flask-restful >= 0.2.11
-BuildRequires:  python2-flask-sqlalchemy >= 2.0
-BuildRequires:  python2-iso8601 >= 0.1.10
-BuildRequires:  python2-pytest
-BuildRequires:  python2-pytest-cov
-BuildRequires:  python2-devel
-BuildRequires:  python2-setuptools
+BuildRequires:  fedmsg
+BuildRequires:  python3-fedmsg
+BuildRequires:  python3-alembic
+BuildRequires:  python3-flask
+BuildRequires:  python3-flask-restful
+BuildRequires:  python3-flask-sqlalchemy
+BuildRequires:  python3-iso8601
+BuildRequires:  python3-pytest
+BuildRequires:  python3-pytest-cov
+BuildRequires:  python3-devel
+BuildRequires:  python3-setuptools
 %else
 BuildRequires:  fedmsg >= 0.16.2
 BuildRequires:  python-alembic >= 0.8.3
@@ -61,16 +63,28 @@ ResultsDB is a results store engine for, but not limited to, Fedora QA tools.
 %setup -q
 
 %check
+%if 0%{?fedora}
+PYTHONPATH=%{buildroot}%{python3_sitelib}/ pytest-3
+%else
 PYTHONPATH=%{buildroot}%{python2_sitelib}/ py.test
+%endif
 # This seems to be the only place where we can remove pyco files, see:
 # https://fedoraproject.org/wiki/Packaging:Python#Byte_compiling
 rm -f %{buildroot}%{_sysconfdir}/resultsdb/*.py{c,o}
 
 %build
+%if 0%{?fedora}
+%{__python3} setup.py build
+%else
 %{__python2} setup.py build
+%endif
 
 %install
+%if 0%{?fedora}
+%{__python3} setup.py install --skip-build --root %{buildroot}
+%else
 %{__python2} setup.py install --skip-build --root %{buildroot}
+%endif
 
 # apache and wsgi settings
 install -d %{buildroot}%{_datadir}/resultsdb/conf
@@ -84,8 +98,14 @@ install -p -m 0644 conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb
 %files
 %doc README.md conf/*
 %license LICENSE
+
+%if 0%{?fedora}
+%{python3_sitelib}/resultsdb
+%{python3_sitelib}/*.egg-info
+%else
 %{python2_sitelib}/resultsdb
 %{python2_sitelib}/*.egg-info
+%endif
 
 %attr(755,root,root) %{_bindir}/resultsdb
 %dir %{_sysconfdir}/resultsdb
