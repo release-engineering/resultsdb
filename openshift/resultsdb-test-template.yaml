@@ -137,6 +137,11 @@ objects:
           imagePullPolicy: Always
           ports:
           - containerPort: 5432
+            protocol: TCP
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: 0.4
           readinessProbe:
             timeoutSeconds: 1
             initialDelaySeconds: 5
@@ -259,6 +264,7 @@ objects:
           resources:
             limits:
               memory: 384Mi
+              cpu: 0.3
         volumes:
         - name: config-volume
           secret:
@@ -345,6 +351,7 @@ objects:
           resources:
             limits:
               memory: 384Mi
+              cpu: 0.3
         volumes:
         - name: config-volume
           secret:
