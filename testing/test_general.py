@@ -187,7 +187,7 @@ class TestMessaging():
         try:
             plugin = messaging.load_messaging_plugin('fedmsg', {})
         except KeyError as err:
-            if "not found" in err.message:
+            if "not found" in str(err):
                 print ("""=============== HINT ===============
 This exception can be caused by the fact, that you did not run
 `python setup.py develop` before executing the testsuite.
