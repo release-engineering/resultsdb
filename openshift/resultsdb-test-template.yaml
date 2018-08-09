@@ -65,32 +65,36 @@ objects:
       MESSAGE_BUS_PLUGIN = 'fedmsg'
       MESSAGE_BUS_KWARGS = {'modname': 'resultsdb'}
       ADDITIONAL_RESULT_OUTCOMES = ${RESULTSDB_ADDITIONAL_RESULT_OUTCOMES}
+    # Credentials are resultsdb-updater:password
+    .htpasswd: |-
+      resultsdb-updater:$2y$05$yAlqAYWqfMoxAMrFgFMfpuQsDw.v5b4tuS8x43h6tcPP1gIXBRutq
 - apiVersion: v1
   kind: ConfigMap
   metadata:
-    name: "resultsdb-test-${TEST_ID}-public-httpd-config"
+    name: "resultsdb-test-${TEST_ID}-httpd-config"
     labels:
       environment: "test-${TEST_ID}"
       app: resultsdb
   data:
     resultsdb.conf: |-
+      <IfModule !auth_basic_module>
+        LoadModule auth_basic_module '${MOD_WSGI_MODULES_DIRECTORY}/mod_auth_basic.so'
+      </IfModule>
+      <IfModule !authn_file_module>
+        LoadModule authn_file_module '${MOD_WSGI_MODULES_DIRECTORY}/mod_authn_file.so'
+      </IfModule>
+      <IfModule !authz_user_module>
+        LoadModule authz_user_module '${MOD_WSGI_MODULES_DIRECTORY}/mod_authz_user.so'
+      </IfModule>
+
       <Location "/">
-        # <RequireAny>
-        #   # allow only GET
-        #   Require method GET
-        # </RequireAny>
-      </Location>
-- apiVersion: v1
-  kind: ConfigMap
-  metadata:
-    name: "resultsdb-test-${TEST_ID}-internal-httpd-config"
-    labels:
-      environment: "test-${TEST_ID}"
-      app: resultsdb
-  data:
-    resultsdb.conf: |-
-      <Location "/">
-      # allow all methods
+        AuthType Basic
+        AuthName "Authentication Required"
+        AuthBasicProvider file
+        AuthUserFile "/etc/resultsdb/.htpasswd"
+        <LimitExcept GET>
+          Require valid-user
+        </LimitExcept>
       </Location>
 - apiVersion: v1
   kind: Service
@@ -197,22 +201,6 @@ objects:
       termination: edge
       insecureEdgeTerminationPolicy: Redirect
 - apiVersion: v1
-  kind: Service
-  metadata:
-    name: "resultsdb-test-${TEST_ID}-internal-api"
-    labels:
-      environment: "test-${TEST_ID}"
-      app: resultsdb
-  spec:
-    selector:
-      app: resultsdb
-      environment: "test-${TEST_ID}"
-      service: internal-api
-    ports:
-    - name: api
-      port: 5001
-      targetPort: 5001
-- apiVersion: v1
   kind: DeploymentConfig
   metadata:
     name: "resultsdb-test-${TEST_ID}-api"
@@ -221,11 +209,36 @@ objects:
       service: api
       app: resultsdb
   spec:
-    replicas: 1
+    replicas: 2
     selector:
       app: resultsdb
       environment: "test-${TEST_ID}"
       service: api
+    strategy:
+      type: Rolling
+      rollingParams:
+        pre:
+          failurePolicy: Abort
+          execNewPod:
+            containerName: api
+            command:
+              - /bin/sh
+              - -i
+              - -c
+              - |
+                # try for 10 minutes (600 seconds)
+                e=$(( $(date +%s) + 600 ))
+                i=0
+                while [ $(date +%s) -lt $e ]; do
+                  echo 'TRY #'$((++i))
+                  if resultsdb init_db ; then
+                    exit 0
+                  fi
+                done
+                exit 1
+            volumes:
+            - config-volume
+            - httpd-config-volume
     template:
       metadata:
         labels:
@@ -269,95 +282,9 @@ objects:
         - name: config-volume
           secret:
             secretName: "resultsdb-test-${TEST_ID}-config"
+            defaultMode: 0600
         - name: httpd-config-volume
           configMap:
-            name: "resultsdb-test-${TEST_ID}-public-httpd-config"
-    triggers:
-    - type: ConfigChange
-- apiVersion: v1
-  kind: DeploymentConfig
-  metadata:
-    name: "resultsdb-test-${TEST_ID}-internal-api"
-    labels:
-      environment: "test-${TEST_ID}"
-      service: internal-api
-      app: resultsdb
-  spec:
-    replicas: 1
-    selector:
-      app: resultsdb
-      environment: "test-${TEST_ID}"
-      service: internal-api
-    strategy:
-      type: Rolling
-      rollingParams:
-        pre:
-          failurePolicy: Abort
-          execNewPod:
-            containerName: api
-            command:
-              - /bin/sh
-              - -i
-              - -c
-              - |
-                # try for 10 minutes (600 seconds)
-                e=$(( $(date +%s) + 600 ))
-                i=0
-                while [ $(date +%s) -lt $e ]; do
-                  echo 'TRY #'$((++i))
-                  if resultsdb init_db ; then
-                    exit 0
-                  fi
-                done
-                exit 1
-            volumes:
-            - config-volume
-            - httpd-config-volume
-    template:
-      metadata:
-        labels:
-          environment: "test-${TEST_ID}"
-          service: internal-api
-          app: resultsdb
-      spec:
-        containers:
-        - name: api
-          image: "${RESULTSDB_IMAGE}"
-          imagePullPolicy: Always
-          ports:
-          - containerPort: 5001
-          volumeMounts:
-          - name: config-volume
-            mountPath: /etc/resultsdb
-            readOnly: true
-          - name: httpd-config-volume
-            mountPath: /etc/httpd/conf.d
-            readOnly: true
-          readinessProbe:
-            timeoutSeconds: 1
-            initialDelaySeconds: 5
-            httpGet:
-              path: /api/v2.0/
-              port: 5001
-          livenessProbe:
-            timeoutSeconds: 1
-            initialDelaySeconds: 30
-            httpGet:
-              path: /api/v2.0/
-              port: 5001
-          # Limit to 384MB memory. This is probably *not* enough but it is
-          # necessary in the current environment to allow for 2 replicas and
-          # rolling updates, without hitting the (very aggressive) memory quota.
-          resources:
-            limits:
-              memory: 384Mi
-              cpu: 0.3
-        volumes:
-        - name: config-volume
-          secret:
-            secretName: "resultsdb-test-${TEST_ID}-config"
-        - name: httpd-config-volume
-          configMap:
-            name: "resultsdb-test-${TEST_ID}-internal-httpd-config"
+            name: "resultsdb-test-${TEST_ID}-httpd-config"
     triggers:
     - type: ConfigChange

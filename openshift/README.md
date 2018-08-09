@@ -21,10 +21,11 @@ configuration option.
 There are two volumes expected to be mounted, holding configuration for
 ResultsDB and httpd:
 
-1. The volume mounted at `/etc/resultsdb` should have `settings.py`, holding
-   ResultsDB configuration. For an example, see `settings.py` in
+1. The volume mounted at `/etc/resultsdb` should have `settings.py` and `.htpasswd`.  
+   The former holds ResultsDB configuration. For an example, see `settings.py` in
    `resultsdb-test-template.yaml`, or `conf/settings.py.example`
-   for a full list of configuration options.
+   for a full list of configuration options.  
+   `.htpasswd` holds user data for basic auth, and it's generated using `htpasswd`.
 
 2. The volume mounted at `/etc/httpd/conf.d` should have `resultsdb.conf`,
    holding httpd configuration to be used by `mod_wsgi-express`. For an
