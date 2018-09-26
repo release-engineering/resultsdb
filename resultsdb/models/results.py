@@ -27,7 +27,8 @@ from resultsdb.serializers import DBSerialize
 __all__ = ['Testcase', 'Group', 'Result', 'ResultData', 'GroupsToResults', 'RESULT_OUTCOME']
 
 PRESET_OUTCOMES = ('PASSED', 'INFO', 'FAILED', 'NEEDS_INSPECTION')
-RESULT_OUTCOME = PRESET_OUTCOMES + app.config.get('ADDITIONAL_RESULT_OUTCOMES', [])
+ADDITIONAL_RESULT_OUTCOMES = tuple(app.config.get('ADDITIONAL_RESULT_OUTCOMES', []))
+RESULT_OUTCOME = PRESET_OUTCOMES + ADDITIONAL_RESULT_OUTCOMES
 JOB_STATUS = []
 
 
