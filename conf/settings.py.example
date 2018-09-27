@@ -30,6 +30,12 @@ REQUIRED_DATA = {
     'create_testcase': [],
     }
 
+# Extend the list of allowed outcomes.
+ADDITIONAL_RESULT_OUTCOMES = ()
+
+# Fedmenu configuration
+FEDMENU_URL = 'https://apps.fedoraproject.org/fedmenu'
+FEDMENU_DATA_URL = 'https://apps.fedoraproject.org/js/data.js'
 
 # ================== Authentication ===================
 
@@ -75,5 +81,7 @@ MESSAGE_BUS_KWARGS = {'modname': 'resultsdb'}
 #    },
 #}
 
+# Publish Taskotron-compatible fedmsgs on the 'taskotron' topic
+MESSAGE_BUS_PUBLISH_TASKOTRON = False
 
 
