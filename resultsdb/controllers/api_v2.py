@@ -420,12 +420,12 @@ def __get_results_parse_args():
     retval['args'] = args
 
     # find results_data with the query parameters
-    # these are the paramters other than those defined in RequestParser
-    req_args = dict(request.args)  # this is important, do not delete ;)
-
-    # req_args is a dict of lists, where keys are param names and values are param values
-    #  the value is a list even if only one param value was specified
-    results_data = {key: req_args[key] for key in req_args.keys() if key not in args}
+    #  these are the paramters other than those defined in RequestParser
+    # request.args is a ImmutableMultiDict, which allows for more values to be
+    #  stored in one key (so one can do stuff like .../results?item=foo&item=bar in URL).
+    # Here we transform the `request.args` MultiDict to `results_data` dict of lists, and
+    #  while also filtering out the reserved-keyword-args
+    results_data = {k: request.args.getlist(k) for k in request.args.keys() if k not in args}
     for param, values in results_data.items():
         for i, value in enumerate(values):
             results_data[param][i] = value.split(',')
