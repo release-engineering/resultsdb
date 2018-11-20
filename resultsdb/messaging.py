@@ -40,10 +40,10 @@ def get_prev_result(result):
     Find previous result with the same testcase, item, type, and arch.
     Return None if no result is found.
 
-    Note that this logic is Taskotron-specific: it does not consider the 
-    possibility that a result may be distinguished by other keys in the data 
-    (for example 'scenario' which is used in OpenQA results). But this is only 
-    used for publishing Taskotron compatibility messages, thus we keep this 
+    Note that this logic is Taskotron-specific: it does not consider the
+    possibility that a result may be distinguished by other keys in the data
+    (for example 'scenario' which is used in OpenQA results). But this is only
+    used for publishing Taskotron compatibility messages, thus we keep this
     logic as is.
     """
     q = db.session.query(Result).filter(Result.id != result.id)
@@ -63,16 +63,16 @@ def publish_taskotron_message(result, include_job_url=False):
     """
     Publish a fedmsg on the taskotron topic with Taskotron-compatible structure.
 
-    These messages are deprecated, consumers should consume from the resultsdb 
+    These messages are deprecated, consumers should consume from the resultsdb
     topic instead.
     """
     prev_result = get_prev_result(result)
     if prev_result is not None and prev_result.outcome == result.outcome:
-        # If the previous result had the same outcome, skip publishing 
+        # If the previous result had the same outcome, skip publishing
         # a message for this new result.
-        # This was intended as a workaround to avoid spammy messages from the 
-        # dist.depcheck task, which tends to produce a very large number of 
-        # identical results for any given build, because of the way that it is 
+        # This was intended as a workaround to avoid spammy messages from the
+        # dist.depcheck task, which tends to produce a very large number of
+        # identical results for any given build, because of the way that it is
         # designed.
         log.debug("Skipping Taskotron message for result %d, outcome has not changed", result.id)
         return

@@ -19,6 +19,10 @@
 
 from datetime import date, datetime
 
+try:
+    basestring
+except NameError:
+    basestring = (str, bytes)
 
 class DBSerialize(object):
     pass
@@ -38,9 +42,13 @@ class BaseSerializer(object):
 
         if isinstance(value, dict):
             ret = {}
-            for k, v in value.iteritems():
+            for k, v in value.items():
                 ret[k] = self.serialize(v, **kwargs)
             return ret
+
+        #in py3 string-like types have __iter__ causing endless loops
+        if isinstance(value, basestring):
+            return value
 
         # convert iterables to list of serialized stuff
         if hasattr(value, '__iter__'):

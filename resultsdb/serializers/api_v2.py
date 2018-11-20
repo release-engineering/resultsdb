@@ -33,7 +33,7 @@ class Serializer(BaseSerializer):
             href=url_for('api_v2.get_group', group_id=o.uuid, _external=True),
         )
 
-        return {key: self.serialize(value) for key, value in rv.iteritems()}
+        return {key: self.serialize(value) for key, value in rv.items()}
 
     def _serialize_Testcase(self, o, **kwargs):
         rv = dict(
@@ -42,7 +42,7 @@ class Serializer(BaseSerializer):
             href=url_for('api_v2.get_testcase', testcase_name=o.name, _external=True),
         )
 
-        return {key: self.serialize(value) for key, value in rv.iteritems()}
+        return {key: self.serialize(value) for key, value in rv.items()}
 
     def _serialize_Result(self, o, **kwargs):
         result_data = {}
@@ -64,7 +64,7 @@ class Serializer(BaseSerializer):
             href=url_for('api_v2.get_result', result_id=o.id, _external=True),
         )
 
-        return {key: self.serialize(value) for key, value in rv.iteritems()}
+        return {key: self.serialize(value) for key, value in rv.items()}
 
     def _serialize_ResultData(self, o, **kwargs):
         rv = dict(
@@ -72,4 +72,4 @@ class Serializer(BaseSerializer):
             value=o.value,
         )
 
-        return {key: self.serialize(value) for key, value in rv.iteritems()}
+        return {key: self.serialize(value) for key, value in rv.items()}

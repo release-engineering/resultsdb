@@ -31,6 +31,9 @@ parameters:
   displayName: Secret Key for ResultsDB
   generate: expression
   from: "[\\w]{32}"
+- name: RESULTSDB_ADDITIONAL_RESULT_OUTCOMES
+  displayName: Additional outcomes values.
+  value: "[]"
 objects:
 - apiVersion: v1
   kind: Secret
@@ -61,6 +64,7 @@ objects:
       MESSAGE_BUS_PUBLISH = False
       MESSAGE_BUS_PLUGIN = 'fedmsg'
       MESSAGE_BUS_KWARGS = {'modname': 'resultsdb'}
+      ADDITIONAL_RESULT_OUTCOMES = ${RESULTSDB_ADDITIONAL_RESULT_OUTCOMES}
 - apiVersion: v1
   kind: ConfigMap
   metadata:
@@ -133,6 +137,11 @@ objects:
           imagePullPolicy: Always
           ports:
           - containerPort: 5432
+            protocol: TCP
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: 0.4
           readinessProbe:
             timeoutSeconds: 1
             initialDelaySeconds: 5
@@ -162,9 +171,6 @@ objects:
     labels:
       environment: "test-${TEST_ID}"
       app: resultsdb
-    annotations:
-      service.alpha.openshift.io/dependencies: |-
-        [{"name": "resultsdb-test-${TEST_ID}-database", "kind": "Service"}]
   spec:
     selector:
       app: resultsdb
@@ -197,9 +203,6 @@ objects:
     labels:
       environment: "test-${TEST_ID}"
       app: resultsdb
-    annotations:
-      service.alpha.openshift.io/dependencies: |-
-        [{"name": "resultsdb-test-${TEST_ID}-database", "kind": "Service"}]
   spec:
     selector:
       app: resultsdb
@@ -261,6 +264,7 @@ objects:
           resources:
             limits:
               memory: 384Mi
+              cpu: 0.3
         volumes:
         - name: config-volume
           secret:
@@ -284,6 +288,31 @@ objects:
       app: resultsdb
       environment: "test-${TEST_ID}"
       service: internal-api
+    strategy:
+      type: Rolling
+      rollingParams:
+        pre:
+          failurePolicy: Abort
+          execNewPod:
+            containerName: api
+            command:
+              - /bin/sh
+              - -i
+              - -c
+              - |
+                # try for 10 minutes (600 seconds)
+                e=$(( $(date +%s) + 600 ))
+                i=0
+                while [ $(date +%s) -lt $e ]; do
+                  echo 'TRY #'$((++i))
+                  if resultsdb init_db ; then
+                    exit 0
+                  fi
+                done
+                exit 1
+            volumes:
+            - config-volume
+            - httpd-config-volume
     template:
       metadata:
         labels:
@@ -322,6 +351,7 @@ objects:
           resources:
             limits:
               memory: 384Mi
+              cpu: 0.3
         volumes:
         - name: config-volume
           secret:

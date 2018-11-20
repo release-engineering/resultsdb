@@ -6,6 +6,10 @@ import resultsdb.controllers.api_v2 as apiv2
 import resultsdb.lib.helpers as helpers
 import resultsdb.messaging as messaging
 
+try:
+    basestring
+except NameError:
+    basestring = (str, bytes)
 
 class MyRequest(object):
 
@@ -102,7 +106,7 @@ class TestPrevNextURL():
         self.rq.url = 'URL'
         monkeypatch.setattr(apiv2, 'request', self.rq)
 
-        data, prev, next = apiv2.prev_next_urls(range(10), 1)
+        data, prev, next = apiv2.prev_next_urls(list(range(10)), 1)
         assert data == [0]
         assert prev is None
         assert next == 'URL?page=1'
@@ -111,7 +115,7 @@ class TestPrevNextURL():
         self.rq.url = 'URL?stuff=some'
         monkeypatch.setattr(apiv2, 'request', self.rq)
 
-        data, prev, next = apiv2.prev_next_urls(range(10), 1)
+        data, prev, next = apiv2.prev_next_urls(list(range(10)), 1)
         assert data == [0]
         assert prev is None
         assert next == 'URL?stuff=some&page=1'
@@ -120,7 +124,7 @@ class TestPrevNextURL():
         self.rq.url = 'URL?page=1&limit=1'
         monkeypatch.setattr(apiv2, 'request', self.rq)
 
-        data, prev, next = apiv2.prev_next_urls(range(10), 1)
+        data, prev, next = apiv2.prev_next_urls(list(range(10)), 1)
         assert data == [0]
         assert prev == 'URL?page=0&limit=1'
         assert next == 'URL?page=2&limit=1'
@@ -128,7 +132,7 @@ class TestPrevNextURL():
         self.rq.url = 'URL?limit=1&page=1'
         monkeypatch.setattr(apiv2, 'request', self.rq)
 
-        data, prev, next = apiv2.prev_next_urls(range(10), 1)
+        data, prev, next = apiv2.prev_next_urls(list(range(10)), 1)
         assert data == [0]
         assert prev == 'URL?limit=1&page=0'
         assert next == 'URL?limit=1&page=2'
@@ -136,7 +140,7 @@ class TestPrevNextURL():
         self.rq.url = 'URL&page=1&limit=1'
         monkeypatch.setattr(apiv2, 'request', self.rq)
 
-        data, prev, next = apiv2.prev_next_urls(range(10), 1)
+        data, prev, next = apiv2.prev_next_urls(list(range(10)), 1)
         assert data == [0]
         assert prev == 'URL&page=0&limit=1'
         assert next == 'URL&page=2&limit=1'
@@ -144,7 +148,7 @@ class TestPrevNextURL():
         self.rq.url = 'URL&limit=1&page=1'
         monkeypatch.setattr(apiv2, 'request', self.rq)
 
-        data, prev, next = apiv2.prev_next_urls(range(10), 1)
+        data, prev, next = apiv2.prev_next_urls(list(range(10)), 1)
         assert data == [0]
         assert prev == 'URL&limit=1&page=0'
         assert next == 'URL&limit=1&page=2'
@@ -183,8 +187,8 @@ class TestMessaging():
         try:
             plugin = messaging.load_messaging_plugin('fedmsg', {})
         except KeyError as err:
-            if "not found" in err.message:
-                print """=============== HINT ===============
+            if "not found" in str(err):
+                print ("""=============== HINT ===============
 This exception can be caused by the fact, that you did not run
 `python setup.py develop` before executing the testsuite.
 
@@ -194,7 +198,7 @@ in pwd due to `python setup.py develop`.
 
 If you ran `python setup.py develop` and are still seeing this error, then:
  - you might me missing the 'fedmsg' entrypoint in setup.py
- - there can be an error in the plugin loading code"""
+ - there can be an error in the plugin loading code""")
             raise
         assert isinstance(plugin, messaging.FedmsgPlugin), "check whether `fedmsg` entrypoint in setup.py points to resultsdb.messaging:FedmsgPlugin"
 
