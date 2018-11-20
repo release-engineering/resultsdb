@@ -30,7 +30,7 @@ import os
 
 
 # the version as used in setup.py
-__version__ = "2.1.1"
+__version__ = "2.1.2"
 
 try:
     basestring

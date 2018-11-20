@@ -1,7 +1,7 @@
 Name:           resultsdb
 # NOTE: if you update version, *make sure* to also update `resultsdb/__init__.py`
-Version:        2.1.1
-Release:        2%{?dist}
+Version:        2.1.2
+Release:        1%{?dist}
 Summary:        Results store for automated tasks
 
 License:        GPLv2+
@@ -115,6 +115,14 @@ install -p -m 0644 conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb
 %{_datadir}/resultsdb/*
 
 %changelog
+* Tue Nov 20 2018 Frantisek Zatloukal <fzatlouk@redhat.com> - 2.1.2-1
+- Support Python 3, use it on Fedora
+- Fix ImmutableMultiDict handling for python 3.7
+- Use tuples instead of list in RESULT_OUTCOME
+- Define resource limits for the database container
+- Makefile: Use generic Makefile provided by qa-make
+- Add config for task-dockerbuild
+
 * Sun Jul 01 2018 Frantisek Zatloukal <fzatlouk@redhat.com> - 2.1.1-2
 - Fix building on EPEL 7
 
