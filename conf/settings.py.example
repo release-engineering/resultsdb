@@ -31,7 +31,7 @@ REQUIRED_DATA = {
     }
 
 # Extend the list of allowed outcomes.
-ADDITIONAL_RESULT_OUTCOMES = ()
+ADDITIONAL_RESULT_OUTCOMES = []
 
 # Fedmenu configuration
 FEDMENU_URL = 'https://apps.fedoraproject.org/fedmenu'
@@ -83,5 +83,3 @@ MESSAGE_BUS_KWARGS = {'modname': 'resultsdb'}
 
 # Publish Taskotron-compatible fedmsgs on the 'taskotron' topic
 MESSAGE_BUS_PUBLISH_TASKOTRON = False
-
-
