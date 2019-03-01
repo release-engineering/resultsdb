@@ -179,7 +179,7 @@ Examples are provided in the Parameters section of the documentation.
         }
 
 
-## Get a list of current Results for a specified filter _FIXME: reword to make more sense_ [GET /results/latest{?keyval,testcase,groups,since}]
+## Get a list of current Results for a specified filter _FIXME: reword to make more sense_ [GET /results/latest{?keyval,testcases,groups,since}]
 
 Especially with automation in mind, a simpe query to get the latest `Results` of all the `Testcases` based on a filter
 makes a lot of sense. For example Koji could be interested in data like "All current results for the `koji_build` `koschei-1.7.2-1.fc24`", without
@@ -189,21 +189,26 @@ This endpoint does just that - takes filter parameters, and returns the most rec
 Only `Testcases` with at least one `Result` that meet the filter are present - e.g. if ResultsDB contained `dist.rpmlint` and `dist.rpmgrill`
 `Testcases`, but there was only a `dist.rpmlint` `Result` for the `koschei-1.7.2-1.fc24` `koji_build`, just `dist.rpmlint`'s `Result` would be returned.
 
+An additional available parameter is `_distinct_on`, if specified allows the user to group by additional fields (example: `scenario`).
+
 + Parameters
     + keyval (string)
         - Any key-value pair in `Result.data`. Replace `keyval` with the key's name: `...&item=koschei-1.7.2-1.fc24`
         - Multiple values can be provided, separate by commas to get `or` filter based on all the values provided: `...&arch=x86_64,noarch`
         - `like` filter with `*` as wildcards: `...&item:like=koschei*fc24*`
         - Multiple key-value pairs provide `and` filter, e.g. to search for all `Results` with `item` like `koschei*fc24*` and `arch` being either `noarch` or `x86_64`: `...&item:like=koschei*fc24*&arch=noarch`
-    + testcase (string, optional)
+    + testcases (string, optional)
         - Use to narrow down `Testcases` of interest. By default, all `Testcases` are searched for `Results`
-        - Multiple values can be provided, separate by coma to get `or` filter based on all the values provided: `...&testcase=dist.rpmlint,dist.depcheck`
-        - `like` filter with `*` as wildcards: `...&testcase:like=dist.*`
+        - Multiple values can be provided, separate by comma to get `or` filter based on all the values provided: `...&testcases=dist.rpmlint,dist.depcheck`
+        - `like` filter with `*` as wildcards: `...&testcases:like=dist.*`
     + groups: `27f94e36-62ec-11e6-83fd-525400d7d6a4` (string, optional)
-        - Multiple values can be provided, separate by commas to get `or` filter based on all the values provided: `...&group=uuid1,uuid2`
+        - Multiple values can be provided, separate by commas to get `or` filter based on all the values provided: `...&groups=uuid1,uuid2`
     + since: `2016-08-15T13:00:00` (string)
         Date (or datetime) in ISO8601 format.
         To specify range, separate start and end date(time) by comma: `...&since=2016-08-14,2016-08-15T13:42:57`
+    + _distinct_on: `scenario` (string, optional)
+	- The value can be any `key` in `Result.data`.  Example: `...&_distinct_on=scenario`
+	- Multiple values can be provided, separate by comma. Example: `...&_distinct_on=scenario,item`
 
 + Request `.../results/latest?item=koschei-1.7.2-1.fc24&type=koji_build`
     + Parameters

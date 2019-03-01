@@ -857,6 +857,117 @@ class TestFuncApiV20():
         assert data['data'][1]['testcase']['name'] == self.ref_testcase_name
         assert data['data'][1]['outcome'] == "FAILED"
 
+    def test_get_results_latest_distinct_on(self):
+        self.helper_create_testcase()
+
+        self.helper_create_result(outcome="PASSED", data={'scenario': 'scenario1'}, testcase=self.ref_testcase_name)
+        self.helper_create_result(outcome="PASSED", data={'scenario': 'scenario2'}, testcase=self.ref_testcase_name)
+        r = self.app.get('/api/v2.0/results/latest?testcases=' + self.ref_testcase_name + '&_distinct_on=scenario')
+        data = json.loads(r.data)
+        assert len(data['data']) == 2
+        assert data['data'][0]['data']['scenario'][0] == 'scenario2'
+        assert data['data'][1]['data']['scenario'][0] == 'scenario1'
+        r = self.app.get('/api/v2.0/results/latest?testcases=' + self.ref_testcase_name)
+        data = json.loads(r.data)
+        assert len(data['data']) == 1
+        assert data['data'][0]['data']['scenario'][0] == 'scenario2'
+
+    def test_get_results_latest_distinct_on_more_specific_cases(self):
+        '''
+            | id | testcase | scenario |
+            |----|----------|----------|
+            | 1  | tc_1     | s_1      |
+            | 2  | tc_2     | s_1      |
+            | 3  | tc_2     | s_2      |
+            | 4  | tc_3     |          |
+        '''
+        self.helper_create_result(outcome="PASSED", data={
+            'item': 'grub',
+            'scenario': 's_1'}, testcase='tc_1')
+        self.helper_create_result(outcome="PASSED", data={
+            'item': 'grub',
+            'scenario': 's_1'}, testcase='tc_2')
+        self.helper_create_result(outcome="PASSED", data={
+            'item': 'grub',
+            'scenario': 's_2'}, testcase='tc_2')
+        self.helper_create_result(outcome="PASSED", data={
+            'item': 'grub'}, testcase='tc_3')
+        r = self.app.get('/api/v2.0/results/latest?item=grub&_distinct_on=scenario')
+        data = json.loads(r.data)
+        assert len(data['data']) == 4
+        for i, result in enumerate(reversed(data['data'])):
+            assert result['id'] == (i+1)
+
+        r = self.app.get('/api/v2.0/results/latest?item=grub')
+        data = json.loads(r.data)
+        assert len(data['data']) == 3
+        assert data['data'][0]['id'] == 4
+        assert data['data'][1]['id'] == 3
+        assert data['data'][2]['id'] == 1
+
+        '''
+            | id | testcase | scenario |
+            |----|----------|----------|
+            | 1  | tc_1     | s_1      |
+            | 2  | tc_2     | s_1      |
+            | 3  | tc_2     | s_2      |
+            | 4  | tc_3     |          |
+            | 5  | tc_1     |          |
+        '''
+        self.helper_create_result(outcome="PASSED", data={
+            'item': 'grub'}, testcase='tc_1')
+        r = self.app.get('/api/v2.0/results/latest?item=grub&_distinct_on=scenario')
+        data = json.loads(r.data)
+        assert len(data['data']) == 5
+        for i, result in enumerate(reversed(data['data'])):
+            assert result['id'] == (i+1)
+
+        r = self.app.get('/api/v2.0/results/latest?item=grub')
+        data = json.loads(r.data)
+        assert len(data['data']) == 3
+        assert data['data'][0]['id'] == 5
+        assert data['data'][1]['id'] == 4
+        assert data['data'][2]['id'] == 3
+
+        '''
+            | id | testcase | scenario |
+            |----|----------|----------|
+            | 1  | tc_1     | s_1      |
+            | 2  | tc_2     | s_1      |
+            | 3  | tc_2     | s_2      |
+            | 4  | tc_3     |          |
+            | 5  | tc_1     |          |
+            | 6  | tc_1     | s_1      |
+        '''
+        self.helper_create_result(outcome="PASSED", data={
+            'item': 'grub', 'scenario': 's_1'}, testcase='tc_1')
+        r = self.app.get('/api/v2.0/results/latest?item=grub&_distinct_on=scenario')
+        data = json.loads(r.data)
+        assert len(data['data']) == 5
+        for i, result in enumerate(reversed(data['data'])):
+            assert result['id'] == (i+2) # 2, 3, 4, 5, 6
+        r = self.app.get('/api/v2.0/results/latest?item=grub')
+        data = json.loads(r.data)
+        assert len(data['data']) == 3
+        assert data['data'][0]['id'] == 6
+        assert data['data'][1]['id'] == 4
+        assert data['data'][2]['id'] == 3
+
+    def test_get_results_latest_distinct_on_with_scenario_not_defined(self):
+        self.helper_create_testcase()
+    
+        self.helper_create_result(outcome="PASSED", testcase=self.ref_testcase_name)
+        self.helper_create_result(outcome="PASSED", testcase=self.ref_testcase_name)
+        r = self.app.get('/api/v2.0/results/latest?testcases=' + self.ref_testcase_name + '&_distinct_on=scenario')
+        data = json.loads(r.data)
+        assert len(data['data']) == 2
+
+    def test_get_results_latest_distinct_on_wrong_params(self):
+        r = self.app.get('/api/v2.0/results/latest?_distinct_on=scenario')
+        data = json.loads(r.data)
+        assert r.status_code == 400
+        assert data['message'] == "Please, provide at least one filter beside '_distinct_on'"
+
     def test_message_publication(self):
         self.helper_create_result()
         plugin = resultsdb.messaging.DummyPlugin
