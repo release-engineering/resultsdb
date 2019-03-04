@@ -11,8 +11,7 @@ Source0:        https://qa.fedoraproject.org/releases/%{name}/%{name}-%{version}
 BuildArch:      noarch
 
 %if 0%{?fedora}
-Requires:       fedmsg
-Requires:       python3-fedmsg
+Requires:       python3-fedora-messaging
 Requires:       python3-alembic
 Requires:       python3-flask
 Requires:       python3-flask-restful
@@ -21,7 +20,7 @@ Requires:       python3-iso8601
 Requires:       python3-six
 Requires:       python3-sqlalchemy
 %else
-Requires:       fedmsg >= 0.16.2
+Requires:       python-fedora-messaging
 Requires:       python-alembic >= 0.8.3
 Requires:       python-flask >= 0.10.1
 Requires:       python-flask-restful >= 0.2.11

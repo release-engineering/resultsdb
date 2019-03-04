@@ -7,7 +7,7 @@
 # A note for maintainers: Please keep this list in sync and in the same order
 # as the spec file.
 
-fedmsg >= 0.16.2
+fedora-messaging
 alembic >= 0.8.3
 Flask >= 0.10.1
 # FIXME: Flask-RESTful 0.3.6 breaks tests, see https://phab.qa.fedoraproject.org/T961
