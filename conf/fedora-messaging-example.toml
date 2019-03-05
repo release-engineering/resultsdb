@@ -1,0 +1,18 @@
+# A sample configuration for fedora-messaging. This file is in the TOML format.
+# For complete details on all configuration options, see the documentation.
+
+amqp_url = "amqp://"
+
+publish_exchange = "amq.topic"
+
+# The topic_prefix configuration value will add a prefix to the topics of every sent message.
+# This is used for migrating from fedmsg, and should not be used afterwards.
+topic_prefix = ""
+
+[tls]
+ca_cert = "/etc/pki/tls/certs/ca-bundle.crt"
+keyfile = "/my/client/key.pem"
+certfile = "/my/client/cert.pem"
+
+[client_properties]
+app = "ResultsDB"
