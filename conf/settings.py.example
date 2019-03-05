@@ -58,6 +58,7 @@ MESSAGE_BUS_PUBLISH = False
 # default, but you could create your own.
 # Supported values: 'dummy', 'stomp', 'fedmsg'
 MESSAGE_BUS_PLUGIN = 'fedmsg'
+MESSAGE_BUS_KWARGS = {'modname': 'resultsdb'}
 
 ## Alternatively, you could use the 'stomp' messaging plugin.
 #MESSAGE_BUS_PLUGIN = 'stomp'
