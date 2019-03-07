@@ -31,8 +31,7 @@ Requires:       python-sqlalchemy >= 0.9.8
 %endif
 
 %if 0%{?fedora}
-BuildRequires:  fedmsg
-BuildRequires:  python3-fedmsg
+BuildRequires:  python3-fedora-messaging
 BuildRequires:  python3-alembic
 BuildRequires:  python3-flask
 BuildRequires:  python3-flask-restful
