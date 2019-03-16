@@ -44,6 +44,7 @@ AUTH_MODULE = None
 
 # OIDC Configuration
 OIDC_ADMINS = []
+import os
 OIDC_CLIENT_SECRETS = os.getcwd() + '/conf/oauth2_client_secrets.json'
 OIDC_AUD = 'My-Client-ID'
 OIDC_SCOPE = 'https://pagure.io/taskotron/resultsdb/access'

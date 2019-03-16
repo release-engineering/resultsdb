@@ -6,15 +6,10 @@ build argument:
 
 ```bash
 $ docker build -f openshift/Dockerfile \
-               --tag <IMAGE_TAG> \
-               --build-arg resultsdb_rpm=<RESULTSDB_RPM> ./
+               --tag <IMAGE_TAG>
 ```
 
 `IMAGE_TAG` is the tag to be applied on the image built.
-
-`RESULTSDB_RPM` is either the URL of the ResultsDB rpm, or the relative path of
-that rpm *within* the build context.
-
 
 Using the container image
 =========================
