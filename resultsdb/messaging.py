@@ -22,7 +22,8 @@ import json
 
 import pkg_resources
 
-import fedmsg
+from fedora_messaging.api import Message, publish
+from fedora_messaging.exceptions import PublishReturned, ConnectionException
 
 from resultsdb import db
 from resultsdb.models.results import Result, ResultData
@@ -83,7 +84,7 @@ def publish_taskotron_message(result, include_job_url=False):
         if datum.key in ('item', 'type',)
     )
     task['name'] = result.testcase.name
-    msg = {
+    body = {
         'task': task,
         'result': {
             'id': result.id,
@@ -95,9 +96,18 @@ def publish_taskotron_message(result, include_job_url=False):
     }
 
     if include_job_url:  # only in the v1 API
-        msg['result']['job_url'] = result.groups[0].ref_url if result.groups else None
+        body['result']['job_url'] = result.groups[0].ref_url if result.groups else None
 
-    fedmsg.publish(topic='result.new', modname='taskotron', msg=msg)
+    try:
+        msg = Message (
+            topic='taskotron.result.new',
+            body=body
+        )
+        publish(msg)
+    except PublishReturned as e:
+        log.error('Fedora Messaging broker rejected message {}: {}'.format(msg.id, e))
+    except ConnectionException as e:
+        log.error('Error sending message {}: {}'.format(msg.id, e))
 
 
 def create_message(result):
@@ -138,7 +148,18 @@ class FedmsgPlugin(MessagingPlugin):
     """ A fedmsg plugin, used to publish to the fedmsg bus. """
 
     def publish(self, message):
-        fedmsg.publish(topic='result.new', modname=self.modname, msg=message)
+
+        try:
+            msg = Message(
+                topic='{}.result.new'.format(self.modname),
+                body=message
+            )
+            publish(msg)
+        except PublishReturned as e:
+            log.error('Fedora Messaging broker rejected message {}: {}'.format(msg.id, e))
+        except ConnectionException as e:
+            log.error('Error sending message {}: {}'.format(msg.id, e))
+
 
 
 class StompPlugin(MessagingPlugin):

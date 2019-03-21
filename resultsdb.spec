@@ -1,6 +1,6 @@
 Name:           resultsdb
 # NOTE: if you update version, *make sure* to also update `resultsdb/__init__.py`
-Version:        2.1.2
+Version:        2.2.0
 Release:        1%{?dist}
 Summary:        Results store for automated tasks
 
@@ -10,9 +10,7 @@ Source0:        https://qa.fedoraproject.org/releases/%{name}/%{name}-%{version}
 
 BuildArch:      noarch
 
-%if 0%{?fedora}
-Requires:       fedmsg
-Requires:       python3-fedmsg
+Requires:       python3-fedora-messaging >= 1.5.0
 Requires:       python3-alembic
 Requires:       python3-flask
 Requires:       python3-flask-restful
@@ -20,20 +18,8 @@ Requires:       python3-flask-sqlalchemy
 Requires:       python3-iso8601
 Requires:       python3-six
 Requires:       python3-sqlalchemy
-%else
-Requires:       fedmsg >= 0.16.2
-Requires:       python-alembic >= 0.8.3
-Requires:       python-flask >= 0.10.1
-Requires:       python-flask-restful >= 0.2.11
-Requires:       python-flask-sqlalchemy >= 2.0
-Requires:       python2-iso8601 >= 0.1.10
-Requires:       python2-six >= 1.9.0
-Requires:       python-sqlalchemy >= 0.9.8
-%endif
 
-%if 0%{?fedora}
-BuildRequires:  fedmsg
-BuildRequires:  python3-fedmsg
+BuildRequires:  python3-fedora-messaging >= 1.5.0
 BuildRequires:  python3-alembic
 BuildRequires:  python3-flask
 BuildRequires:  python3-flask-restful
@@ -43,18 +29,6 @@ BuildRequires:  python3-pytest
 BuildRequires:  python3-pytest-cov
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
-%else
-BuildRequires:  fedmsg >= 0.16.2
-BuildRequires:  python-alembic >= 0.8.3
-BuildRequires:  python-flask >= 0.10.1
-BuildRequires:  python-flask-restful >= 0.2.11
-BuildRequires:  python-flask-sqlalchemy >= 2.0
-BuildRequires:  python2-iso8601 >= 0.1.10
-BuildRequires:  python2-pytest
-BuildRequires:  python2-pytest-cov
-BuildRequires:  python2-devel
-BuildRequires:  python2-setuptools
-%endif
 
 %description
 ResultsDB is a results store engine for, but not limited to, Fedora QA tools.
@@ -63,28 +37,17 @@ ResultsDB is a results store engine for, but not limited to, Fedora QA tools.
 %setup -q
 
 %check
-%if 0%{?fedora}
-PYTHONPATH=%{buildroot}%{python3_sitelib}/ pytest-3
-%else
-PYTHONPATH=%{buildroot}%{python2_sitelib}/ py.test
-%endif
+NO_CAN_HAS_POSTGRES='sadly' PYTHONPATH=%{buildroot}%{python3_sitelib}/ pytest-3
+
 # This seems to be the only place where we can remove pyco files, see:
 # https://fedoraproject.org/wiki/Packaging:Python#Byte_compiling
 rm -f %{buildroot}%{_sysconfdir}/resultsdb/*.py{c,o}
 
 %build
-%if 0%{?fedora}
 %{__python3} setup.py build
-%else
-%{__python2} setup.py build
-%endif
 
 %install
-%if 0%{?fedora}
 %{__python3} setup.py install --skip-build --root %{buildroot}
-%else
-%{__python2} setup.py install --skip-build --root %{buildroot}
-%endif
 
 # apache and wsgi settings
 install -d %{buildroot}%{_datadir}/resultsdb/conf
@@ -99,13 +62,8 @@ install -p -m 0644 conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb
 %doc README.md conf/*
 %license LICENSE
 
-%if 0%{?fedora}
 %{python3_sitelib}/resultsdb
 %{python3_sitelib}/*.egg-info
-%else
-%{python2_sitelib}/resultsdb
-%{python2_sitelib}/*.egg-info
-%endif
 
 %attr(755,root,root) %{_bindir}/resultsdb
 %dir %{_sysconfdir}/resultsdb
@@ -115,6 +73,12 @@ install -p -m 0644 conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb
 %{_datadir}/resultsdb/*
 
 %changelog
+* Thu Mar 21 2019 Frantisek Zatloukal <fzatlouk@redhat.com> - 2.2.0-1
+- Latest endpoint: group by additional fields
+- specfile: Drop python 2 support
+- Drop support for fedmsg and replace by fedora-messaging
+- settings.py: use lists instead of tuples
+
 * Tue Nov 20 2018 Frantisek Zatloukal <fzatlouk@redhat.com> - 2.1.2-1
 - Support Python 3, use it on Fedora
 - Fix ImmutableMultiDict handling for python 3.7

@@ -31,7 +31,7 @@ REQUIRED_DATA = {
     }
 
 # Extend the list of allowed outcomes.
-ADDITIONAL_RESULT_OUTCOMES = ()
+ADDITIONAL_RESULT_OUTCOMES = []
 
 # Fedmenu configuration
 FEDMENU_URL = 'https://apps.fedoraproject.org/fedmenu'
@@ -58,11 +58,6 @@ MESSAGE_BUS_PUBLISH = False
 # default, but you could create your own.
 # Supported values: 'dummy', 'stomp', 'fedmsg'
 MESSAGE_BUS_PLUGIN = 'fedmsg'
-# You can pass extra arguments to your message bus plugin here.  For instance,
-# the fedmsg plugin expects an extra `modname` argument that can be used to
-# configure the topic, like this:
-#   <topic_prefix>.<environment>.<modname>.<topic>
-# e.g. org.fedoraproject.prod.taskotron.result.new
 MESSAGE_BUS_KWARGS = {'modname': 'resultsdb'}
 
 ## Alternatively, you could use the 'stomp' messaging plugin.
@@ -83,5 +78,3 @@ MESSAGE_BUS_KWARGS = {'modname': 'resultsdb'}
 
 # Publish Taskotron-compatible fedmsgs on the 'taskotron' topic
 MESSAGE_BUS_PUBLISH_TASKOTRON = False
-
-

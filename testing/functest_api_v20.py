@@ -49,6 +49,7 @@ class TestFuncApiV20():
         cls.dbfile = tempfile.NamedTemporaryFile(delete=False)
         cls.dbfile.close()
         resultsdb.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///%s' % cls.dbfile.name
+        #resultsdb.app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://resultsdb:resultsdb@localhost:5432/resultsdb'
         resultsdb.app.config['MESSAGE_BUS_PUBLISH'] = True
         resultsdb.app.config['MESSAGE_BUS_PLUGIN'] = 'dummy'
 
@@ -856,6 +857,127 @@ class TestFuncApiV20():
         assert data['data'][0]['outcome'] == "PASSED"
         assert data['data'][1]['testcase']['name'] == self.ref_testcase_name
         assert data['data'][1]['outcome'] == "FAILED"
+
+    def test_get_results_latest_distinct_on(self):
+        print("=============== HINT ===============\nThis test requires PostgreSQL, because DISTINCT ON does work differently in SQLite")
+        if os.getenv('NO_CAN_HAS_POSTGRES', None):
+            return
+
+        self.helper_create_testcase()
+
+        self.helper_create_result(outcome="PASSED", data={'scenario': 'scenario1'}, testcase=self.ref_testcase_name)
+        self.helper_create_result(outcome="FAILED", data={'scenario': 'scenario2'}, testcase=self.ref_testcase_name)
+
+        r = self.app.get('/api/v2.0/results/latest?testcases=' + self.ref_testcase_name + '&_distinct_on=scenario')
+        data = json.loads(r.data)
+        assert len(data['data']) == 2
+        assert data['data'][0]['data']['scenario'][0] == 'scenario2'
+        assert data['data'][1]['data']['scenario'][0] == 'scenario1'
+
+        r = self.app.get('/api/v2.0/results/latest?testcases=' + self.ref_testcase_name)
+        data = json.loads(r.data)
+        assert len(data['data']) == 1
+        assert data['data'][0]['data']['scenario'][0] == 'scenario2'
+
+    def test_get_results_latest_distinct_on_more_specific_cases_1(self):
+        print("=============== HINT ===============\nThis test requires PostgreSQL, because DISTINCT ON does work differently in SQLite")
+        if os.getenv('NO_CAN_HAS_POSTGRES', None):
+            return
+
+        '''
+            | id | testcase | scenario |
+            |----|----------|----------|
+            | 1  | tc_1     | s_1      |
+            | 2  | tc_2     | s_1      |
+            | 3  | tc_2     | s_2      |
+            | 4  | tc_3     |          |
+        '''
+        self.helper_create_result(outcome="PASSED", testcase='tc_1', data={'item': 'grub', 'scenario': 's_1'})
+        self.helper_create_result(outcome="PASSED", testcase='tc_2', data={'item': 'grub', 'scenario': 's_1'})
+        self.helper_create_result(outcome="PASSED", testcase='tc_2', data={'item': 'grub', 'scenario': 's_2'})
+        self.helper_create_result(outcome="PASSED", testcase='tc_3', data={'item': 'grub'})
+
+        r = self.app.get('/api/v2.0/results/latest?item=grub&_distinct_on=scenario')
+        data = json.loads(r.data)
+
+        assert len(data['data']) == 4
+
+    def test_get_results_latest_distinct_on_more_specific_cases_2(self):
+        print("=============== HINT ===============\nThis test requires PostgreSQL, because DISTINCT ON does work differently in SQLite")
+        if os.getenv('NO_CAN_HAS_POSTGRES', None):
+            return
+
+        '''
+            | id | testcase | scenario |
+            |----|----------|----------|
+            | 1  | tc_1     | s_1      |
+            | 2  | tc_2     | s_1      |
+            | 3  | tc_2     | s_2      |
+            | 4  | tc_3     |          |
+            | 5  | tc_1     |          |
+        '''
+        self.helper_create_result(outcome="PASSED", testcase='tc_1', data={'item': 'grub', 'scenario': 's_1'})
+        self.helper_create_result(outcome="PASSED", testcase='tc_2', data={'item': 'grub', 'scenario': 's_1'})
+        self.helper_create_result(outcome="PASSED", testcase='tc_2', data={'item': 'grub', 'scenario': 's_2'})
+        self.helper_create_result(outcome="PASSED", testcase='tc_3', data={'item': 'grub'})
+        self.helper_create_result(outcome="FAILED", testcase='tc_1', data={'item': 'grub'})
+
+        r = self.app.get('/api/v2.0/results/latest?item=grub&_distinct_on=scenario')
+        data = json.loads(r.data)
+
+        assert len(data['data']) == 5
+
+    def test_get_results_latest_distinct_on_more_specific_cases_2(self):
+        print("=============== HINT ===============\nThis test requires PostgreSQL, because DISTINCT ON does work differently in SQLite")
+        if os.getenv('NO_CAN_HAS_POSTGRES', None):
+            return
+
+        '''
+            | id | testcase | scenario |
+            |----|----------|----------|
+            | 1  | tc_1     | s_1      |
+            | 2  | tc_2     | s_1      |
+            | 3  | tc_2     | s_2      |
+            | 4  | tc_3     |          |
+            | 5  | tc_1     |          |
+            | 6  | tc_1     | s_1      |
+        '''
+        self.helper_create_result(outcome="PASSED", testcase='tc_1', data={'item': 'grub', 'scenario': 's_1'})
+        self.helper_create_result(outcome="PASSED", testcase='tc_2', data={'item': 'grub', 'scenario': 's_1'})
+        self.helper_create_result(outcome="PASSED", testcase='tc_2', data={'item': 'grub', 'scenario': 's_2'})
+        self.helper_create_result(outcome="PASSED", testcase='tc_3', data={'item': 'grub'})
+        self.helper_create_result(outcome="FAILED", testcase='tc_1', data={'item': 'grub'})
+        self.helper_create_result(outcome="INFO",   testcase='tc_1', data={'item': 'grub', 'scenario': 's_1'})
+
+        r = self.app.get('/api/v2.0/results/latest?item=grub&_distinct_on=scenario')
+        data = json.loads(r.data)
+
+        assert len(data['data']) == 5
+        tc_1s = [r for r in data['data'] if r['testcase']['name'] == 'tc_1']
+        assert len(tc_1s) == 2
+        assert tc_1s[0]['outcome'] == 'INFO'
+        assert tc_1s[1]['outcome'] == 'FAILED'
+
+    def test_get_results_latest_distinct_on_with_scenario_not_defined(self):
+        print("=============== HINT ===============\nThis test requires PostgreSQL, because DISTINCT ON does work differently in SQLite")
+        if os.getenv('NO_CAN_HAS_POSTGRES', None):
+            return
+
+        self.helper_create_testcase()
+        self.helper_create_result(outcome="PASSED", testcase=self.ref_testcase_name)
+        self.helper_create_result(outcome="FAILED", testcase=self.ref_testcase_name)
+
+        r = self.app.get('/api/v2.0/results/latest?testcases=' + self.ref_testcase_name + '&_distinct_on=scenario')
+        data = json.loads(r.data)
+
+        assert len(data['data']) == 1
+        assert data['data'][0]['outcome'] == 'FAILED'
+
+    def test_get_results_latest_distinct_on_wrong_params(self):
+        r = self.app.get('/api/v2.0/results/latest?_distinct_on=scenario')
+        data = json.loads(r.data)
+        assert r.status_code == 400
+        assert data['message'] == "Please, provide at least one filter beside '_distinct_on'"
 
     def test_message_publication(self):
         self.helper_create_result()
