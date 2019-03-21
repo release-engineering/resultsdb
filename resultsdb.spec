@@ -1,6 +1,6 @@
 Name:           resultsdb
 # NOTE: if you update version, *make sure* to also update `resultsdb/__init__.py`
-Version:        2.1.2
+Version:        2.2.0
 Release:        1%{?dist}
 Summary:        Results store for automated tasks
 
@@ -73,6 +73,12 @@ install -p -m 0644 conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb
 %{_datadir}/resultsdb/*
 
 %changelog
+* Thu Mar 21 2019 Frantisek Zatloukal <fzatlouk@redhat.com> - 2.2.0-1
+- Latest endpoint: group by additional fields
+- specfile: Drop python 2 support
+- Drop support for fedmsg and replace by fedora-messaging
+- settings.py: use lists instead of tuples
+
 * Tue Nov 20 2018 Frantisek Zatloukal <fzatlouk@redhat.com> - 2.1.2-1
 - Support Python 3, use it on Fedora
 - Fix ImmutableMultiDict handling for python 3.7
