@@ -79,6 +79,9 @@ install -p -m 0644 conf/settings.py.example %{buildroot}%{_sysconfdir}/resultsdb
 - Drop support for fedmsg and replace by fedora-messaging
 - settings.py: use lists instead of tuples
 
+* Sat Feb 02 2019 Fedora Release Engineering <releng@fedoraproject.org> - 2.1.2-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_30_Mass_Rebuild
+
 * Tue Nov 20 2018 Frantisek Zatloukal <fzatlouk@redhat.com> - 2.1.2-1
 - Support Python 3, use it on Fedora
 - Fix ImmutableMultiDict handling for python 3.7
