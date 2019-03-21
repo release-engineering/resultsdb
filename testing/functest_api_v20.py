@@ -49,7 +49,7 @@ class TestFuncApiV20():
         cls.dbfile = tempfile.NamedTemporaryFile(delete=False)
         cls.dbfile.close()
         resultsdb.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///%s' % cls.dbfile.name
-        resultsdb.app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://resultsdb:resultsdb@localhost:5432/resultsdb'
+        #resultsdb.app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://resultsdb:resultsdb@localhost:5432/resultsdb'
         resultsdb.app.config['MESSAGE_BUS_PUBLISH'] = True
         resultsdb.app.config['MESSAGE_BUS_PLUGIN'] = 'dummy'
 
@@ -859,6 +859,10 @@ class TestFuncApiV20():
         assert data['data'][1]['outcome'] == "FAILED"
 
     def test_get_results_latest_distinct_on(self):
+        print("=============== HINT ===============\nThis test requires PostgreSQL, because DISTINCT ON does work differently in SQLite")
+        if os.getenv('NO_CAN_HAS_POSTGRES', None):
+            return
+
         self.helper_create_testcase()
 
         self.helper_create_result(outcome="PASSED", data={'scenario': 'scenario1'}, testcase=self.ref_testcase_name)
@@ -876,6 +880,10 @@ class TestFuncApiV20():
         assert data['data'][0]['data']['scenario'][0] == 'scenario2'
 
     def test_get_results_latest_distinct_on_more_specific_cases_1(self):
+        print("=============== HINT ===============\nThis test requires PostgreSQL, because DISTINCT ON does work differently in SQLite")
+        if os.getenv('NO_CAN_HAS_POSTGRES', None):
+            return
+
         '''
             | id | testcase | scenario |
             |----|----------|----------|
@@ -895,6 +903,10 @@ class TestFuncApiV20():
         assert len(data['data']) == 4
 
     def test_get_results_latest_distinct_on_more_specific_cases_2(self):
+        print("=============== HINT ===============\nThis test requires PostgreSQL, because DISTINCT ON does work differently in SQLite")
+        if os.getenv('NO_CAN_HAS_POSTGRES', None):
+            return
+
         '''
             | id | testcase | scenario |
             |----|----------|----------|
@@ -916,6 +928,10 @@ class TestFuncApiV20():
         assert len(data['data']) == 5
 
     def test_get_results_latest_distinct_on_more_specific_cases_2(self):
+        print("=============== HINT ===============\nThis test requires PostgreSQL, because DISTINCT ON does work differently in SQLite")
+        if os.getenv('NO_CAN_HAS_POSTGRES', None):
+            return
+
         '''
             | id | testcase | scenario |
             |----|----------|----------|
@@ -943,6 +959,10 @@ class TestFuncApiV20():
         assert tc_1s[1]['outcome'] == 'FAILED'
 
     def test_get_results_latest_distinct_on_with_scenario_not_defined(self):
+        print("=============== HINT ===============\nThis test requires PostgreSQL, because DISTINCT ON does work differently in SQLite")
+        if os.getenv('NO_CAN_HAS_POSTGRES', None):
+            return
+
         self.helper_create_testcase()
         self.helper_create_result(outcome="PASSED", testcase=self.ref_testcase_name)
         self.helper_create_result(outcome="FAILED", testcase=self.ref_testcase_name)

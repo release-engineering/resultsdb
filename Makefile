@@ -55,7 +55,7 @@ update-makefile:
 test: $(VENV)
 	set -e
 	source $(VENV)/bin/activate;
-	TEST='true' py.test --cov-report=term-missing --cov $(MODULENAME);
+	TEST='true' NO_CAN_HAS_POSTGRES='sadly' py.test --cov-report=term-missing --cov $(MODULENAME);
 	deactivate
 
 .PHONY: test-ci
@@ -63,7 +63,7 @@ test: $(VENV)
 test-ci: $(VENV)
 	set -e
 	source $(VENV)/bin/activate
-	TEST='true' py.test --cov-report=xml --cov $(MODULENAME)
+	TEST='true' NO_CAN_HAS_POSTGRES='sadly' py.test --cov-report=xml --cov $(MODULENAME)
 	deactivate
 
 .PHONY: pylint
