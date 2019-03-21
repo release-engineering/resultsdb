@@ -63,8 +63,8 @@ Should you need to store additional data use the `data` keyval store. The stored
 For example in Taskotron, `item` and `type` are used to represent "what was tested", where `type` could be `koji_build`, `bodhi_update`, `compose`, `docker_image` ... 
 and `item` is then the (reasonable) identifier of said "item under test".
 
-We advise agaings using `_expand`, `_auth`, `_fields` and `_sort` as key names - although ResultsDB will store and return the data, these keys might not be 
-query-able for searching the `Results` collection, as these are reserved for the future API functionalities. (FIXME: reword to make more sense?)
+We advise agaings using `_expand`, `_auth`, `_fields`, `_sort` and `_distinct_on` as key names - although ResultsDB will store and return the data, these keys might not be 
+query-able for searching the `Results` collection, as these are reserved for the future API functionalities.
 
 Through all the `Result` instances, there is a `href` attribute, that represents a link to self.
 
@@ -179,7 +179,7 @@ Examples are provided in the Parameters section of the documentation.
         }
 
 
-## Get a list of current Results for a specified filter _FIXME: reword to make more sense_ [GET /results/latest{?keyval,testcases,groups,since}]
+## Get a list of latest Results for a specified filter [GET /results/latest{?keyval,testcases,groups,since,_distinct_on}]
 
 Especially with automation in mind, a simpe query to get the latest `Results` of all the `Testcases` based on a filter
 makes a lot of sense. For example Koji could be interested in data like "All current results for the `koji_build` `koschei-1.7.2-1.fc24`", without
@@ -207,8 +207,8 @@ An additional available parameter is `_distinct_on`, if specified allows the use
         Date (or datetime) in ISO8601 format.
         To specify range, separate start and end date(time) by comma: `...&since=2016-08-14,2016-08-15T13:42:57`
     + _distinct_on: `scenario` (string, optional)
-	- The value can be any `key` in `Result.data`.  Example: `...&_distinct_on=scenario`
-	- Multiple values can be provided, separate by comma. Example: `...&_distinct_on=scenario,item`
+        - The value can be any `key` in `Result.data`.  Example: `...&_distinct_on=scenario`
+        - Multiple values can be provided, separate by comma. Example: `...&_distinct_on=scenario,item`
 
 + Request `.../results/latest?item=koschei-1.7.2-1.fc24&type=koji_build`
     + Parameters
