@@ -20,14 +20,14 @@
 
 import re
 import uuid
+import string
+import random
 from functools import partial
 
 from flask import Blueprint, jsonify, request, url_for
 from flask_restful import reqparse
 
 from sqlalchemy.orm import exc as orm_exc
-from sqlalchemy import distinct
-from sqlalchemy.sql import text
 from werkzeug.exceptions import HTTPException
 from werkzeug.exceptions import BadRequest as JSONBadRequest
 
@@ -321,7 +321,23 @@ def create_group():
 # =============================================================================
 #                                     RESULTS
 # =============================================================================
-def filter_results(q, since_start=None, since_end=None, outcomes=None, groups=None, testcases=None, testcases_like=None, result_data=None):
+def select_results(since_start=None, since_end=None, outcomes=None, groups=None, testcases=None, testcases_like=None, result_data=None, _sort=None):
+    # Checks if the sort parameter specified in the request is valid before querying.
+    # Sorts by submit_time in a descending order if the sort parameter is absent or invalid.
+    q = db.session.query(Result)
+    query_sorted = False
+    if _sort:
+        sort_match = re.match(r'^(?P<order>asc|desc):(?P<column>.+)$', _sort)
+        if sort_match and sort_match.group('column') == 'submit_time':
+            sort_order = {'asc': db.asc, 'desc': db.desc}[sort_match.group('order')]
+            sort_column = getattr(Result, sort_match.group('column'))
+            q = q.order_by(sort_order(sort_column))
+            query_sorted = True
+    if _sort and _sort == 'disable_sorting':
+        query_sorted = True
+    if not query_sorted:
+        q = q.order_by(db.desc(Result.submit_time))
+
     # Time constraints
     if since_start:
         q = q.filter(Result.submit_time >= since_start)
@@ -375,26 +391,6 @@ def filter_results(q, since_start=None, since_end=None, outcomes=None, groups=No
     return q
 
 
-def select_results(since_start=None, since_end=None, outcomes=None, groups=None, testcases=None, testcases_like=None, result_data=None, _sort=None):
-    # Checks if the sort parameter specified in the request is valid before querying.
-    # Sorts by submit_time in a descending order if the sort parameter is absent or invalid.
-    query_sorted = False
-    if _sort:
-        sort_match = re.match(r'^(?P<order>asc|desc):(?P<column>.+)$', _sort)
-        if sort_match:
-            if sort_match.group('column') == 'submit_time':
-                sort_order = {'asc': db.asc, 'desc': db.desc}[sort_match.group('order')]
-                sort_column = getattr(Result, sort_match.group('column'))
-                q = db.session.query(Result).order_by(sort_order(sort_column))
-                query_sorted = True
-    if not query_sorted:
-        q = db.session.query(Result).order_by(db.desc(Result.submit_time))
-
-    q = filter_results(q, since_start, since_end, outcomes, groups, testcases, testcases_like, result_data)
-
-    return q
-
-
 def __get_results_parse_args():
     retval = {"args": None, "error": None, "result_data": None}
     try:
@@ -445,93 +441,6 @@ def __get_results_parse_args():
 
     return retval
 
-RP['get_results_latest'] = reqparse.RequestParser()
-RP['get_results_latest'].add_argument('since', location='args')
-RP['get_results_latest'].add_argument('groups', default="", location='args')
-# TODO - can this be done any better?
-RP['get_results_latest'].add_argument('_sort', default="", location='args')
-RP['get_results_latest'].add_argument('testcases', default="", location='args')
-RP['get_results_latest'].add_argument('testcases:like', default="", location='args')
-# These two are ignored.  They're present so reqparse isn't confused by JSONP.
-RP['get_results_latest'].add_argument('callback', location='args')
-RP['get_results_latest'].add_argument('_', location='args')
-
-
-@api.route('/results/latest', methods=['GET'])
-def get_results_latest():
-    p = __get_results_parse_args()
-    if p['error'] is not None:
-        return p['error']
-
-    args = p['args']
-    if not args['_distinct_on']:
-        q = select_results(
-            since_start=args['since']['start'],
-            since_end=args['since']['end'],
-            groups=args['groups'],
-            testcases=args['testcases'],
-            testcases_like=args['testcases:like'],
-            result_data=p['result_data'],
-            _sort=args['_sort'],
-        )
-
-        # Produce a subquery with the same filter criteria as above *except*
-        # test case name, which we group by and join on.
-        sq = select_results(
-            since_start=args['since']['start'],
-            since_end=args['since']['end'],
-            groups=args['groups'],
-            result_data=p['result_data'],
-            )\
-            .order_by(None)\
-            .with_entities(
-                Result.testcase_name.label('testcase_name'),
-                db.func.max(Result.submit_time).label('max_submit_time'))\
-            .group_by(Result.testcase_name)\
-            .subquery()
-        q = q.join(sq, db.and_(Result.testcase_name == sq.c.testcase_name,
-                               Result.submit_time == sq.c.max_submit_time))
-
-        results = q.all()
-
-        return jsonify(dict(
-            data=[SERIALIZE(o) for o in results],
-        ))
-
-    testcases = args.get('testcases', None)
-    testcases_like = args.get('testcases:like', None)
-    since_start = args['since'].get('start', None)
-    since_end = args['since'].get('end', None)
-    groups = args.get('groups', None)
-    distinct_on = args['_distinct_on'] 
-
-    if not any([testcases, testcases_like, since_start, since_end, groups, p['result_data']]):
-        return jsonify({'message': ("Please, provide at least one "
-                                    "filter beside '_distinct_on'")}), 400
-
-    q = db.session.query(Result)
-    q = filter_results(q, since_start=since_start, since_end=since_end,
-                       groups=groups, testcases=testcases,
-                       testcases_like=testcases_like, result_data=p['result_data'])
-
-    values_distinct_on = ['result.testcase_name']
-    for i in distinct_on:
-        name = 'result_data_{}'.format(i)
-        alias = db.aliased(
-                db.session.query(ResultData).filter(ResultData.key == i).subquery(), name=name)
-        q = q.outerjoin(alias)
-        values_distinct_on.append('{}.value'.format(name))
-    q = q.distinct(*values_distinct_on).order_by(
-            text(', '.join(values_distinct_on)), db.desc(text('result.submit_time')))
-
-    results = q.all()
-    results = dict(
-        data=[SERIALIZE(o) for o in results],
-    )
-    results['data'] = sorted(results['data'], key=lambda x: x['submit_time'], reverse=True)
-    return jsonify(results)
-
-
 RP['get_results'] = reqparse.RequestParser()
 RP['get_results'].add_argument('page', default=0, type=int, location='args')
 RP['get_results'].add_argument('limit', default=QUERY_LIMIT, type=int, location='args')
@@ -579,6 +488,81 @@ def get_results(group_ids=None, testcase_names=None):
         next=next,
         data=[SERIALIZE(o) for o in data],
     ))
+
+
+@api.route('/results/latest', methods=['GET'])
+def get_results_latest():
+    p = __get_results_parse_args()
+    if p['error'] is not None:
+        return p['error']
+
+    args = p['args']
+    since_start = args['since'].get('start', None)
+    since_end = args['since'].get('end', None)
+    groups = args.get('groups', None)
+    testcases = args.get('testcases', None)
+    testcases_like = args.get('testcases:like', None)
+    distinct_on = args.get('_distinct_on', None)
+
+    if not distinct_on:
+        q = select_results(
+            since_start=since_start,
+            since_end=since_end,
+            groups=groups,
+            testcases=testcases,
+            testcases_like=testcases_like,
+            result_data=p['result_data'],
+        )
+
+        # Produce a subquery with the same filter criteria as above *except*
+        # test case name, which we group by and join on.
+        sq = select_results(
+            since_start=since_start,
+            since_end=since_end,
+            groups=groups,
+            result_data=p['result_data'],
+            )\
+            .order_by(None)\
+            .with_entities(
+                Result.testcase_name.label('testcase_name'),
+                db.func.max(Result.submit_time).label('max_submit_time'))\
+            .group_by(Result.testcase_name)\
+            .subquery()
+        q = q.join(sq, db.and_(Result.testcase_name == sq.c.testcase_name,
+                               Result.submit_time == sq.c.max_submit_time))
+
+        results = q.all()
+
+        return jsonify(dict(
+            data=[SERIALIZE(o) for o in results],
+        ))
+
+
+    if not any([testcases, testcases_like, since_start, since_end, groups, p['result_data']]):
+        return jsonify({'message': ("Please, provide at least one "
+                                    "filter beside '_distinct_on'")}), 400
+
+    q = db.session.query(Result)
+    q = select_results(since_start=since_start, since_end=since_end,
+                       groups=groups, testcases=testcases,
+                       testcases_like=testcases_like, result_data=p['result_data'], _sort="disable_sorting")
+
+    values_distinct_on = [Result.testcase_name]
+    for i, key in enumerate(distinct_on):
+        name = 'result_data_%s_%s' % (i, key)
+        alias = db.aliased(db.session.query(ResultData).filter(ResultData.key == key).subquery(), name=name)
+        q = q.outerjoin(alias)
+        values_distinct_on.append(db.text('{}.value'.format(name)))
+
+    q = q.distinct(*values_distinct_on)
+    q = q.order_by(*values_distinct_on).order_by(db.desc(Result.submit_time))
+
+    results = q.all()
+    results = dict(
+        data=[SERIALIZE(o) for o in results],
+    )
+    results['data'] = sorted(results['data'], key=lambda x: x['submit_time'], reverse=True)
+    return jsonify(results)
 
 
 @api.route('/groups/<group_id>/results', methods=['GET'])
