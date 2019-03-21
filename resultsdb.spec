@@ -37,7 +37,7 @@ ResultsDB is a results store engine for, but not limited to, Fedora QA tools.
 %setup -q
 
 %check
-PYTHONPATH=%{buildroot}%{python3_sitelib}/ pytest-3
+NO_CAN_HAS_POSTGRES='sadly' PYTHONPATH=%{buildroot}%{python3_sitelib}/ pytest-3
 
 # This seems to be the only place where we can remove pyco files, see:
 # https://fedoraproject.org/wiki/Packaging:Python#Byte_compiling
