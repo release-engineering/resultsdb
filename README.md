@@ -80,10 +80,19 @@ And run as usual.
 
 ## Running test suite
 
-You can run the test suite with the following command (with virtualenv
-active)::
+You can run the test suite with the following command::
 
-    $ pytest
+    $ tox
+
+Note, that in order for some of the tests to work properly, tox is configured to spin-up PostgreSQL in a docker container using the
+``tox-docker`` plugin, which needs to be installed separately. The best option probably is::
+
+    $ pip install --user tox-docker
+    $ pip3 install --user tox-docker
+
+Should you, for some reason avoid docker, you could run the following command (with virtualenv active)::
+
+    $ NO_CAN_HAS_POSTGRES=sadly pytest
 
 ## Deployment
 
