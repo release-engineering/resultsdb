@@ -22,15 +22,21 @@ import json
 
 import pkg_resources
 
-from fedora_messaging.api import Message, publish
-from fedora_messaging.exceptions import PublishReturned, ConnectionException
-
-from resultsdb import db
+from resultsdb import db, app
 from resultsdb.models.results import Result, ResultData
 from resultsdb.serializers.api_v2 import Serializer
 
 import logging
 log = logging.getLogger(__name__)
+
+try:
+    from fedora_messaging.api import Message, publish
+    from fedora_messaging.exceptions import PublishReturned, ConnectionException
+except ImportError:
+    if app.config.get('MESSAGE_BUS_PUBLISH_TASKOTRON') or app.config.get('MESSAGE_BUS_PLUGIN'):
+        log.error('fedora-messaging must be installed if "MESSAGE_BUS_PUBLISH_TASKOTRON" is '
+                  'enabled or "MESSAGE_BUS_PLUGIN" is set to "fedmsg"')
+        raise
 
 
 SERIALIZE = Serializer().serialize
