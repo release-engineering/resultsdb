@@ -114,3 +114,5 @@ class TestingConfig(Config):
     FEDMENU_URL = 'https://apps.stg.fedoraproject.org/fedmenu'
     FEDMENU_DATA_URL = 'https://apps.stg.fedoraproject.org/js/data.js'
     ADDITIONAL_RESULT_OUTCOMES = ('AMAZING',)
+    MESSAGE_BUS_PLUGIN = 'dummy'
+    MESSAGE_BUS_KWARGS = {}
