@@ -33,7 +33,7 @@ try:
     from fedora_messaging.api import Message, publish
     from fedora_messaging.exceptions import PublishReturned, ConnectionException
 except ImportError:
-    if app.config.get('MESSAGE_BUS_PUBLISH_TASKOTRON') or app.config.get('MESSAGE_BUS_PLUGIN'):
+    if app.config.get('MESSAGE_BUS_PUBLISH_TASKOTRON') or app.config.get('MESSAGE_BUS_PLUGIN') == 'fedmsg':
         log.error('fedora-messaging must be installed if "MESSAGE_BUS_PUBLISH_TASKOTRON" is '
                   'enabled or "MESSAGE_BUS_PLUGIN" is set to "fedmsg"')
         raise
