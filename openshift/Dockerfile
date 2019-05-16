@@ -16,7 +16,7 @@ USER root
 COPY ./resultsdb.spec /opt/app-root/src/resultsdb/resultsdb.spec
 
 # install dependencies defined in RPM spec file
-RUN dnf -y install findutils rpm-build python3-pip python3-mod_wsgi python3-psycopg2 \
+RUN dnf -y install findutils rpm-build python3-pip python3-mod_wsgi python3-psycopg2 python3-stomppy \
     && rpm --query --requires --specfile ./resultsdb/resultsdb.spec | xargs -d '\n' dnf -y install
 
 COPY . /opt/app-root/src/resultsdb/
