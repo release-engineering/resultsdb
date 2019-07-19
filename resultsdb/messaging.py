@@ -113,7 +113,7 @@ def publish_taskotron_message(result, include_job_url=False):
     except PublishReturned as e:
         log.error('Fedora Messaging broker rejected message {}: {}'.format(msg.id, e))
     except ConnectionException as e:
-        log.error('Error sending message {}: {}'.format(msg.id, e))
+        log.error('Error sending message {}: {}'.format(msg.id, e.reason))
 
 
 def create_message(result):
@@ -164,7 +164,7 @@ class FedmsgPlugin(MessagingPlugin):
         except PublishReturned as e:
             log.error('Fedora Messaging broker rejected message {}: {}'.format(msg.id, e))
         except ConnectionException as e:
-            log.error('Error sending message {}: {}'.format(msg.id, e))
+            log.error('Error sending message {}: {}'.format(msg.id, e.reason))
 
 
 
