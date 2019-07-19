@@ -110,6 +110,7 @@ def publish_taskotron_message(result, include_job_url=False):
             body=body
         )
         publish(msg)
+        log.debug("Message published")
     except PublishReturned as e:
         log.error('Fedora Messaging broker rejected message {}: {}'.format(msg.id, e))
     except ConnectionException as e:
@@ -161,11 +162,11 @@ class FedmsgPlugin(MessagingPlugin):
                 body=message
             )
             publish(msg)
+            log.debug("Message published")
         except PublishReturned as e:
             log.error('Fedora Messaging broker rejected message {}: {}'.format(msg.id, e))
         except ConnectionException as e:
             log.error('Error sending message {}: {}'.format(msg.id, e.reason))
-
 
 
 class StompPlugin(MessagingPlugin):
