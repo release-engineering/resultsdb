@@ -804,6 +804,24 @@ def create_testcase():
     return jsonify(SERIALIZE(testcase)), 201
 
 
+@api.route('/healthcheck', methods=['GET'])
+def healthcheck():
+    """
+    Request handler for performing an application-level health check. This is
+    not part of the published API, it is intended for use by OpenShift or other
+    monitoring tools.
+
+    Returns a 200 response if the application is alive and able to serve requests.
+    """
+    try:
+        db.session.execute("SELECT 1 FROM result LIMIT 0").fetchall()
+    except Exception:
+        app.logger.exception('Healthcheck failed on DB query.')
+        return jsonify({"message": 'Unable to communicate with database'}), 503
+
+    return jsonify({"message": 'Health check OK'}), 200
+
+
 @api.route('', methods=['GET'])
 @api.route('/', methods=['GET'])
 def landing_page():

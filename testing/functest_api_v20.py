@@ -1012,3 +1012,18 @@ class TestFuncApiV20():
         data = json.loads(r.data)
         assert r.status_code == 300
         assert data['outcomes'] == ['PASSED', 'INFO', 'FAILED', 'NEEDS_INSPECTION', 'AMAZING']
+
+    def test_healthcheck_success(self):
+        r = self.app.get('/api/v2.0/healthcheck')
+        assert r.status_code == 200
+
+        data = json.loads(r.data)
+        assert data.get('message') == 'Health check OK'
+
+    def test_healthcheck_fail(self):
+        resultsdb.db.session.execute('DROP TABLE result')
+        r = self.app.get('/api/v2.0/healthcheck')
+        assert r.status_code == 503
+
+        data = json.loads(r.data)
+        assert data.get('message') == 'Unable to communicate with database'
