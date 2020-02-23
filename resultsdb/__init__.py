@@ -19,6 +19,7 @@
 #   Ralph Bean <rbean@redhat.com>
 
 from resultsdb import proxy
+from . import config
 
 import flask
 from flask import Flask
@@ -67,11 +68,13 @@ def jsonify_with_jsonp(*args, **kwargs):
 
 flask.jsonify = jsonify_with_jsonp
 
+openshift = os.getenv('OPENSHIFT_PROD')
+
 # Load default config, then override that with a config file
 if os.getenv('DEV') == 'true':
     default_config_obj = 'resultsdb.config.DevelopmentConfig'
     default_config_file = os.getcwd() + '/conf/settings.py'
-elif os.getenv('TEST') == 'true':
+elif os.getenv('TEST') == 'true' or openshift == "0":
     default_config_obj = 'resultsdb.config.TestingConfig'
     default_config_file = os.getcwd() + '/conf/settings.py'
 else:
@@ -79,6 +82,9 @@ else:
     default_config_file = '/etc/resultsdb/settings.py'
 
 app.config.from_object(default_config_obj)
+
+if openshift:
+    config.openshift_config(app.config, openshift)
 
 config_file = os.environ.get('RESULTSDB_CONFIG', default_config_file)
 

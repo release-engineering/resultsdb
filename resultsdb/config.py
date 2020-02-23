@@ -17,8 +17,9 @@
 # Authors:
 #   Josef Skladanka <jskladan@redhat.com>
 #   Ralph Bean <rbean@redhat.com>
-import os
 
+import os
+import sys
 
 class Config(object):
     DEBUG = True
@@ -116,3 +117,32 @@ class TestingConfig(Config):
     ADDITIONAL_RESULT_OUTCOMES = ('AMAZING',)
     MESSAGE_BUS_PLUGIN = 'dummy'
     MESSAGE_BUS_KWARGS = {}
+
+def openshift_config(config_object, openshift_production):
+    # First, get db details from env
+    try:
+        config_object["SQLALCHEMY_DATABASE_URI"] = "postgresql+psycopg2://%s:%s@%s:%s/%s" % (
+            os.environ["POSTGRESQL_USER"],
+            os.environ["POSTGRESQL_PASSWORD"],
+            os.environ["POSTGRESQL_SERVICE_HOST"],
+            os.environ["POSTGRESQL_SERVICE_PORT"],
+            os.environ["POSTGRESQL_DATABASE"]
+        )
+        config_object["SECRET_KEY"] = os.environ["SECRET_KEY"]
+    except(KeyError):
+        print("OpenShift mode enabled but required values couldn't be fetched. "
+              "Check, if you have these variables defined in you env: "
+              "(POSTGRESQL_[USER, PASSWORD, DATABASE, SERVICE_HOST, SERVICE_PORT], SECRET_KEY)", file=sys.stderr)
+        sys.exit(1)
+
+    # Nuke out messaging, we don't support this in OpenShift mode
+    # Inject settings.py and disable OpenShift mode if you need this
+    config_object["MESSAGE_BUS_PLUGIN"] = 'dummy'
+    config_object["MESSAGE_BUS_KWARGS"] = {}
+
+    if os.getenv("MESSAGE_BUS_PLUGIN") or os.getenv("MESSAGE_BUS_KWARGS"):
+        print("It appears you've tried to set up messaging in OpenShift mode.")
+        print("This is not supported, you need to inject setting.py and disable OpenShift mode if you need messaging.")
+
+    # Danger zone, keep this False out in the wild, always
+    config_object["SHOW_DB_URI"] = False
