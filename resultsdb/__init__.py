@@ -68,6 +68,11 @@ def jsonify_with_jsonp(*args, **kwargs):
 
 flask.jsonify = jsonify_with_jsonp
 
+# Checks for env variable OPENSHIFT_PROD to trigger OpenShift codepath on init
+# The main difference is that settings will be queried from env (check config.openshift_config())
+# Possible values are:
+# "1" - OpenShift production deployment
+# "0" - OpenShift testing deployment
 openshift = os.getenv('OPENSHIFT_PROD')
 
 # Load default config, then override that with a config file
