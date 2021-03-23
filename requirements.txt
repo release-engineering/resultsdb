@@ -23,5 +23,5 @@ pytest >= 2.4.2
 pytest-cov >= 1.6
 
 # s2i requirements
-psycopg2
+psycopg2-binary
 gunicorn
