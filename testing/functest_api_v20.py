@@ -1021,7 +1021,7 @@ class TestFuncApiV20():
         assert data.get('message') == 'Health check OK'
 
     def test_healthcheck_fail(self):
-        resultsdb.db.session.execute('DROP TABLE result')
+        resultsdb.db.session.execute('DROP TABLE result CASCADE')
         r = self.app.get('/api/v2.0/healthcheck')
         assert r.status_code == 503
 
