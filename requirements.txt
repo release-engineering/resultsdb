@@ -18,6 +18,10 @@ iso8601 >= 0.1.10
 six >= 1.9.0
 SQLAlchemy >= 0.9.8
 
+# Package 'rsa' requires a different Python: 2.7.18 not in '>=3.5, <4'
+# (rsa is dependncy of flask-oidc)
+rsa < 4.7; python_version < "3"
+
 # Test suite requirements
 pytest >= 2.4.2
 pytest-cov >= 1.6

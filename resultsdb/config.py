@@ -18,6 +18,9 @@
 #   Josef Skladanka <jskladan@redhat.com>
 #   Ralph Bean <rbean@redhat.com>
 
+# For Python 2.7 compatibility
+from __future__ import print_function
+
 import os
 import sys
 
