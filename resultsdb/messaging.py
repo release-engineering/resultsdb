@@ -191,7 +191,7 @@ class StompPlugin(MessagingPlugin):
             kwargs['message'] = kwargs.pop('body')  # On EL7, different sig.
 
         conn = self.stomp.Connection(**self.connection)
-        conn.connect()
+        conn.connect(wait=True)
         try:
             conn.send(**kwargs)
             log.debug("Published message through stomp: %s", msg)
