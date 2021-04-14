@@ -94,13 +94,10 @@ Should you, for some reason avoid docker, you could run the following command (w
 
     $ NO_CAN_HAS_POSTGRES=sadly pytest
 
-To use tox-docker with podman without requiring root, you can use a local user
-socket::
+To use tox-docker with podman without requiring root, you can use
+`tox-podman.sh` script that wraps `tox`::
 
-    $ systemctl --user start podman.socket
-    $ curl --unix-socket /run/user/$UID/podman/podman.sock http://localhost/_ping
-    $ export DOCKER_HOST=unix:///run/user/$UID/podman/podman.sock
-    $ tox -e py39
+    $ ./tox-podman.sh -e py39
 
 ## Deployment
 
