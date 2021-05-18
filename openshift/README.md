@@ -5,8 +5,7 @@ Building the container image requires the ResultsDB rpm to be provided as a
 build argument:
 
 ```bash
-$ docker build -f openshift/Dockerfile \
-               --tag <IMAGE_TAG>
+$ podman build -f Dockerfile --tag <IMAGE_TAG> .
 ```
 
 `IMAGE_TAG` is the tag to be applied on the image built.
