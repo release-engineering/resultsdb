@@ -282,7 +282,6 @@ objects:
         - name: config-volume
           secret:
             secretName: "resultsdb-test-${TEST_ID}-config"
-            defaultMode: 0600
         - name: httpd-config-volume
           configMap:
             name: "resultsdb-test-${TEST_ID}-httpd-config"
