@@ -314,7 +314,6 @@ def create_group():
     db.session.add(group)
     db.session.commit()
 
-    db.session.add(group)
     return jsonify(SERIALIZE(group)), 201
 
 
@@ -641,7 +640,6 @@ def create_result():
         testcase = Testcase(name=tc['name'])
     testcase.ref_url = tc.get('ref_url', testcase.ref_url)
     db.session.add(testcase)
-    db.session.commit()
 
     # args[groups] is a list of strings(uuid) or dicts(group object)
     #  when a group defined by the string is not found, new is created
@@ -663,7 +661,6 @@ def create_result():
             group.ref_url = grp.get('ref_url', group.ref_url)
 
             db.session.add(group)
-            db.session.commit()
             groups.append(group)
 
     result = Result(testcase, outcome, groups, args['ref_url'], args['note'])
@@ -698,7 +695,6 @@ def create_result():
     db.session.add(result)
     db.session.commit()
 
-    db.session.add(result)
     app.logger.debug("Created new result for testcase %s with outcome %s", testcase.name, outcome)
 
     if app.config['MESSAGE_BUS_PUBLISH']:
@@ -800,7 +796,6 @@ def create_testcase():
     db.session.add(testcase)
     db.session.commit()
 
-    db.session.add(testcase)
     return jsonify(SERIALIZE(testcase)), 201
 
 

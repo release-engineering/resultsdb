@@ -325,7 +325,6 @@ def create_job():
     db.session.add(job)
     db.session.commit()
 
-    db.session.add(job)
     return jsonify(SERIALIZE(job)), 201
 
 
@@ -527,7 +526,6 @@ def create_result():
             # TODO: add configurable default "empty" URL
             testcase = Testcase(args['testcase_name'], "")
             db.session.add(testcase)
-            db.session.commit()
 
     outcome = args['outcome'].strip().upper()
     if outcome not in RESULT_OUTCOME:
@@ -565,8 +563,6 @@ def create_result():
 
     db.session.add(result)
     db.session.commit()
-
-    db.session.add(result)
 
     if app.config['MESSAGE_BUS_PUBLISH']:
         plugin = load_messaging_plugin(
@@ -652,7 +648,6 @@ def create_testcase():
         # return jsonify({"message": e.message}), 400
         return jsonify({"message": "Testcase with this name already exists"}), 400
 
-    db.session.add(testcase)
     return jsonify(SERIALIZE(testcase)), 201
 
 
