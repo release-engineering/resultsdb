@@ -3,7 +3,7 @@
 # docker build -f openshift/Dockerfile \
 #              --tag <IMAGE_TAG>
 
-FROM registry.fedoraproject.org/fedora:33
+FROM registry.fedoraproject.org/fedora:35
 LABEL \
     name="ResultsDB application" \
     vendor="ResultsDB developers" \
