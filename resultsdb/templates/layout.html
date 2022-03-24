@@ -1,11 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <title>{{ title|default('ResultsDB') }}</title>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <!-- Bootstrap -->
-      <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
-      <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
   </head>
 
   <body>
@@ -18,7 +20,7 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <span class="navbar-brand"><b>ResultsDB</b></span>
+          <span class="navbar-brand"><strong>ResultsDB</strong></span>
         </div>
         <div class="navbar-collapse collapse">
 
@@ -27,10 +29,6 @@
               <li><a href="{{ url_for('api_v2.get_results') }}">Results</a></li>
               <li><a href="{{ url_for('api_v2.get_testcases') }}">Testcases</a></li>
           </ul>
-
-<!--         <div class="navbar-right">
-             <input type="button" class="btn btn-default navbar-btn" value="Search" onclick="location.href='';">
-         </div> -->
 
         </div><!--/.nav-collapse -->
       </div><!--/.container -->
@@ -58,11 +56,10 @@
       </footer>
     {% endblock %}
 
-
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-    <script src="//code.jquery.com/jquery.js"></script>
-    <!-- Include all compiled plugins -->
-    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js" integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd" crossorigin="anonymous"></script>
 
     {% if config['FEDMENU_URL'] is defined %}
     <script src="{{ config['FEDMENU_URL'] }}/js/fedmenu.js"></script>
