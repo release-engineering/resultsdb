@@ -36,10 +36,36 @@ class Config(object):
     SQLALCHEMY_DATABASE_URI = 'sqlite://'
     SHOW_DB_URI = True
 
-    LOGFILE = '/var/log/resultsdb/resultsdb.log'
-    FILE_LOGGING = False
-    SYSLOG_LOGGING = False
-    STREAM_LOGGING = True
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'loggers': {
+            'resultsdb': {
+                'level': 'INFO',
+            },
+            'dogpile': {
+                'level': 'WARNING',
+            },
+        },
+        'handlers': {
+            'console': {
+                'formatter': 'bare',
+                'class': 'logging.StreamHandler',
+                'stream': 'ext://sys.stdout',
+                'level': 'INFO',
+            },
+        },
+        'formatters': {
+            'bare': {
+                'format': '[%(asctime)s] [%(process)d] [%(levelname)s] %(name)s: %(message)s',
+                'datefmt': '%Y-%m-%d %H:%M:%S',
+            }
+        },
+        'root': {
+            'level': 'WARNING',
+            'handlers': ['console'],
+        },
+    }
 
     # Specify which fields are required (in addition to those already required)
     #  when creating result/group/testcase.

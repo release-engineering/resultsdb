@@ -27,6 +27,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 import logging
 import logging.handlers
+import logging.config as logging_config
 import os
 
 
@@ -100,18 +101,28 @@ if app.config['PRODUCTION']:
     if app.secret_key == 'replace-me-with-something-random':
         raise Warning("You need to change the app.secret_key value for production")
 
-# setup logging
-fmt = '[%(filename)s:%(lineno)d] ' if app.debug else '%(module)-12s '
-fmt += '%(asctime)s %(levelname)-7s %(message)s'
-datefmt = '%Y-%m-%d %H:%M:%S'
-loglevel = logging.DEBUG if app.debug else logging.INFO
-formatter = logging.Formatter(fmt=fmt, datefmt=datefmt)
-
 
 def setup_logging():
+    # Use LOGGING if defined instead of the old options
+    log_config = app.config.get('LOGGING')
+    if log_config:
+        logging_config.dictConfig(log_config)
+        return
+
+    fmt = '[%(filename)s:%(lineno)d] ' if app.debug else '%(module)-12s '
+    fmt += '%(asctime)s %(levelname)-7s %(message)s'
+    datefmt = '%Y-%m-%d %H:%M:%S'
+    loglevel = logging.DEBUG if app.debug else logging.INFO
+    formatter = logging.Formatter(fmt=fmt, datefmt=datefmt)
+
     root_logger = logging.getLogger('')
     root_logger.setLevel(logging.DEBUG)
 
+    # Keep the old way to setup logging in settings.py or config.py, example:
+    # LOGFILE = '/var/log/resultsdb/resultsdb.log'
+    # FILE_LOGGING = False
+    # SYSLOG_LOGGING = False
+    # STREAM_LOGGING = True
     if app.config['STREAM_LOGGING']:
         print("doing stream logging")
         stream_handler = logging.StreamHandler()
