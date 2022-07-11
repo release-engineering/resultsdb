@@ -31,7 +31,7 @@ log = logging.getLogger(__name__)
 
 try:
     from fedora_messaging.api import Message, publish
-    from fedora_messaging.exceptions import PublishReturned, ConnectionException
+    from fedora_messaging.exceptions import PublishReturned, PublishTimeout, PublishForbidden, ConnectionException
 except ImportError:
     if app.config.get('MESSAGE_BUS_PUBLISH_TASKOTRON') or app.config.get('MESSAGE_BUS_PLUGIN') == 'fedmsg':
         log.error('fedora-messaging must be installed if "MESSAGE_BUS_PUBLISH_TASKOTRON" is '
@@ -113,6 +113,10 @@ def publish_taskotron_message(result, include_job_url=False):
         log.debug("Message published")
     except PublishReturned as e:
         log.error('Fedora Messaging broker rejected message {}: {}'.format(msg.id, e))
+    except PublishTimeout:
+        log.error('Timeout publishing message {}'.format(msg.id))
+    except PublishForbidden as e:
+        log.error('Permission error publishing message {}: {}'.format(msg.id, e))
     except ConnectionException as e:
         log.error('Error sending message {}: {}'.format(msg.id, e.reason))
 
@@ -165,6 +169,10 @@ class FedmsgPlugin(MessagingPlugin):
             log.debug("Message published")
         except PublishReturned as e:
             log.error('Fedora Messaging broker rejected message {}: {}'.format(msg.id, e))
+        except PublishTimeout:
+            log.error('Timeout publishing message {}'.format(msg.id))
+        except PublishForbidden as e:
+            log.error('Permission error publishing message {}: {}'.format(msg.id, e))
         except ConnectionException as e:
             log.error('Error sending message {}: {}'.format(msg.id, e.reason))
 
