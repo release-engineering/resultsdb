@@ -565,7 +565,7 @@ def get_results_latest():
 
 
 @api.route('/groups/<group_id>/results', methods=['GET'])
-@api.route('/testcases/<testcase_name>/results', methods=['GET'])
+@api.route('/testcases/<path:testcase_name>/results', methods=['GET'])
 def get_results_by_group_testcase(group_id=None, testcase_name=None):
     # check whether the group/testcase exists. If not, throw 404
     if group_id is not None:
@@ -763,7 +763,7 @@ def get_testcases():  # page = None, limit = QUERY_LIMIT):
     ))
 
 
-@api.route('/testcases/<testcase_name>', methods=['GET'])
+@api.route('/testcases/<path:testcase_name>', methods=['GET'])
 def get_testcase(testcase_name):
     try:
         testcase = Testcase.query.filter_by(name=testcase_name).one()
