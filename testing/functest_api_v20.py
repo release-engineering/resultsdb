@@ -558,6 +558,58 @@ class TestFuncApiV20():
         assert r.status_code == 400
         assert data['message'].startswith("Colon not allowed in key name:")
 
+    def test_create_result_submit_time_as_number(self):
+        ref_data = json.dumps(dict(
+            outcome=self.ref_result_outcome,
+            testcase=self.ref_testcase,
+            submit_time=1661324097123,
+        ))
+
+        r = self.app.post('/api/v2.0/results', data=ref_data, content_type='application/json')
+        data = json.loads(r.data)
+
+        assert r.status_code == 201
+        assert data['submit_time'] == '2022-08-24T06:54:57.123000'
+
+    def test_create_result_submit_time_as_number_string(self):
+        ref_data = json.dumps(dict(
+            outcome=self.ref_result_outcome,
+            testcase=self.ref_testcase,
+            submit_time="1661324097123",
+        ))
+
+        r = self.app.post('/api/v2.0/results', data=ref_data, content_type='application/json')
+        data = json.loads(r.data)
+
+        assert r.status_code == 201
+        assert data['submit_time'] == '2022-08-24T06:54:57.123000'
+
+    def test_create_result_submit_time_as_datetime(self):
+        ref_data = json.dumps(dict(
+            outcome=self.ref_result_outcome,
+            testcase=self.ref_testcase,
+            submit_time='2022-08-24T06:54:57.123456',
+        ))
+
+        r = self.app.post('/api/v2.0/results', data=ref_data, content_type='application/json')
+        data = json.loads(r.data)
+
+        assert r.status_code == 201
+        assert data['submit_time'] == '2022-08-24T06:54:57.123456'
+
+    def test_create_result_submit_time_as_invalid(self):
+        ref_data = json.dumps(dict(
+            outcome=self.ref_result_outcome,
+            testcase=self.ref_testcase,
+            submit_time='now',
+        ))
+
+        r = self.app.post('/api/v2.0/results', data=ref_data, content_type='application/json')
+        data = json.loads(r.data)
+
+        assert r.status_code == 400
+        assert data['message'].startswith('Malformed Request')
+
     def test_get_result(self):
         self.test_create_result()
 

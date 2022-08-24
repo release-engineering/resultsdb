@@ -112,12 +112,13 @@ class Result(db.Model, DBSerialize):
                  ),
     )
 
-    def __init__(self, testcase, outcome, groups=None, ref_url=None, note=None):
+    def __init__(self, testcase, outcome, groups=None, ref_url=None, note=None, submit_time=None):
         self.testcase = testcase
         self.outcome = outcome
         self.ref_url = ref_url
         self.note = note
         self.groups = groups
+        self.submit_time = submit_time
 
 
 class ResultData(db.Model, DBSerialize):
