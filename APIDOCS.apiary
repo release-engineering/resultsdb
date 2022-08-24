@@ -246,7 +246,7 @@ An additional available parameter is `_distinct_on`, if specified allows the use
 To create new `Result`, simply provide a JSON object containing the `outcome` and `testcase` fields.
 Should you want to store more information, you can make use of `groups`, `note`, `ref_url` and `data` (the key-value store).
 
-When a new `Result` is created, it is assigned an unique `id` and `submit_time` (UTC time of the `Result` submission) by the API.
+When a new `Result` is created, it is assigned an unique `id` and `submit_time` (UTC time of the `Result` submission, unless it is overridden in the request) by the API.
 
 + Attributes (Result POST)
 
@@ -549,7 +549,7 @@ get updated with the new `ref_url`, if set in the JSON data.
 - outcome (OUTCOMES, required) - Represents the outcome of the testing.
 - note: `0 errors, 30 warnings` (string, optional, nullable) - Should be used as a _short_ summary of important information about the result. Detailed hints/logs should be accessible at the `ref_url` URL.
 - `ref_url`: `https://taskotron-dev.fedoraproject.org/artifacts/all/27f94e36-62ec-11e6-83fd-525400d7d6a4/task_output/koschei-1.7.2-1.fc24.log` (string, optional) - Use as a pointer to logs/artifacts/detailed information about the result.
-- submit_time: `2016-08-15T13:29:06` (string) - UTC time of the `Result` submission in ISO8601 format. Assigned by API at the moment of creation.
+- submit_time: `2016-08-15T13:29:06` (string) - UTC time of the result creation in ISO8601 format.
 - groups (array) - List of `Groups`'s UUIDs the result is part of.
     - `27f94e36-62ec-11e6-83fd-525400d7d6a4` (string)
 - data (object) - Any number of key-value pairs. Used to store any additional information. In Taskotron `item` and `type` are the most common keys used to represent "what was tested".
@@ -586,6 +586,7 @@ get updated with the new `ref_url`, if set in the JSON data.
     - *key* (enum)
         - `foo` (string) - Single value
         - `foo`, `bar` (array[string]) - List of values
+- `submit_time` (string/number, optional, nullable): UTC time of the result creation in ISO8601 format (YYYY-MM-DDTHH:MM:SS.ffffff) or a number of milliseconds since the Epoch. Defaults to the time of the `Result` submission.
 - _auth (object, nullable, optional) - Placeholder for the future implemantation of Authentication/Authorization
 
 

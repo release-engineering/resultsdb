@@ -1,4 +1,5 @@
 import numbers
+from datetime import datetime, timezone
 
 try:
     basestring
@@ -42,3 +43,35 @@ def list_or_none(value, *args, **kwargs):
     if value is None:
         return value
     raise ValueError("Expected list or None, got %r" % type(value))
+
+
+def time_from_milliseconds(value):
+    seconds, milliseconds = divmod(value, 1000)
+    time = datetime.fromtimestamp(seconds, tz=timezone.utc)
+    return time.replace(microsecond=milliseconds * 1000)
+
+
+def submit_time(value, *args, **kwargs):
+    if args or kwargs:
+        raise TypeError("Unexpected arguments")
+    if isinstance(value, datetime):
+        return value
+    if value is None:
+        return value
+    if isinstance(value, numbers.Number):
+        return time_from_milliseconds(value)
+    if isinstance(value, str):
+        try:
+            return datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%f')
+        except ValueError:
+            pass
+
+        try:
+            return time_from_milliseconds(int(value))
+        except ValueError:
+            pass
+    raise ValueError(
+        "Expected timestamp in milliseconds or datetime"
+        " (in format YYYY-MM-DDTHH:MM:SS.ffffff),"
+        " got %r" % type(value)
+    )

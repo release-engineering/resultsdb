@@ -38,7 +38,7 @@ from resultsdb.serializers.api_v2 import Serializer
 from resultsdb.models.results import Group, Result, Testcase, ResultData
 from resultsdb.models.results import RESULT_OUTCOME
 from resultsdb.messaging import load_messaging_plugin, create_message, publish_taskotron_message
-from resultsdb.lib.helpers import non_empty, dict_or_string, list_or_none
+from resultsdb.lib.helpers import non_empty, dict_or_string, list_or_none, submit_time
 
 QUERY_LIMIT = 20
 
@@ -600,6 +600,7 @@ RP['create_result'].add_argument('groups', type=list_or_none, location='json')
 RP['create_result'].add_argument('note', location='json')
 RP['create_result'].add_argument('data', type=dict, location='json')
 RP['create_result'].add_argument('ref_url', location='json')
+RP['create_result'].add_argument('submit_time', type=submit_time, location='json')
 
 
 @api.route('/results', methods=['POST'])
@@ -663,7 +664,15 @@ def create_result():
             db.session.add(group)
             groups.append(group)
 
-    result = Result(testcase, outcome, groups, args['ref_url'], args['note'])
+    result = Result(
+        testcase,
+        outcome,
+        groups,
+        args['ref_url'],
+        args['note'],
+        args['submit_time'],
+    )
+
     # Convert result_data
     #  for each key-value pair in args['data']
     #    convert keys to unicode
