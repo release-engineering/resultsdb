@@ -92,7 +92,7 @@ jobs:
         with:
           image: ${{ env.IMAGE_NAME }}
           tags: >-
-            ${{ github.ref == 'refs/heads/master' && 'latest' || '' }}
+            ${{ github.ref == 'refs/heads/develop' && 'latest' || '' }}
             ${{ github.sha }}
           containerfiles: Dockerfile
 
