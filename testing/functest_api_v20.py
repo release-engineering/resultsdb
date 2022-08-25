@@ -68,8 +68,10 @@ class TestFuncApiV20():
         self.ref_url_prefix = "http://localhost/api/v2.0"
 
         # Testcase data
-        self.ref_testcase_name = "scratch.testing.mytestcase"
-        self.ref_testcase_ref_url = "http://example.com/scratch.testing.mytestcase"
+        self.ref_testcase_name = "fedora-ci.koji-build./plans/basic.functional"
+        self.ref_testcase_ref_url = (
+            "http://example.com/fedora-ci.koji-build./plans/basic.functional"
+        )
         self.ref_testcase = {
             'name': self.ref_testcase_name,
             'ref_url': self.ref_testcase_ref_url,
