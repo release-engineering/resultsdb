@@ -36,12 +36,12 @@ tox = {version = "4.0.0b2", optional = true}
 tox-docker = {version = "4.0.0a2", optional = true}
 
 flask-oidc = "^1.4.0"
-Flask-RESTful = "^0.3.9"
 Flask-SQLAlchemy = "^2.5.1"
 SQLAlchemy = {version = "^1.4.39"}
 psycopg2-binary = {version = "^2.9.3"}
 alembic = "^1.8.1"
 iso8601 = "^1.0.2"
+Flask-Pydantic = "^0.11.0"
 
 [tool.poetry.extras]
 test = [

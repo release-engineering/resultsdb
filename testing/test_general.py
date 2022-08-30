@@ -1,83 +1,14 @@
 import datetime
-import pytest
-import functools
 
 import resultsdb.controllers.api_v2 as apiv2
-import resultsdb.lib.helpers as helpers
 import resultsdb.messaging as messaging
+from resultsdb.parsers.api_v2 import parse_since
 
-try:
-    basestring
-except NameError:
-    basestring = (str, bytes)
 
 class MyRequest(object):
 
     def __init__(self, url):
         self.url = url
-
-
-class TestTypeHelpers():
-
-    def test_dict_or_string(self):
-        assert helpers.dict_or_string('') == ''
-        assert helpers.dict_or_string(u'') == u''
-        assert helpers.dict_or_string({}) == {}
-        assert helpers.dict_or_string({"foo": "bar"}) == {"foo": "bar"}
-        with pytest.raises(ValueError):
-            helpers.dict_or_string([])
-
-    def test_list_or_none(self):
-        assert helpers.list_or_none(None) is None
-        assert helpers.list_or_none([]) == []
-        assert helpers.list_or_none(["foo", "bar"]) == ["foo", "bar"]
-        with pytest.raises(ValueError):
-            assert helpers.list_or_none("")
-
-    def test_non_empty(self):
-        assert helpers.non_empty(basestring, "foobar") == "foobar"
-        assert helpers.non_empty(int, 0) == 0
-        assert helpers.non_empty(int, 1) == 1
-        assert helpers.non_empty(float, 0.0) == 0.0
-        assert helpers.non_empty(float, 1.0) == 1.0
-        assert helpers.non_empty(list, ["foo"]) == ["foo"]
-        assert helpers.non_empty(dict, {"foo": "bar"}) == {"foo": "bar"}
-
-        with pytest.raises(ValueError):
-            helpers.non_empty(basestring, "")
-        with pytest.raises(ValueError):
-            helpers.non_empty(list, [])
-        with pytest.raises(ValueError):
-            helpers.non_empty(dict, {})
-
-    def test_non_empty_with_lambda(self):
-        assert helpers.non_empty(helpers.list_or_none, ['foo']) == ['foo']
-        assert helpers.non_empty(functools.partial(helpers.non_empty, helpers.list_or_none), ['foo']) == ['foo']
-        with pytest.raises(ValueError):
-            helpers.non_empty(helpers.list_or_none, [])
-        with pytest.raises(ValueError):
-            helpers.non_empty(helpers.list_or_none, None)
-        with pytest.raises(ValueError):
-            helpers.non_empty(functools.partial(helpers.non_empty, helpers.list_or_none), [])
-
-
-class TestExtraDataValidation():
-    def test__validate_create_result_extra_data(self):
-        data = {"foobar": 0, "moo": "1"}
-        assert apiv2._validate_create_result_extra_data(None, data) == data
-        assert apiv2._validate_create_result_extra_data([], data) == data
-        assert apiv2._validate_create_result_extra_data(['foobar'], data) == data
-        assert apiv2._validate_create_result_extra_data(['moo'], data) == data
-        with pytest.raises(ValueError):
-            apiv2._validate_create_result_extra_data(['foobar'], None)
-        with pytest.raises(ValueError):
-            apiv2._validate_create_result_extra_data(['foobar'], {})
-        with pytest.raises(ValueError):
-            apiv2._validate_create_result_extra_data(['foobar'], {'foobar': None})
-        with pytest.raises(ValueError):
-            apiv2._validate_create_result_extra_data(['foobar'], {'foobar': ''})
-        with pytest.raises(ValueError):
-            apiv2._validate_create_result_extra_data(None, "")
 
 
 class TestPrevNextURL():
@@ -153,6 +84,7 @@ class TestPrevNextURL():
         assert prev == 'URL&limit=1&page=0'
         assert next == 'URL&limit=1&page=2'
 
+
 class TestParseSince():
 
     def setup_method(self, method):
@@ -160,21 +92,21 @@ class TestParseSince():
         self.date_obj = datetime.datetime.strptime(self.date_str, "%Y-%m-%dT%H:%M:%S.%f")
 
     def test_parse_start(self):
-        start, end = apiv2.parse_since(self.date_str)
+        start, end = parse_since(self.date_str)
         assert start == self.date_obj
         assert end is None
 
     def test_parse_start_with_timezone_info(self):
-        start, end = apiv2.parse_since(self.date_str + 'Z')
+        start, end = parse_since(self.date_str + 'Z')
         assert start == self.date_obj
         assert end is None
 
-        start, end = apiv2.parse_since(self.date_str + '+01')
+        start, end = parse_since(self.date_str + '+01')
         assert start == self.date_obj
         assert end is None
 
     def test_parse_end(self):
-        start, end = apiv2.parse_since(self.date_str + ',' + self.date_str)
+        start, end = parse_since(self.date_str + ',' + self.date_str)
         assert start == self.date_obj
         assert end == self.date_obj
 

@@ -20,27 +20,26 @@
 
 import re
 import uuid
-import string
-import random
-from functools import partial
 
 from flask import Blueprint, jsonify, request, url_for
-from flask_restful import reqparse
+from flask_pydantic import validate
 
 from sqlalchemy.orm import exc as orm_exc
-from werkzeug.exceptions import HTTPException
-from werkzeug.exceptions import BadRequest as JSONBadRequest
-
-import iso8601
 
 from resultsdb import app, db
 from resultsdb.serializers.api_v2 import Serializer
+from resultsdb.parsers.api_v2 import (
+    CreateGroupParams,
+    CreateResultParams,
+    CreateTestcaseParams,
+    GroupsParams,
+    ResultsParams,
+    TestcasesParams,
+    QUERY_LIMIT,
+)
 from resultsdb.models.results import Group, Result, Testcase, ResultData
 from resultsdb.models.results import RESULT_OUTCOME
 from resultsdb.messaging import load_messaging_plugin, create_message, publish_taskotron_message
-from resultsdb.lib.helpers import non_empty, dict_or_string, list_or_none, submit_time
-
-QUERY_LIMIT = 20
 
 api = Blueprint('api_v2', __name__)
 
@@ -53,6 +52,7 @@ try:
     unicode
 except NameError:
     unicode = str
+
 
 # TODO: find out why error handler works for 404 but not for 400
 @app.errorhandler(400)
@@ -72,77 +72,8 @@ RE_PAGE = re.compile(r"([?&])page=([0-9]+)")
 RE_CALLBACK = re.compile(r"([?&])callback=[^&]*&?")
 RE_CLEAN_AMPERSANDS = re.compile(r'&+')
 
-# RP contains request parsers (reqparse.RequestParser).
-#    Parsers are added in each 'resource section' for better readability
-RP = {}
-
 SERIALIZE = Serializer().serialize
 
-
-def _validate_create_result_extra_data(required_fields, data, *args, **kwargs):
-    """Check whether data dict contains required_fields as keys."""
-    if args or kwargs:
-        raise TypeError("Unexpected arguments")
-    if isinstance(data, dict) or data is None:
-        if required_fields:
-            if data is None:
-                raise ValueError("Expected dict, got None")
-            # check whether all required field are present in data
-            missing = set(required_fields) - set(data.keys())
-            if missing:
-                raise ValueError("Missing required fields in data: %s" % list(missing))
-            # check that the required fields have non-empty value
-            for field in required_fields:
-                try:
-                    non_empty(type(data[field]), data[field])
-                except ValueError:
-                    raise ValueError("Required field %r missing value (got %r)" % (field, data[field]))
-        return data
-    raise ValueError("Expected dict or None, got %r" % type(data))
-
-
-def setup_request_parser_from_config():
-    """
-    This makes sure the configuration in REQUIRED_DATA is applied.
-    For values set in the config, either the request parser is changed, to make
-    the value required. Or if the value is not yet in the request-parser (which now
-    realistically only applies to the `data.` values in result) it is added.
-    """
-    for key, values in app.config.get('REQUIRED_DATA', {}).items():
-        if key not in RP:
-            app.logger.error("Error in config: REQUIRED_DATA contains unknown endpoint %r.", key)
-            continue
-
-        arguments = dict([(arg.name, arg) for arg in RP[key].args])
-
-        # handle data. for create_result (effectively results extra-data)
-        if key == 'create_result':
-            extra_data = [v for v in values if v.startswith('data.')]
-            values = list(set(values) - set(extra_data))
-
-            if extra_data:
-                required_values = [v[len('data.'):] for v in extra_data]
-                arg = arguments['data']
-                arg.type = partial(_validate_create_result_extra_data, required_values)
-                arg.required = True
-                app.logger.info("Seting %s in %r as required-non-empty" % (extra_data, key))
-
-        for value in values:
-            arg = arguments.get(value, None)
-            if arg is not None and not arg.required:
-                arg.required = True
-                arg.type = partial(non_empty, arg.type)
-                app.logger.info("Seting argument %r in %r as required-non-empty" % (value, key))
-            else:
-                app.logger.error(
-                    "Error in config: REQUIRED_DATA contains unknown value %r for endpoint %r.",
-                    value, key
-                    )
-
-
-@app.before_first_request
-def do_before_first_request():
-    setup_request_parser_from_config()
 # =============================================================================
 #                               GLOBAL METHODS
 # =============================================================================
@@ -200,60 +131,25 @@ def prev_next_urls(data, limit=QUERY_LIMIT):
     return data, prev, next
 
 
-def parse_since(since):
-    since_start = None
-    since_end = None
-    if since is not None:
-        s = since.split(',')
-        since_start = iso8601.parse_date(s[0])
-        try:
-            since_start = since_start.replace(tzinfo=None)  # we need to strip timezone info
-            since_end = iso8601.parse_date(s[1])
-            since_end = since_end.replace(tzinfo=None)  # we need to strip timezone info
-        # Yes, this library sucks in Exception handling..
-        except IndexError:
-            pass
-        except (TypeError, ValueError, iso8601.iso8601.ParseError):
-            raise iso8601.iso8601.ParseError()
-    return since_start, since_end
-
-
 # =============================================================================
 #                                      GROUPS
 # =============================================================================
 
 
-RP['get_groups'] = reqparse.RequestParser()
-RP['get_groups'].add_argument('page', default=0, type=int, location='args')
-RP['get_groups'].add_argument('limit', default=QUERY_LIMIT, type=int, location='args')
-RP['get_groups'].add_argument('uuid', default=None, location='args')
-RP['get_groups'].add_argument('description', default=None, location='args')
-RP['get_groups'].add_argument('description:like', default=None, location='args')
-# These two are ignored.  They're present so reqparse isn't confused by JSONP.
-RP['get_groups'].add_argument('callback', location='args')
-RP['get_groups'].add_argument('_', location='args')
-
-
 @api.route('/groups', methods=['GET'])
-def get_groups():
-    try:
-        args = RP['get_groups'].parse_args()
-    except JSONBadRequest as error:
-        return jsonify({"message": "Malformed Request: %s" % error}), error.code
-    except HTTPException as error:
-        return jsonify(error.data), error.code
-
+@validate()
+def get_groups(query: GroupsParams):
     q = db.session.query(Group).order_by(db.desc(Group.id))
 
     desc_filters = []
-    if args['description']:
-        for description in args['description'].split(','):
+    if query.description:
+        for description in query.description.split(','):
             if not description.strip():
                 continue
             desc_filters.append(Group.description == description)
-#        desc_filters.append(Group.description.in_(args['description'].split(',')))
-    elif args['description:like']:
-        for description in args['description:like'].split(','):
+#        desc_filters.append(Group.description.in_(query.description.split(',')))
+    elif query.description_like_:
+        for description in query.description_like_.split(','):
             if not description.strip():
                 continue
             desc_filters.append(Group.description.like(description.replace("*", "%")))
@@ -261,11 +157,11 @@ def get_groups():
         q = q.filter(db.or_(*desc_filters))
 
     # Filter by uuid
-    if args['uuid']:
-        q = q.filter(Group.uuid.in_(args['uuid'].split(',')))
+    if query.uuid:
+        q = q.filter(Group.uuid.in_(query.uuid.split(',')))
 
-    q = pagination(q, args['page'], args['limit'])
-    data, prev, next = prev_next_urls(q.all(), args['limit'])
+    q = pagination(q, query.page, query.limit)
+    data, prev, next = prev_next_urls(q.all(), query.limit)
 
     return jsonify(dict(
         prev=prev,
@@ -284,32 +180,20 @@ def get_group(group_id):
     return jsonify(SERIALIZE(group))
 
 
-RP['create_group'] = reqparse.RequestParser()
-RP['create_group'].add_argument('uuid', default=None, location='json')
-RP['create_group'].add_argument('ref_url', location='json')
-RP['create_group'].add_argument('description', default=None, location='json')
-
-
 @api.route('/groups', methods=['POST'])
-def create_group():
-    try:
-        args = RP['create_group'].parse_args()
-    except JSONBadRequest as error:
-        return jsonify({"message": "Malformed Request: %s" % error}), error.code
-    except HTTPException as error:
-        return jsonify(error.data), error.code
-
-    if args['uuid']:
-        group = Group.query.filter_by(uuid=args['uuid']).first()
+@validate()
+def create_group(body: CreateGroupParams):
+    if body.uuid:
+        group = Group.query.filter_by(uuid=body.uuid).first()
         if not group:
-            group = Group(uuid=args['uuid'])
+            group = Group(uuid=body.uuid)
     else:
         group = Group(uuid=str(uuid.uuid1()))
 
-    if args['ref_url']:
-        group.ref_url = args['ref_url']
-    if args['description']:
-        group.description = args['description']
+    if body.ref_url:
+        group.ref_url = body.ref_url
+    if body.description:
+        group.description = body.description
 
     db.session.add(group)
     db.session.commit()
@@ -390,37 +274,18 @@ def select_results(since_start=None, since_end=None, outcomes=None, groups=None,
     return q
 
 
-def __get_results_parse_args():
-    retval = {"args": None, "error": None, "result_data": None}
-    try:
-        args = RP['get_results'].parse_args()
-    except JSONBadRequest as error:
-        retval["error"] = (jsonify({"message": "Malformed Request: %s" % error}), error.code)
-        return retval
-    except HTTPException as error:
-        retval["error"] = (jsonify(error.data), error.code)
-        return retval
-
-    if args.get('outcome', None) is not None:
-        args['outcome'] = [outcome.strip().upper() for outcome in args['outcome'].split(',')]
-        for outcome in args['outcome']:
-            if outcome not in RESULT_OUTCOME:
-                retval["error"] = (
-                    jsonify({'message': "outcome %r not one of %r" % (outcome, RESULT_OUTCOME,)}), 400)
-                return retval
-
-    try:
-        s, e = parse_since(args.get('since', None))
-    except iso8601.iso8601.ParseError:
-        retval["error"] = (jsonify({"message": "'since' parameter not in ISO8601 format"}), 400)
-        return retval
-
-    args['since'] = {'start': s, 'end': e}
-    args['testcases'] = [tc.strip() for tc in args['testcases'].split(',') if tc.strip()]
-    args['testcases:like'] = [tc.strip() for tc in args['testcases:like'].split(',') if tc.strip()]
-    args['groups'] = [group.strip() for group in args['groups'].split(',') if group.strip()]
-    args['_distinct_on'] = [_distinct_on.strip() for _distinct_on in args['_distinct_on'].split(',') if _distinct_on.strip()]
-    retval['args'] = args
+def __get_results_parse_args(query: ResultsParams):
+    args = {
+        '_sort': query.sort_,
+        'limit': query.limit,
+        'page': query.page,
+        'testcases': query.testcases,
+        'testcases:like': query.testcases_like_,
+        'groups': query.groups,
+        '_distinct_on': query.distinct_on_,
+        'outcome': query.outcome,
+        'since': query.since,
+    }
 
     # find results_data with the query parameters
     #  these are the paramters other than those defined in RequestParser
@@ -435,34 +300,14 @@ def __get_results_parse_args():
         # flatten the list
         results_data[param] = [item for sublist in results_data[param] for item in sublist]
 
-    if results_data != {}:
-        retval['result_data'] = results_data
-
-    return retval
-
-RP['get_results'] = reqparse.RequestParser()
-RP['get_results'].add_argument('page', default=0, type=int, location='args')
-RP['get_results'].add_argument('limit', default=QUERY_LIMIT, type=int, location='args')
-RP['get_results'].add_argument('since', location='args')
-RP['get_results'].add_argument('outcome', location='args')
-RP['get_results'].add_argument('groups', default="", location='args')
-RP['get_results'].add_argument('_sort', default="", location='args')
-RP['get_results'].add_argument('_distinct_on', default="", location='args')
-# TODO - can this be done any better?
-RP['get_results'].add_argument('testcases', default="", location='args')
-RP['get_results'].add_argument('testcases:like', default="", location='args')
-# These two are ignored.  They're present so reqparse isn't confused by JSONP.
-RP['get_results'].add_argument('callback', location='args')
-RP['get_results'].add_argument('_', location='args')
+    return {
+        'result_data': results_data if results_data else None,
+        'args': args,
+    }
 
 
-@api.route('/results', methods=['GET'])
-def get_results(group_ids=None, testcase_names=None):
-
-    p = __get_results_parse_args()
-    if p['error'] is not None:
-        return p['error']
-
+def __get_results(query: ResultsParams, group_ids=None, testcase_names=None):
+    p = __get_results_parse_args(query)
     args = p['args']
 
     groups = group_ids if group_ids is not None else args['groups']
@@ -489,12 +334,16 @@ def get_results(group_ids=None, testcase_names=None):
     ))
 
 
-@api.route('/results/latest', methods=['GET'])
-def get_results_latest():
-    p = __get_results_parse_args()
-    if p['error'] is not None:
-        return p['error']
+@api.route('/results', methods=['GET'])
+@validate()
+def get_results(query: ResultsParams):
+    return __get_results(query)
 
+
+@api.route('/results/latest', methods=['GET'])
+@validate()
+def get_results_latest(query: ResultsParams):
+    p = __get_results_parse_args(query)
     args = p['args']
     since_start = args['since'].get('start', None)
     since_end = args['since'].get('end', None)
@@ -565,22 +414,21 @@ def get_results_latest():
 
 
 @api.route('/groups/<group_id>/results', methods=['GET'])
+@validate()
+def get_results_by_group(group_id: str, query: ResultsParams):
+    group = Group.query.filter_by(uuid=group_id).first()
+    if not group:
+        return jsonify({'message': "Group not found: %s" % (group_id,)}), 404
+    return __get_results(query, group_ids=[group.uuid])
+
+
 @api.route('/testcases/<path:testcase_name>/results', methods=['GET'])
-def get_results_by_group_testcase(group_id=None, testcase_name=None):
-    # check whether the group/testcase exists. If not, throw 404
-    if group_id is not None:
-        group = Group.query.filter_by(uuid=group_id).first()
-        if not group:
-            return jsonify({'message': "Group not found: %s" % (group_id,)}), 404
-        group_id = [group.uuid]
-
-    if testcase_name is not None:
-        testcase = Testcase.query.filter_by(name=testcase_name).first()
-        if not testcase:
-            return jsonify({'message': "Testcase not found"}), 404
-        testcase_name = [testcase.name]
-
-    return get_results(group_id, testcase_name)
+@validate()
+def get_results_by_testcase(testcase_name: str, query: ResultsParams):
+    testcase = Testcase.query.filter_by(name=testcase_name).first()
+    if not testcase:
+        return jsonify({'message': "Testcase not found"}), 404
+    return __get_results(query, testcase_names=[testcase.name])
 
 
 @api.route('/results/<result_id>', methods=['GET'])
@@ -593,47 +441,16 @@ def get_result(result_id):
     return jsonify(SERIALIZE(result))
 
 
-RP['create_result'] = reqparse.RequestParser()
-RP['create_result'].add_argument('outcome', type=partial(non_empty, basestring), required=True, location='json')
-RP['create_result'].add_argument('testcase', type=dict_or_string, required=True, location='json')
-RP['create_result'].add_argument('groups', type=list_or_none, location='json')
-RP['create_result'].add_argument('note', location='json')
-RP['create_result'].add_argument('data', type=dict, location='json')
-RP['create_result'].add_argument('ref_url', location='json')
-RP['create_result'].add_argument('submit_time', type=submit_time, location='json')
-
-
 @api.route('/results', methods=['POST'])
-def create_result():
-    try:
-        args = RP['create_result'].parse_args()
-    except JSONBadRequest as error:
-        return jsonify({"message": "Malformed Request: %s" % error}), error.code
-    except HTTPException as error:
-        return jsonify(error.data), error.code
-
-    outcome = args['outcome'].strip().upper()
-    if outcome not in RESULT_OUTCOME:
-        app.logger.warning("Invalid result outcome submitted: %s", outcome)
-        return jsonify({'message': "outcome must be one of %r" % (RESULT_OUTCOME,)}), 400
-
-    if args['data']:
-        invalid_keys = [key for key in args['data'].keys() if ':' in key]
+@validate()
+def create_result(body: CreateResultParams):
+    if body.data:
+        invalid_keys = [key for key in body.data.keys() if ':' in key]
         if invalid_keys:
             app.logger.warning("Colon not allowed in key name: %s", invalid_keys)
             return jsonify({'message': "Colon not allowed in key name: %r" % invalid_keys}), 400
 
-    # args[testcase] can be either string or object
-    #  non-existing testcases are created automatically
-    tc = args['testcase']
-    if isinstance(tc, basestring):
-        tc = dict(name=args['testcase'])
-        if not tc['name']:
-            app.logger.warning("Result submitted without valid testcase.name: %s", tc)
-            return jsonify({'message': "testcase name not set"}), 400
-    elif isinstance(tc, dict) and 'name' not in tc:
-        app.logger.warning("Result submitted without testcase.name: %s", tc)
-        return jsonify({'message': "testcase.name not set"}), 400
+    tc = body.testcase
 
     testcase = Testcase.query.filter_by(name=tc['name']).first()
     if not testcase:
@@ -642,13 +459,13 @@ def create_result():
     testcase.ref_url = tc.get('ref_url', testcase.ref_url)
     db.session.add(testcase)
 
-    # args[groups] is a list of strings(uuid) or dicts(group object)
+    # groups is a list of strings(uuid) or dicts(group object)
     #  when a group defined by the string is not found, new is created
     #  group defined by the object, is updated/created with the values from the object
     # non-existing groups are created automatically
     groups = []
-    if args['groups']:
-        for grp in args['groups']:
+    if body.groups:
+        for grp in body.groups:
             if isinstance(grp, basestring):
                 grp = dict(uuid=grp)
             elif isinstance(grp, dict):
@@ -664,25 +481,17 @@ def create_result():
             db.session.add(group)
             groups.append(group)
 
-    result = Result(
-        testcase,
-        outcome,
-        groups,
-        args['ref_url'],
-        args['note'],
-        args['submit_time'],
-    )
-
+    result = Result(testcase, body.outcome, groups, body.ref_url, body.note, body.submit_time)
     # Convert result_data
-    #  for each key-value pair in args['data']
+    #  for each key-value pair in body.data
     #    convert keys to unicode
     #    if value is string: NOP
     #    if value is list or tuple: convert values to unicode, create key-value pair for each value from the list
     #    if value is something else: convert to unicode
     #  Store all the key-value pairs
-    if isinstance(args['data'], dict):
+    if isinstance(body.data, dict):
         to_store = []
-        for key, value in args['data'].items():
+        for key, value in body.data.items():
             if not (isinstance(key, str) or isinstance(key, unicode)):
                 key = unicode(key)
 
@@ -704,7 +513,8 @@ def create_result():
     db.session.add(result)
     db.session.commit()
 
-    app.logger.debug("Created new result for testcase %s with outcome %s", testcase.name, outcome)
+    app.logger.debug(
+        "Created new result for testcase %s with outcome %s", testcase.name, body.outcome)
 
     if app.config['MESSAGE_BUS_PUBLISH']:
         app.logger.debug("Preparing to publish message for result id %d", result.id)
@@ -741,29 +551,12 @@ def select_testcases(args_name=None, args_name_like=None):
     return q
 
 
-RP['get_testcases'] = reqparse.RequestParser()
-RP['get_testcases'].add_argument('page', default=0, type=int, location='args')
-RP['get_testcases'].add_argument('limit', default=QUERY_LIMIT, type=int, location='args')
-RP['get_testcases'].add_argument('name', location='args')
-RP['get_testcases'].add_argument('name:like', location='args')
-# These two are ignored.  They're present so reqparse isn't confused by JSONP.
-RP['get_testcases'].add_argument('callback', location='args')
-RP['get_testcases'].add_argument('_', location='args')
-
-
 @api.route('/testcases', methods=['GET'])
-def get_testcases():  # page = None, limit = QUERY_LIMIT):
-
-    try:
-        args = RP['get_testcases'].parse_args()
-    except JSONBadRequest as error:
-        return jsonify({"message": "Malformed Request: %s" % error}), error.code
-    except HTTPException as error:
-        return jsonify(error.data), error.code
-
-    q = select_testcases(args['name'], args['name:like'])
-    q = pagination(q, args['page'], args['limit'])
-    data, prev, next = prev_next_urls(q.all(), args['limit'])
+@validate()
+def get_testcases(query: TestcasesParams):
+    q = select_testcases(query.name, query.name_like_)
+    q = pagination(q, query.page, query.limit)
+    data, prev, next = prev_next_urls(q.all(), query.limit)
 
     return jsonify(dict(
         prev=prev,
@@ -782,25 +575,14 @@ def get_testcase(testcase_name):
     return jsonify(SERIALIZE(testcase))
 
 
-RP['create_testcase'] = reqparse.RequestParser()
-RP['create_testcase'].add_argument('name', type=partial(non_empty, basestring), required=True, location='json')
-RP['create_testcase'].add_argument('ref_url', location='json')
-
-
 @api.route('/testcases', methods=['POST'])
-def create_testcase():
-    try:
-        args = RP['create_testcase'].parse_args()
-    except JSONBadRequest as error:
-        return jsonify({"message": "Malformed Request: %s" % error}), error.code
-    except HTTPException as error:
-        return jsonify(error.data), error.code
-
-    testcase = Testcase.query.filter_by(name=args['name']).first()
+@validate()
+def create_testcase(body: CreateTestcaseParams):
+    testcase = Testcase.query.filter_by(name=body.name).first()
     if not testcase:
-        testcase = Testcase(name=args['name'])
-    if args['ref_url'] is not None:
-        testcase.ref_url = args['ref_url']
+        testcase = Testcase(name=body.name)
+    if body.ref_url is not None:
+        testcase.ref_url = body.ref_url
 
     db.session.add(testcase)
     db.session.commit()
