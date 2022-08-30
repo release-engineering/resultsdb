@@ -27,7 +27,6 @@ import time
 import resultsdb
 import resultsdb.cli
 import resultsdb.messaging
-import resultsdb.controllers.api_v2 as api_v2
 
 try:
     basestring
@@ -120,71 +119,6 @@ class TestFuncApiV20():
     def teardown_method(self, method):
         # Reset this for each test.
         resultsdb.messaging.DummyPlugin.history = []
-    # =============== CONFIG ==================
-
-    def helper_setup_request_parser_from_config(self):
-        ref_data = dict(
-            outcome=self.ref_result_outcome,
-            testcase=self.ref_testcase,
-        )
-
-        r = self.app.post('/api/v2.0/results', data=json.dumps(ref_data), content_type='application/json')
-        assert r.status_code == 201
-
-        # Test setting optional value as required
-        resultsdb.app.config['REQUIRED_DATA'] = {"create_result": ["ref_url"]}
-        api_v2.setup_request_parser_from_config()
-
-        r = self.app.post('/api/v2.0/results', data=json.dumps(ref_data), content_type='application/json')
-        data = json.loads(r.data)
-        assert r.status_code == 400
-        assert data['message'].startswith('Malformed Request')
-
-        ref_data['ref_url'] = ''
-        r = self.app.post('/api/v2.0/results', data=json.dumps(ref_data), content_type='application/json')
-        data = json.loads(r.data)
-        assert r.status_code == 400
-        assert data['message'].startswith('Malformed Request')
-
-        ref_data['ref_url'] = self.ref_result_ref_url
-        r = self.app.post('/api/v2.0/results', data=json.dumps(ref_data), content_type='application/json')
-        assert r.status_code == 201
-
-        # Test setting result.data requirement
-        resultsdb.app.config['REQUIRED_DATA'] = {"create_result": ["data.foobar"]}
-        api_v2.setup_request_parser_from_config()
-
-        r = self.app.post('/api/v2.0/results', data=json.dumps(ref_data), content_type='application/json')
-        data = json.loads(r.data)
-        assert r.status_code == 400
-        assert data['message'].startswith('Malformed Request')
-
-        ref_data['data'] = ['foo', 'bar']
-        r = self.app.post('/api/v2.0/results', data=json.dumps(ref_data), content_type='application/json')
-        data = json.loads(r.data)
-        assert r.status_code == 400
-        assert data['message'].startswith('Malformed Request')
-
-        ref_data['data'] = {'foo': 'bar'}
-        r = self.app.post('/api/v2.0/results', data=json.dumps(ref_data), content_type='application/json')
-        data = json.loads(r.data)
-        assert r.status_code == 400
-        assert data['message'].startswith('Malformed Request')
-
-        ref_data['data'] = {'foobar': 'bar'}
-        r = self.app.post('/api/v2.0/results', data=json.dumps(ref_data), content_type='application/json')
-        assert r.status_code == 201
-
-    def test_setup_request_parser_from_config(self):
-        bkp_config = copy.deepcopy(resultsdb.app.config)
-        bkp_request_parser = copy.deepcopy(api_v2.RP)
-        try:
-            self.helper_setup_request_parser_from_config()
-        except:
-            raise
-        finally:
-            api_v2.RP = bkp_request_parser
-            resultsdb.app.config = bkp_config
 
     # =============== TESTCASES ==================
 
@@ -207,10 +141,32 @@ class TestFuncApiV20():
         ref_data = json.dumps({'ref_url': self.ref_testcase_ref_url})
 
         r = self.app.post('/api/v2.0/testcases', data=ref_data, content_type='application/json')
-        data = json.loads(r.data)
-
         assert r.status_code == 400
-        assert data['message'].startswith('Malformed Request')
+        assert r.json == {
+            'validation_error': {
+                'body_params': [{
+                    'loc': ['name'],
+                    'msg': 'field required',
+                    'type': 'value_error.missing'
+                }]
+            }
+        }
+
+    def test_create_testcase_empty_name(self):
+        ref_data = json.dumps({'name': ''})
+
+        r = self.app.post('/api/v2.0/testcases', data=ref_data, content_type='application/json')
+        assert r.status_code == 400
+        assert r.json == {
+            'validation_error': {
+                'body_params': [{
+                    'ctx': {'limit_value': 1},
+                    'loc': ['name'],
+                    'msg': 'ensure this value has at least 1 characters',
+                    'type': 'value_error.any_str.min_length'
+                }]
+            }
+        }
 
     def test_update_testcase(self):
         self.test_create_testcase()
@@ -453,20 +409,93 @@ class TestFuncApiV20():
         assert r.status_code == 201
         assert data == ref_result
 
-    def test_create_result_missing_data(self):
-        ref_data = json.dumps({'outcome': 'FAKEOUTCOME'})
-        r = self.app.post('/api/v2.0/results', data=ref_data, content_type='application/json')
+    def test_create_result_with_testcase_name(self):
+        self.test_create_group()
+        self.test_create_testcase()
+        testcase_name = self.ref_result['testcase']['name']
+
+        r, data = self.helper_create_result(outcome='AMAZING', testcase=testcase_name)
+
+        assert r.status_code == 201
+        assert data['testcase']['name'] == testcase_name
+
+    def test_create_result_empty_testcase(self):
+        r = self.app.post('/api/v2.0/results', json={'outcome': 'passed', 'testcase': ''})
         data = json.loads(r.data)
 
         assert r.status_code == 400
-        assert data['message'].startswith('Malformed Request')
+        assert data == {
+            'validation_error': {
+                'body_params': [{
+                    'loc': ['testcase'],
+                    'msg': 'testcase name must be non-empty',
+                    'type': 'value_error'
+                }]
+            }
+        }
 
+    def test_create_result_empty_testcase_name(self):
+        r = self.app.post(
+            '/api/v2.0/results', json={'outcome': 'passed', 'testcase': {'name': ''}})
+        data = json.loads(r.data)
+
+        assert r.status_code == 400
+        assert data == {
+            'validation_error': {
+                'body_params': [{
+                    'loc': ['testcase'],
+                    'msg': 'testcase name must be non-empty',
+                    'type': 'value_error'
+                }]
+            }
+        }
+
+    def test_create_result_empty_testcase_dict(self):
+        r = self.app.post(
+            '/api/v2.0/results', json={'outcome': 'passed', 'testcase': {}})
+        data = json.loads(r.data)
+
+        assert r.status_code == 400
+        assert data == {
+            'validation_error': {
+                'body_params': [{
+                    'loc': ['testcase'],
+                    'msg': 'testcase name must be non-empty',
+                    'type': 'value_error'
+                }]
+            }
+        }
+
+    def test_create_result_missing_testcase(self):
+        r = self.app.post('/api/v2.0/results', json={'outcome': 'passed'})
+        data = json.loads(r.data)
+
+        assert r.status_code == 400
+        assert data == {
+            'validation_error': {
+                'body_params': [{
+                    'loc': ['testcase'],
+                    'msg': 'field required',
+                    'type': 'value_error.missing'
+                }]
+            }
+        }
+
+    def test_create_result_missing_outcome(self):
         ref_data = json.dumps({'testcase': self.ref_testcase})
         r = self.app.post('/api/v2.0/results', data=ref_data, content_type='application/json')
         data = json.loads(r.data)
 
         assert r.status_code == 400
-        assert data['message'].startswith('Malformed Request')
+        assert data == {
+            'validation_error': {
+                'body_params': [{
+                    'loc': ['outcome'],
+                    'msg': 'field required',
+                    'type': 'value_error.missing'
+                }]
+            }
+        }
 
     def test_create_result_multiple_groups(self):
         uuid2 = '1c26effb-7c07-4d90-9428-86aac053288c'
@@ -545,7 +574,15 @@ class TestFuncApiV20():
         data = json.loads(r.data)
 
         assert r.status_code == 400
-        assert data['message'].startswith("outcome must be one of")
+        assert data == {
+            'validation_error': {
+                'body_params': [{
+                    'loc': ['outcome'],
+                    'msg': 'must be one of: PASSED, INFO, FAILED, NEEDS_INSPECTION, AMAZING',
+                    'type': 'value_error'
+                }]
+            }
+        }
 
     def test_create_result_invalid_data(self):
         ref_data = json.dumps({
@@ -570,7 +607,7 @@ class TestFuncApiV20():
         r = self.app.post('/api/v2.0/results', data=ref_data, content_type='application/json')
         data = json.loads(r.data)
 
-        assert r.status_code == 201
+        assert r.status_code == 201, data
         assert data['submit_time'] == '2022-08-24T06:54:57.123000'
 
     def test_create_result_submit_time_as_number_string(self):
@@ -583,7 +620,7 @@ class TestFuncApiV20():
         r = self.app.post('/api/v2.0/results', data=ref_data, content_type='application/json')
         data = json.loads(r.data)
 
-        assert r.status_code == 201
+        assert r.status_code == 201, data
         assert data['submit_time'] == '2022-08-24T06:54:57.123000'
 
     def test_create_result_submit_time_as_datetime(self):
@@ -596,7 +633,7 @@ class TestFuncApiV20():
         r = self.app.post('/api/v2.0/results', data=ref_data, content_type='application/json')
         data = json.loads(r.data)
 
-        assert r.status_code == 201
+        assert r.status_code == 201, data
         assert data['submit_time'] == '2022-08-24T06:54:57.123456'
 
     def test_create_result_submit_time_as_invalid(self):
@@ -609,8 +646,19 @@ class TestFuncApiV20():
         r = self.app.post('/api/v2.0/results', data=ref_data, content_type='application/json')
         data = json.loads(r.data)
 
-        assert r.status_code == 400
-        assert data['message'].startswith('Malformed Request')
+        assert r.status_code == 400, data
+        assert data == {
+            "validation_error": {
+                "body_params": [{
+                    "loc": ["submit_time"],
+                    "msg": (
+                        "Expected timestamp in milliseconds or datetime"
+                        " (in format YYYY-MM-DDTHH:MM:SS.ffffff), got <class 'str'>"
+                    ),
+                    "type": "value_error"
+                }]
+            }
+        }
 
     def test_get_result(self):
         self.test_create_result()
@@ -670,7 +718,8 @@ class TestFuncApiV20():
         data1 = json.loads(r1.data)
         data2 = json.loads(r2.data)
 
-        assert r1.status_code == r2.status_code == 200
+        assert r1.status_code == 200, r1.text
+        assert r2.status_code == 200, r2.text
         assert len(data1['data']) == len(data2['data']) == 1
         assert data1 == data2
         assert data1['data'][0] == self.ref_result
@@ -694,9 +743,10 @@ class TestFuncApiV20():
         data1 = json.loads(r1.data)
         data2 = json.loads(r2.data)
 
-        assert r1.status_code == r2.status_code == 200
-        assert data1 == data2
+        assert r1.status_code == 200, r1.text
+        assert r2.status_code == 200, r2.text
         assert data1['data'][0] == self.ref_result
+        assert data2['data'][0] == self.ref_result
 
         r = self.app.get('/api/v2.0/results?testcases=%s,%s' % (self.ref_testcase_name, name2))
         data = json.loads(r.data)
@@ -717,9 +767,10 @@ class TestFuncApiV20():
         data1 = json.loads(r1.data)
         data2 = json.loads(r2.data)
 
-        assert r1.status_code == r2.status_code == 200
-        assert data1 == data2
+        assert r1.status_code == 200, r1.text
+        assert r2.status_code == 200, r2.text
         assert data1['data'][0] == self.ref_result
+        assert data2['data'][0] == self.ref_result
 
         r1 = self.app.get('/api/v2.0/results?testcases:like=%s*' % (self.ref_testcase_name,))
         r2 = self.app.get('/api/v2.0/results?testcases:like=%s,%s*' %
