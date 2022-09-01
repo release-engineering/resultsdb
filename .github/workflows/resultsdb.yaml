@@ -25,10 +25,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install poetry tox tox-gh-actions
+          pip install poetry 'tox-docker>=4.0.0a2' 'tox>=4.0.0b2'
 
       - name: Test with tox
-        run: tox -e py
+        run: tox
 
       - name: Run coveralls-python
         env:
@@ -86,15 +86,37 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install poetry podman-compose
+
+      - name: Update the Application Version
+        run: poetry version "$(./get-version.sh)"
+
+      - name: Get image tag from git branch
+        id: get-image-tag
+        run: |
+          export TAG=$(sed 's/[^0-9a-zA-Z_.-]/__/g' <<< "$GITHUB_REF_NAME") &&
+          echo "::set-output name=tag::$TAG"
+
       - name: Build Image
         id: build-image
         uses: redhat-actions/buildah-build@v2
         with:
           image: ${{ env.IMAGE_NAME }}
           tags: >-
+            ${{ steps.get-image-tag.outputs.tag }}
             ${{ github.ref == 'refs/heads/develop' && 'latest' || '' }}
             ${{ github.sha }}
           containerfiles: Dockerfile
+          build-args: |
+            GITHUB_SHA=${{ github.sha }}
 
       - name: Log in to the image registry
         if: github.event_name == 'push' && github.actor != 'dependabot[bot]'
