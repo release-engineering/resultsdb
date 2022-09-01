@@ -1,30 +1,3 @@
-# This is a list of pypi packages to be installed into virtualenv. Alternatively,
-# you can install these as RPMs instead of pypi packages. See the dependecies
-# with:
-# $ rpmspec -q --requires resultsdb.spec
-# $ rpmspec -q --buildrequires resultsdb.spec
-
-# A note for maintainers: Please keep this list in sync and in the same order
-# as the spec file.
-
-fedora-messaging
-alembic >= 0.8.3
-Flask >= 0.10.1
-flask-oidc >= 1.1.1
-Flask-RESTful >= 0.3.9
-Flask-SQLAlchemy >= 2.0
-iso8601 >= 0.1.10
-six >= 1.9.0
-SQLAlchemy >= 0.9.8
-
-# Package 'rsa' requires a different Python: 2.7.18 not in '>=3.5, <4'
-# (rsa is dependncy of flask-oidc)
-rsa < 4.7; python_version < "3"
-
-# Test suite requirements
-pytest >= 2.4.2
-pytest-cov >= 1.6
-
-# s2i requirements
-psycopg2-binary
-gunicorn
+wheel==0.37.1
+pip==22.2.1
+setuptools==63.3.0
