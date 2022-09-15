@@ -208,9 +208,6 @@ if app.config['AUTH_MODULE'] == 'oidc':
 from resultsdb.controllers.main import main
 app.register_blueprint(main)
 
-from resultsdb.controllers.api_v1 import api as api_v1
-app.register_blueprint(api_v1, url_prefix="/api/v1.0")
-
 from resultsdb.controllers.api_v2 import api as api_v2
 app.register_blueprint(api_v2, url_prefix="/api/v2.0")
 
