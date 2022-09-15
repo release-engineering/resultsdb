@@ -66,7 +66,7 @@ def get_prev_result(result):
     return q.first()
 
 
-def publish_taskotron_message(result, include_job_url=False):
+def publish_taskotron_message(result):
     """
     Publish a fedmsg on the taskotron topic with Taskotron-compatible structure.
 
@@ -100,9 +100,6 @@ def publish_taskotron_message(result, include_job_url=False):
             'log_url': result.ref_url,
         }
     }
-
-    if include_job_url:  # only in the v1 API
-        body['result']['job_url'] = result.groups[0].ref_url if result.groups else None
 
     try:
         msg = Message (
