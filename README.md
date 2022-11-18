@@ -14,15 +14,6 @@ documentation can be found at <http://docs.resultsdb20.apiary.io/>.
 
 ## Quick development setup
 
-First, clone the repository.
-
-Then, setup a virtual environment for development:
-
-    $ sudo dnf install python-virtualenv python-pip
-    $ virtualenv --system-site-packages env_resultsdb
-    $ source env_resultsdb/bin/activate
-    $ pip install -r requirements.txt
-
 If you encounter any installation issues, it's possible that you don't have
 `gcc` and necessary C development headers installed to compile C extensions
 from PyPI. Either install those based on the error messages, or install
@@ -31,15 +22,16 @@ learn how.
 
 Install the project:
 
-    $ python setup.py develop
+    $ poetry run python -m ensurepip --upgrade
+    $ poetry install
 
 Initialize your database:
 
-    $ DEV=true ./init_db.sh
+    $ DEV=true poetry run ./init_db.sh
 
 Run the server:
 
-    $ DEV=true python runapp.py
+    $ DEV=true poetry run python runapp.py
 
 The server is now running with a very simple frontend at <http://localhost:5001>.
 API calls can be sent to <http://localhost:5001/api/v2.0>. All data is stored
