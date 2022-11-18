@@ -1,3 +1,3 @@
 # SPDX-License-Identifier: GPL-2.0+
-import resultsdb
-application = resultsdb.app
+from resultsdb import create_app
+application = create_app()

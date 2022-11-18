@@ -25,6 +25,14 @@ import os
 import sys
 
 
+def db_uri_for_testing():
+    postgres_port = os.getenv("POSTGRES_5432_TCP", None)
+    if postgres_port:
+        return f"postgresql+psycopg2://resultsdb:resultsdb@localhost:{postgres_port}/resultsdb"
+
+    return "sqlite:///.test_db.sqlite"
+
+
 class Config(object):
     DEBUG = True
     PRODUCTION = False
@@ -100,6 +108,7 @@ class Config(object):
 
 
 class ProductionConfig(Config):
+    DEFAULT_CONFIG_FILE = "/etc/resultsdb/settings.py"
     DEBUG = False
     PRODUCTION = True
     SHOW_DB_URI = False
@@ -108,13 +117,18 @@ class ProductionConfig(Config):
 
 
 class DevelopmentConfig(Config):
+    DEFAULT_CONFIG_FILE = os.getcwd() + "/conf/settings.py"
     TRAP_BAD_REQUEST_ERRORS = True
     SQLALCHEMY_DATABASE_URI = "sqlite:////var/tmp/resultsdb_db.sqlite"
     OIDC_CLIENT_SECRETS = os.getcwd() + "/conf/oauth2_client_secrets.json.example"
 
 
 class TestingConfig(DevelopmentConfig):
+    DEFAULT_CONFIG_FILE = None
     TRAP_BAD_REQUEST_ERRORS = True
+
+    SQLALCHEMY_DATABASE_URI = db_uri_for_testing()
+
     FEDMENU_URL = "https://apps.stg.fedoraproject.org/fedmenu"
     FEDMENU_DATA_URL = "https://apps.stg.fedoraproject.org/js/data.js"
     ADDITIONAL_RESULT_OUTCOMES = ("AMAZING",)

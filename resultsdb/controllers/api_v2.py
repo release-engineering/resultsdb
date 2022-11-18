@@ -22,11 +22,12 @@ import re
 import uuid
 
 from flask import Blueprint, jsonify, request, url_for
+from flask import current_app as app
 from flask_pydantic import validate
 
 from sqlalchemy.orm import exc as orm_exc
 
-from resultsdb import app, db
+from resultsdb import db
 from resultsdb.controllers.common import commit_result, SERIALIZE
 from resultsdb.parsers.api_v2 import (
     CreateGroupParams,
@@ -38,7 +39,7 @@ from resultsdb.parsers.api_v2 import (
     QUERY_LIMIT,
 )
 from resultsdb.models.results import Group, Result, Testcase, ResultData
-from resultsdb.models.results import RESULT_OUTCOME
+from resultsdb.models.results import result_outcomes
 
 api = Blueprint("api_v2", __name__)
 
@@ -51,17 +52,6 @@ try:
     unicode
 except NameError:
     unicode = str
-
-
-# TODO: find out why error handler works for 404 but not for 400
-@app.errorhandler(400)
-def bad_request(error):
-    return jsonify({"message": "Bad request"}), 400
-
-
-@app.errorhandler(404)
-def not_found(error):
-    return jsonify({"message": "Not found"}), 404
 
 
 # =============================================================================
@@ -638,7 +628,7 @@ def landing_page():
                 "groups": url_for(".get_groups", _external=True),
                 "results": url_for(".get_results", _external=True),
                 "testcases": url_for(".get_testcases", _external=True),
-                "outcomes": RESULT_OUTCOME,
+                "outcomes": result_outcomes(),
             }
         ),
         300,

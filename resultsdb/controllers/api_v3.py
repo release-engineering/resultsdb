@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: GPL-2.0+
-from flask import Blueprint, current_app, jsonify, g, render_template
+from flask import Blueprint, jsonify, g, render_template
+from flask import current_app as app
 from flask_oidc import OpenIDConnect
 from flask_pydantic import validate
 
-from resultsdb import app, db
+from resultsdb import db
 from resultsdb.authorization import match_testcase_permissions, verify_authorization
 from resultsdb.controllers.common import commit_result
 from resultsdb.models.results import (
@@ -15,6 +16,7 @@ from resultsdb.parsers.api_v3 import (
     PermissionsParams,
     RESULTS_PARAMS_CLASSES,
     ResultParamsBase,
+    result_outcomes_extended,
 )
 
 api = Blueprint("api_v3", __name__)
@@ -22,12 +24,12 @@ oidc = OpenIDConnect()
 
 
 def permissions():
-    return current_app.config.get("PERMISSIONS", [])
+    return app.config.get("PERMISSIONS", [])
 
 
 def _verify_authorization(user, testcase):
-    ldap_host = current_app.config.get("LDAP_HOST")
-    ldap_searches = current_app.config.get("LDAP_SEARCHES")
+    ldap_host = app.config.get("LDAP_HOST")
+    ldap_searches = app.config.get("LDAP_SEARCHES")
     return verify_authorization(user, testcase, permissions(), ldap_host, ldap_searches)
 
 
@@ -130,6 +132,7 @@ def index():
         "api_v3.html",
         supports_oidc=app.config["AUTH_MODULE"] == "oidc",
         endpoints=endpoints,
+        result_outcomes_extended=", ".join(result_outcomes_extended()),
     )
 
 

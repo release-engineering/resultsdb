@@ -21,8 +21,11 @@ import json
 import datetime
 import copy
 
+from flask import current_app as app
+
 import resultsdb
 import resultsdb.messaging
+from resultsdb.models import db
 
 
 class MyResultData(object):
@@ -52,10 +55,10 @@ class AboutTime(object):
 
 class TestFuncCreateFedmsg:
     def setup_method(self, method):
-        resultsdb.db.session.rollback()
-        resultsdb.db.drop_all()
-        resultsdb.db.create_all()
-        self.app = resultsdb.app.test_client()
+        db.session.rollback()
+        db.drop_all()
+        db.create_all()
+        self.app = app.test_client()
         self.ref_url_prefix = "http://localhost/api/v2.0"
 
         # Testcase data

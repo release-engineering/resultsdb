@@ -7,7 +7,7 @@ import iso8601
 from pydantic import BaseModel, Field, validator
 from pydantic.types import constr
 
-from resultsdb.models.results import RESULT_OUTCOME
+from resultsdb.models.results import result_outcomes
 
 QUERY_LIMIT = 20
 
@@ -38,9 +38,6 @@ def time_from_milliseconds(value):
 class BaseListParams(BaseModel):
     page: int = 0
     limit: int = QUERY_LIMIT
-    # These two are ignored.  They're present so reqparse isn't confused by JSONP.
-    callback: Optional[str]
-    _: Optional[str]
 
 
 class GroupsParams(BaseListParams):
@@ -89,8 +86,8 @@ class ResultsParams(BaseListParams):
     @validator("outcome")
     def outcome_must_be_valid(cls, v):
         outcomes = [x.upper() for x in v]
-        if any(x not in RESULT_OUTCOME for x in outcomes):
-            raise ValueError(f'must be one of: {", ".join(RESULT_OUTCOME)}')
+        if any(x not in result_outcomes() for x in outcomes):
+            raise ValueError(f'must be one of: {", ".join(result_outcomes())}')
         return outcomes
 
 
@@ -144,8 +141,8 @@ class CreateResultParams(BaseModel):
 
     @validator("outcome")
     def outcome_must_be_valid(cls, v):
-        if v not in RESULT_OUTCOME:
-            raise ValueError(f'must be one of: {", ".join(RESULT_OUTCOME)}')
+        if v not in result_outcomes():
+            raise ValueError(f'must be one of: {", ".join(result_outcomes())}')
         return v
 
 
