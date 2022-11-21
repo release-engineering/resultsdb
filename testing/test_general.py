@@ -1,4 +1,5 @@
 import datetime
+import ssl
 
 import resultsdb.controllers.api_v2 as apiv2
 import resultsdb.messaging as messaging
@@ -120,7 +121,7 @@ class TestMessaging():
             plugin = messaging.load_messaging_plugin('fedmsg', {})
         except KeyError as err:
             if "not found" in str(err):
-                print ("""=============== HINT ===============
+                print("""=============== HINT ===============
 This exception can be caused by the fact, that you did not run
 `python setup.py develop` before executing the testsuite.
 
@@ -132,7 +133,47 @@ If you ran `python setup.py develop` and are still seeing this error, then:
  - you might me missing the 'fedmsg' entrypoint in setup.py
  - there can be an error in the plugin loading code""")
             raise
-        assert isinstance(plugin, messaging.FedmsgPlugin), "check whether `fedmsg` entrypoint in setup.py points to resultsdb.messaging:FedmsgPlugin"
+        assert isinstance(plugin, messaging.FedmsgPlugin), (
+            "check whether `fedmsg` entrypoint in setup.py points to"
+            " resultsdb.messaging:FedmsgPlugin"
+        )
+
+    def test_load_stomp(self):
+        message_bus_kwargs = {
+            'destination': 'results.new',
+            'connection': {
+                'host_and_ports': [('localhost', 1234)],
+            },
+        }
+        plugin = messaging.load_messaging_plugin('stomp', message_bus_kwargs)
+        assert isinstance(plugin, messaging.StompPlugin)
+        assert plugin.destination == 'results.new'
+
+    def test_stomp_ssl(self):
+        message_bus_kwargs = {
+            'destination': 'results.new',
+            'connection': {
+                'host_and_ports': [('localhost', 1234)],
+
+                'use_ssl': True,
+                'ssl_version': ssl.PROTOCOL_TLSv1_2,
+                'ssl_key_file': '/etc/secret/umb-client.key',
+                'ssl_cert_file': '/etc/secret/umb-client.crt',
+                'ssl_ca_certs': '/etc/secret/ca.pem'
+            },
+        }
+        plugin = messaging.load_messaging_plugin('stomp', message_bus_kwargs)
+        assert plugin.connection == {
+            'host_and_ports': [('localhost', 1234)],
+        }
+        assert plugin.use_ssl is True
+        assert plugin.ssl_args == {
+            'for_hosts': [('localhost', 1234)],
+            'key_file': '/etc/secret/umb-client.key',
+            'cert_file': '/etc/secret/umb-client.crt',
+            'ca_certs': '/etc/secret/ca.pem',
+            'ssl_version': ssl.PROTOCOL_TLSv1_2,
+        }
 
 
 class TestGetResultsParseArgs():

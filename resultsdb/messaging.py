@@ -21,6 +21,7 @@ import abc
 import json
 
 import pkg_resources
+import stomp
 
 from resultsdb import db, app
 from resultsdb.models.results import Result, ResultData
@@ -176,9 +177,26 @@ class FedmsgPlugin(MessagingPlugin):
 
 class StompPlugin(MessagingPlugin):
     def __init__(self, **kwargs):
-        # Ensure that we can import this at startup time.
-        import stomp
-        self.stomp = stomp
+        conn_args = kwargs.get('connection', {})
+        if 'use_ssl' in conn_args:
+            use_ssl = conn_args['use_ssl']
+            del conn_args['use_ssl']
+        else:
+            use_ssl = False
+
+        ssl_args = {'for_hosts': conn_args.get('host_and_ports', [])}
+        for attr in ('key_file', 'cert_file', 'ca_certs'):
+            conn_attr = f'ssl_{attr}'
+            if conn_attr in conn_args:
+                ssl_args[attr] = conn_args[conn_attr]
+                del conn_args[conn_attr]
+
+        if 'ssl_version' in conn_args:
+            ssl_args['ssl_version'] = conn_args['ssl_version']
+            del conn_args['ssl_version']
+
+        kwargs['use_ssl'] = use_ssl
+        kwargs['ssl_args'] = ssl_args
 
         super(StompPlugin, self).__init__(**kwargs)
 
@@ -192,10 +210,11 @@ class StompPlugin(MessagingPlugin):
         msg = json.dumps(msg)
         kwargs = dict(body=msg, headers={}, destination=self.destination)
 
-        if self.stomp.__version__[0] < 4:
-            kwargs['message'] = kwargs.pop('body')  # On EL7, different sig.
+        conn = stomp.connect.StompConnection11(**self.connection)
 
-        conn = self.stomp.Connection(**self.connection)
+        if self.use_ssl:
+            conn.set_ssl(**self.ssl_args)
+
         conn.connect(wait=True)
         try:
             conn.send(**kwargs)
