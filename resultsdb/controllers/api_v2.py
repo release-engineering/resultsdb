@@ -27,7 +27,7 @@ from flask_pydantic import validate
 from sqlalchemy.orm import exc as orm_exc
 
 from resultsdb import app, db
-from resultsdb.serializers.api_v2 import Serializer
+from resultsdb.controllers.common import commit_result, SERIALIZE
 from resultsdb.parsers.api_v2 import (
     CreateGroupParams,
     CreateResultParams,
@@ -39,7 +39,6 @@ from resultsdb.parsers.api_v2 import (
 )
 from resultsdb.models.results import Group, Result, Testcase, ResultData
 from resultsdb.models.results import RESULT_OUTCOME
-from resultsdb.messaging import load_messaging_plugin, create_message, publish_taskotron_message
 
 api = Blueprint('api_v2', __name__)
 
@@ -71,8 +70,6 @@ def not_found(error):
 RE_PAGE = re.compile(r"([?&])page=([0-9]+)")
 RE_CALLBACK = re.compile(r"([?&])callback=[^&]*&?")
 RE_CLEAN_AMPERSANDS = re.compile(r'&+')
-
-SERIALIZE = Serializer().serialize
 
 # =============================================================================
 #                               GLOBAL METHODS
@@ -510,25 +507,7 @@ def create_result(body: CreateResultParams):
         for key, value in to_store:
             ResultData(result, key, value)
 
-    db.session.add(result)
-    db.session.commit()
-
-    app.logger.debug(
-        "Created new result for testcase %s with outcome %s", testcase.name, body.outcome)
-
-    if app.config['MESSAGE_BUS_PUBLISH']:
-        app.logger.debug("Preparing to publish message for result id %d", result.id)
-        plugin = load_messaging_plugin(
-            name=app.config['MESSAGE_BUS_PLUGIN'],
-            kwargs=app.config['MESSAGE_BUS_KWARGS'],
-        )
-        plugin.publish(create_message(result))
-
-    if app.config['MESSAGE_BUS_PUBLISH_TASKOTRON']:
-        app.logger.debug("Preparing to publish Taskotron message for result id %d", result.id)
-        publish_taskotron_message(result)
-
-    return jsonify(SERIALIZE(result)), 201
+    return commit_result(result)
 
 
 # =============================================================================

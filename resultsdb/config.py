@@ -70,15 +70,14 @@ class Config(object):
     # Extend the list of allowed outcomes.
     ADDITIONAL_RESULT_OUTCOMES = ()
 
+    PERMISSIONS = []
+
     # Supported values: "oidc"
     AUTH_MODULE = None
 
-    # OIDC Configuration
-    OIDC_ADMINS = [] # should contain list of usernames that can do POSTs e.g. ['tflink', 'kparal']
     OIDC_CLIENT_SECRETS = '/etc/resultsdb/oauth2_client_secrets.json'
-    OIDC_AUD = 'My-Client-ID'
-    OIDC_SCOPE = 'https://pagure.io/taskotron/resultsdb/access'
-    OIDC_RESOURCE_SERVER_ONLY = True
+    OIDC_REQUIRED_SCOPE = 'resultsdb_scope'
+    OIDC_USERNAME_FIELD = 'uid'
 
     FEDMENU_URL = 'https://apps.fedoraproject.org/fedmenu'
     FEDMENU_DATA_URL = 'https://apps.fedoraproject.org/js/data.js'
@@ -130,13 +129,23 @@ class DevelopmentConfig(Config):
     OIDC_CLIENT_SECRETS = os.getcwd() + '/conf/oauth2_client_secrets.json.example'
 
 
-class TestingConfig(Config):
+class TestingConfig(DevelopmentConfig):
     TRAP_BAD_REQUEST_ERRORS = True
     FEDMENU_URL = 'https://apps.stg.fedoraproject.org/fedmenu'
     FEDMENU_DATA_URL = 'https://apps.stg.fedoraproject.org/js/data.js'
     ADDITIONAL_RESULT_OUTCOMES = ('AMAZING',)
     MESSAGE_BUS_PLUGIN = 'dummy'
     MESSAGE_BUS_KWARGS = {}
+    PERMISSIONS = [{
+        "users": ["testuser1"],
+        "testcases": ["testcase1"],
+    }]
+    AUTH_MODULE = 'oidc'
+    LDAP_HOST = 'ldap://ldap.example.com'
+    LDAP_SEARCHES = [{
+        'BASE': 'ou=Groups,dc=example,dc=com',
+        'SEARCH_STRING': '(memberUid={user})',
+    }]
 
 
 def openshift_config(config_object, openshift_production):

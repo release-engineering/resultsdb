@@ -1,0 +1,64 @@
+{% extends "layout.html" %}
+
+{% block body %}
+
+<h1>ResultsDB API v3</h1>
+
+<p>This is API reference for ResultsDB REST API v3.</p>
+
+{% if supports_oidc %}
+<p>
+    This API supports OpenIDConnect authentication. You can get your access
+    token manually at
+    <a href="{{ url_for("login") }}">/auth/oidclogin</a>.
+</p>
+{% endif %}
+
+<p><ul>
+    {% for endpoint in endpoints %}
+        <li>
+            <a href="#{{ endpoint.name }}">
+                {{ endpoint.method }} /api/v3/{{ endpoint.name }}
+            </a>
+        </li>
+    {% endfor %}
+</ul></p>
+
+{% for endpoint in endpoints %}
+<section id="{{ endpoint.name }}">
+    <h2>
+        {{ endpoint.method }} /api/v3/{{ endpoint.name }}
+        <a class="anchor-link" href="#{{ endpoint.name }}">#</a>
+    </h2>
+
+    <p>{{ endpoint.description | replace('\n\n', '<br>') | safe }}</p>
+
+    {% if endpoint.schema_endpoint %}
+        <p><a href="{{ url_for(endpoint.schema_endpoint) }}">schema</a></p>
+    {% endif %}
+
+    {% if endpoint.example %}
+        <h3>Example</h3>
+        <pre>{{ endpoint.example }}</pre>
+    {% endif %}
+
+    <h3>{{ type }} Parameters</h3>
+    <ul>
+        {% for name in endpoint.schema.properties %}
+            <li>
+                <section id="{{ endpoint.name }}/{{ name }}">
+                    <span class="param">{{ name }}</span> - <em>{{ endpoint.schema.properties[name].type }}</em>
+                    <em>{{ endpoint.schema.properties[name].format }}</em>
+                    <b>{{ '[required]' if name in endpoint.schema.required else '' }}</b>
+                    <a class="anchor-link" href="#{{ endpoint.name }}/{{ name }}">#</a>
+                    <p>
+                        {{ endpoint.schema.properties[name].description | replace('\n\n', '<br>') | safe }}
+                    </p>
+                </section>
+            </li>
+        {% endfor %}
+    </ul>
+</section>
+{% endfor %}
+
+{% endblock %}

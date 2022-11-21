@@ -1,0 +1,462 @@
+# SPDX-License-Identifier: GPL-2.0+
+from collections.abc import Iterator
+from textwrap import dedent
+from typing import List, Optional
+
+from pydantic import (
+    BaseModel,
+    EmailStr,
+    Field,
+    HttpUrl,
+    root_validator,
+    validator,
+)
+from pydantic.types import constr
+
+from resultsdb.models.results import RESULT_OUTCOME
+
+RESULT_OUTCOME_EXTENDED = set(RESULT_OUTCOME) | {
+    "QUEUED",
+    "RUNNING",
+    "ERROR",
+}
+
+EXAMPLE_COMMON_PARAMS = dict(
+    testcase="testcase1",
+    outcome="PASSED",
+    ci_name="ci1",
+    ci_team="team1",
+    ci_docs="https://test.example.com/docs",
+    ci_email="test@example.com",
+)
+
+MAIN_RESULT_ATTRIBUTES = frozenset(
+    {
+        "testcase",
+        "testcase_ref_url",
+        "outcome",
+        "ref_url",
+        "note",
+        "scratch",
+    }
+)
+
+MAX_STRING_SIZE = 8192
+
+
+def field(description: str, **kwargs):
+    return Field(description=dedent(description).strip(), **kwargs)
+
+
+class ResultParamsBase(BaseModel):
+    """
+    Base class for parameters to an API endpoint for creating results
+    for a specific artifact type.
+
+    Implement the following class methods in the derived classes:
+
+    - artifact_type() - returns "type" for the new result data
+    - example() - returns an example (instantiation of the derived class)
+    """
+
+    outcome: str = field(
+        f"""
+        Result of the test run. Can also indicate the intention to run
+        the test in the near future (QUEUED), an unfinished run (RUNNING)
+        or a CI error (ERROR).
+
+        Valid values: {", ".join(sorted(RESULT_OUTCOME_EXTENDED))}
+        """
+    )
+    testcase: constr(min_length=1) = field(
+        """
+        Full test case name.
+        """
+    )
+    testcase_ref_url: Optional[HttpUrl] = field(
+        """
+        Link to documentation for testing events for distributed CI systems to
+        make them sustainable. Should contain information about how to
+        contribute to the specific test, how to reproduce it, ideally on
+        localhost and how to retrigger the test.
+        """
+    )
+    note: Optional[str] = field(
+        """
+        Optional note related to the test result.
+        """
+    )
+    ref_url: Optional[HttpUrl] = field(
+        """
+        Specific runner URL. For example a Jenkins build URL.
+        """
+    )
+
+    error_reason: Optional[str] = field(
+        """
+        Reason of the error.
+
+        <b>Required</b> with ERROR outcome.
+        """
+    )
+    issue_url: Optional[HttpUrl] = field(
+        """
+        If the CI system is able to automatically file an issue/ticket for the
+        error, put the URL here.
+
+        Only valid with ERROR outcome.
+        """
+    )
+
+    system_provider: Optional[str] = field(
+        """
+        System used for provisioning.
+        This can also be hostname of the specific system instance.
+
+        Examples: openstack, beaker, beaker.example.com, openshift, rhev
+        """
+    )
+    system_architecture: Optional[str] = field(
+        """
+        Architecture of the system/distro used for testing.
+
+        Examples: x86_64, ppc64le, s390x, aarch64
+        """
+    )
+    system_variant: Optional[str] = field(
+        """
+        The compose or image variant, if applicable.
+
+        Examples: Server, Workstation
+        """
+    )
+
+    scenario: Optional[str] = field(
+        """
+        Test scenario. Identifies scenario under which the test(s) are
+        executed. This is useful in case of artifacts consisting of
+        multiple items which are subject of the same testsuite. For example
+        "productmd-compose" artifact contains multiple variants and
+        architectures all with their own repositories and installation
+        media on which the same testsuite is executed. The variant and
+        architecture would be in such case the scenario. The scenario is
+        free form text where the tested item identifier is encoded.
+
+        Examples: KDE-live-iso x86_64 64bit, Server x86_64
+        """
+    )
+
+    ci_name: str = field(
+        """
+        A human readable name for the CI system.
+
+        Examples: BaseOS CI, OSCI Compose Gating Bot
+        """
+    )
+    ci_team: str = field(
+        """
+        A human readable name of the team running the testing
+        or gating. This is useful for example to distinguish
+        multiple teams running on the same Jenkins instance.
+
+        Examples: BaseOS QE, Libvirt QE, RTT, OSCI
+        """
+    )
+    ci_docs: HttpUrl = field(
+        """
+        Link to documentation with details about the system.
+        """
+    )
+    ci_email: EmailStr = field(
+        """
+        Contact email address.
+        """
+    )
+    ci_url: Optional[HttpUrl] = field(
+        """
+        URL link to the system or system's web interface.
+        """
+    )
+    ci_irc: Optional[str] = field(
+        """
+        IRC contact for help (prefix with '#' for channel).
+
+        Examples: #osci
+        """
+    )
+
+    scratch: Optional[bool] = field(
+        """
+        Indication if the build is a scratch build.
+
+        If true, the final "type" would contain suffix "_scratch".
+        """,
+        default=False,
+    )
+    rebuild: Optional[HttpUrl] = field(
+        """
+        URL to rebuild the run. Usually leads to a separate page with rebuild options.
+        """
+    )
+    log: Optional[HttpUrl] = field(
+        """
+        URL of build log. Can be an HTML page
+        """
+    )
+
+    class Config:
+        max_anystr_length = MAX_STRING_SIZE
+
+    def result_data(self) -> Iterator[int]:
+        """Generator yielding property name and value pairs to store in DB."""
+        if self.scratch:
+            yield ("type", f"{self.artifact_type()}_scratch")
+        else:
+            yield ("type", self.artifact_type())
+
+        properties = self.dict(exclude_unset=True, exclude=self.exclude() | MAIN_RESULT_ATTRIBUTES)
+        for name, value in properties.items():
+            if isinstance(value, list):
+                for subvalue in value:
+                    yield (name, str(subvalue))
+            else:
+                yield (name, str(value))
+
+    @validator("outcome")
+    def outcome_must_be_valid(cls, v):
+        if v not in RESULT_OUTCOME_EXTENDED:
+            raise ValueError(f'must be one of: {", ".join(RESULT_OUTCOME_EXTENDED)}')
+        return v
+
+    @root_validator
+    def only_available_for_error_outcome(cls, values):
+        if (
+            values["error_reason"] is not None or values["issue_url"] is not None
+        ) and values.get("outcome") != "ERROR":
+            raise ValueError(
+                "error_reason and issue_url can be only set for ERROR outcome"
+            )
+        return values
+
+    @classmethod
+    def exclude(cls):
+        """Returns set of attributes that should be excluded."""
+        return set()
+
+
+class BrewResultParams(ResultParamsBase):
+    """Create new test result for a brew-build."""
+
+    item: constr(min_length=1) = field(
+        """
+        Name-version-release of the brew-build.
+        """
+    )
+
+    brew_task_id: int = field(
+        """
+        Task ID of the koji/brew build.
+        """
+    )
+
+    @classmethod
+    def example(cls):
+        return cls(
+            item="glibc-2.26-27.fc27",
+            brew_task_id=123456,
+            **EXAMPLE_COMMON_PARAMS,
+        )
+
+    @classmethod
+    def artifact_type(cls) -> str:
+        return "brew-build"
+
+
+class RedHatContainerImageResultParams(ResultParamsBase):
+    """Create new test result for a redhat-container-image."""
+
+    item: constr(min_length=1) = field(
+        """
+        Name-version-release of the container image.
+        """
+    )
+
+    id: str = field(
+        """
+        A digest that uniquely identifies the image within a repository.
+
+        Example:
+        <code>sha256:67dad89757a55bfdfabec8abd0e22f8c7c12a1856514726470228063ed86593b</code>
+        """
+    )
+    issuer: str = field(
+        """
+        Build issuer of the artifact.
+
+        Example: jdoe
+        """
+    )
+    component: str = field(
+        """
+        Image's product name.
+
+        Examples: openshiftcontainerplatform, redhatenterpriselinux
+        """
+    )
+
+    full_names: List[str] = field(
+        """
+        Array of full names of the container image.
+        One full name is in the form of "registry:port/namespace/name:tag".
+        """
+    )
+    brew_task_id: Optional[int] = field(
+        """
+        Brew task ID of the buildContainer task.
+        """
+    )
+    brew_build_id: Optional[int] = field(
+        """
+        Brew build ID of container.
+        """
+    )
+    registry_url: Optional[str] = field(
+        """
+        Registry url from the container image full name.
+        """
+    )
+    tag: Optional[str] = field(
+        """
+        Tag from the container image full name.
+        """
+    )
+    name: Optional[str] = field(
+        """
+        Name from the container image full name.
+
+        Example: python-27-rhel8
+        """
+    )
+    namespace: Optional[str] = field(
+        """
+        Namespace from the container image full name.
+
+        Example: rhscl
+        """
+    )
+    source: Optional[str] = field(
+        """
+        The first item in the request field from task details. This is
+        usually a link to git repository with a reference, delimited with
+        the '#' sign. In case of a scratch build or other build built via
+        uploading a src.rpm the build task source will look like the bash
+        scratch build.
+
+        Example: git+https://github.com/docker/rootfs.git#container:docker
+        """
+    )
+
+    @classmethod
+    def example(cls):
+        return cls(
+            item="rhoam-operator-bundle-container-v1.25.0-13",
+            id="sha256:27a51bc590483f0cd8c6085825a82a5697832e1d8b0e6aab0651262b84855803",
+            issuer="CPaaS",
+            component="rhoam-operator-bundle-container",
+            full_names=[
+                "registry.example.com/rh-osbs/operator"
+                "sha256:27a51bc590483f0cd8c6085825a82a5697832e1d8b0e6aab0651262b84855803",
+            ],
+            **EXAMPLE_COMMON_PARAMS,
+        )
+
+    @classmethod
+    def artifact_type(cls):
+        return "redhat-container-image"
+
+
+class RedHatModuleResultParams(ResultParamsBase):
+    "Create new test result for a module."
+
+    item: constr(min_length=1) = field(
+        """
+        Name-version-release of the module
+        """
+    )
+
+    @classmethod
+    def example(cls):
+        return cls(
+            item="llvm-toolset-rhel8-8000020190511064904-55190bc5",
+            **EXAMPLE_COMMON_PARAMS,
+        )
+
+    @classmethod
+    def artifact_type(cls):
+        return "redhat-module"
+
+
+class ProductmdComposeResultParams(ResultParamsBase):
+    "Create new test result for a compose."
+
+    id: constr(min_length=1) = field(
+        """
+        ID of the compose as recorded in the productmd metadata
+        (payload.compose.id field inside the metadata/composeinfo.json file
+        located in the compose directory)
+
+        The additional "item" data field would be set to both the "{id}" and
+        also "{id}/{system_architecture}/{system_variant}".
+
+        Example: RHEL-7.4-20180531.2
+        """
+    )
+
+    @property
+    def item(self):
+        variant = self.system_variant or "unknown"
+        arch = self.system_architecture or ""
+        return [
+            f"{self.id}/{variant}/{arch}",
+            self.id,
+        ]
+
+    def result_data(self):
+        yield from super().result_data()
+        for item in self.item:
+            yield ("item", item)
+
+    @classmethod
+    def exclude(cls):
+        return {"id"}
+
+    @classmethod
+    def example(cls):
+        return cls(
+            id="RHEL-8.8.0-20221129.0",
+            **EXAMPLE_COMMON_PARAMS,
+        )
+
+    @classmethod
+    def artifact_type(cls):
+        return "productmd-compose"
+
+
+class PermissionsParams(BaseModel):
+    """List permissions for posting results for matching test cases."""
+
+    testcase: Optional[str] = field(
+        """
+        Filter only permissions matching test case name glob expression.
+
+        Example: <code>compose.*</code>
+        """
+    )
+
+
+RESULTS_PARAMS_CLASSES = (
+    BrewResultParams,
+    ProductmdComposeResultParams,
+    RedHatContainerImageResultParams,
+    RedHatModuleResultParams,
+)

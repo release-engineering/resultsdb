@@ -19,12 +19,9 @@
 
 import json
 import datetime
-import os
-import tempfile
 import copy
 
 import resultsdb
-import resultsdb.cli
 import resultsdb.messaging
 
 
@@ -57,21 +54,10 @@ class AboutTime(object):
 
 
 class TestFuncCreateFedmsg():
-
-    @classmethod
-    def setup_class(cls):
-        cls.dbfile = tempfile.NamedTemporaryFile(delete=False)
-        cls.dbfile.close()
-        resultsdb.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///%s' % cls.dbfile.name
-        resultsdb.app.config['MESSAGE_BUS_PUBLISH'] = True
-        resultsdb.app.config['MESSAGE_BUS_PLUGIN'] = 'dummy'
-
-    @classmethod
-    def teardown_class(cls):
-        os.unlink(cls.dbfile.name)
-
     def setup_method(self, method):
-        resultsdb.cli.initialize_db(destructive=True)
+        resultsdb.db.session.rollback()
+        resultsdb.db.drop_all()
+        resultsdb.db.create_all()
         self.app = resultsdb.app.test_client()
         self.ref_url_prefix = "http://localhost/api/v2.0"
 
