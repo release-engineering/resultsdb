@@ -7,15 +7,20 @@ RUN set -exo pipefail \
     && yum install -y \
         --setopt install_weak_deps=false \
         --nodocs \
+        gcc \
+        krb5-devel \
+        openldap-devel \
         python39 \
+        python39-devel \
     # install runtime dependencies
     && yum install -y \
         --installroot=/mnt/rootfs \
         --releasever=8 \
         --setopt install_weak_deps=false \
         --nodocs \
-        httpd \
+        krb5-libs \
         mod_ssl \
+        openldap \
         python39 \
         python39-mod_wsgi \
     && yum --installroot=/mnt/rootfs clean all \

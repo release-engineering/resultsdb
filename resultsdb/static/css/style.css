@@ -10,11 +10,28 @@ body > .container {
     padding-top: 60px;
     padding-bottom: 30px;
 }
-.footer {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  height: 30px;
-  background-color: #f5f5f5;
+
+.navbar {
+    padding: .75rem 0;
 }
 
+/* consider navbar when jumping to sections */
+section::before {
+    display: block;
+    height: 65px;
+    margin-top: -65px;
+    visibility: hidden;
+    content: "";
+}
+
+.anchor-link:not(:hover) {
+    opacity: 30%;
+}
+
+:target > h2, :target > .param {
+   background-color: #ffc;
+}
+
+.param {
+    font-weight: bold;
+}
