@@ -177,7 +177,8 @@ class FedmsgPlugin(MessagingPlugin):
 
 class StompPlugin(MessagingPlugin):
     def __init__(self, **kwargs):
-        conn_args = kwargs.get('connection', {})
+        args = kwargs.copy()
+        conn_args = args['connection'].copy()
         if 'use_ssl' in conn_args:
             use_ssl = conn_args['use_ssl']
             del conn_args['use_ssl']
@@ -195,10 +196,11 @@ class StompPlugin(MessagingPlugin):
             ssl_args['ssl_version'] = conn_args['ssl_version']
             del conn_args['ssl_version']
 
-        kwargs['use_ssl'] = use_ssl
-        kwargs['ssl_args'] = ssl_args
+        args['connection'] = conn_args
+        args['use_ssl'] = use_ssl
+        args['ssl_args'] = ssl_args
 
-        super(StompPlugin, self).__init__(**kwargs)
+        super(StompPlugin, self).__init__(**args)
 
         # Validate that some required config is present
         required = ['connection', 'destination']
