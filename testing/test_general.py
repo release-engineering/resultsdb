@@ -162,18 +162,21 @@ If you ran `python setup.py develop` and are still seeing this error, then:
                 'ssl_ca_certs': '/etc/secret/ca.pem'
             },
         }
-        plugin = messaging.load_messaging_plugin('stomp', message_bus_kwargs)
-        assert plugin.connection == {
-            'host_and_ports': [('localhost', 1234)],
-        }
-        assert plugin.use_ssl is True
-        assert plugin.ssl_args == {
-            'for_hosts': [('localhost', 1234)],
-            'key_file': '/etc/secret/umb-client.key',
-            'cert_file': '/etc/secret/umb-client.crt',
-            'ca_certs': '/etc/secret/ca.pem',
-            'ssl_version': ssl.PROTOCOL_TLSv1_2,
-        }
+
+        # Run twice to ensure that the original configuration is not modified.
+        for _ in (1, 2):
+            plugin = messaging.load_messaging_plugin('stomp', message_bus_kwargs)
+            assert plugin.connection == {
+                'host_and_ports': [('localhost', 1234)],
+            }
+            assert plugin.use_ssl is True
+            assert plugin.ssl_args == {
+                'for_hosts': [('localhost', 1234)],
+                'key_file': '/etc/secret/umb-client.key',
+                'cert_file': '/etc/secret/umb-client.crt',
+                'ca_certs': '/etc/secret/ca.pem',
+                'ssl_version': ssl.PROTOCOL_TLSv1_2,
+            }
 
 
 class TestGetResultsParseArgs():
