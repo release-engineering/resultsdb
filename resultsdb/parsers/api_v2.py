@@ -124,10 +124,11 @@ class CreateResultParams(BaseModel):
         if isinstance(v, Number):
             return time_from_milliseconds(v)
         if isinstance(v, str):
-            try:
-                return datetime.strptime(v, '%Y-%m-%dT%H:%M:%S.%f')
-            except ValueError:
-                pass
+            for suffix in ('Z', '', '%z', '+00'):
+                try:
+                    return datetime.strptime(v, f'%Y-%m-%dT%H:%M:%S.%f{suffix}')
+                except ValueError:
+                    pass
 
             try:
                 return time_from_milliseconds(int(v))
@@ -136,7 +137,7 @@ class CreateResultParams(BaseModel):
         raise ValueError(
             "Expected timestamp in milliseconds or datetime"
             " (in format YYYY-MM-DDTHH:MM:SS.ffffff),"
-            " got %r" % type(v)
+            " got %r" % v
         )
 
     @validator('testcase')
