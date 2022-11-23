@@ -624,17 +624,19 @@ class TestFuncApiV20():
         assert data['submit_time'] == '2022-08-24T06:54:57.123000'
 
     def test_create_result_submit_time_as_datetime(self):
-        ref_data = json.dumps(dict(
-            outcome=self.ref_result_outcome,
-            testcase=self.ref_testcase,
-            submit_time='2022-08-24T06:54:57.123456',
-        ))
+        for suffix in ('', 'Z', '+00:00', '+0000', '+00'):
+            ref_data = json.dumps(dict(
+                outcome=self.ref_result_outcome,
+                testcase=self.ref_testcase,
+                submit_time=f'2022-08-24T06:54:57.123456{suffix}',
+            ))
 
-        r = self.app.post('/api/v2.0/results', data=ref_data, content_type='application/json')
-        data = json.loads(r.data)
+            r = self.app.post(
+                '/api/v2.0/results', data=ref_data, content_type='application/json')
+            data = json.loads(r.data)
 
-        assert r.status_code == 201, data
-        assert data['submit_time'] == '2022-08-24T06:54:57.123456'
+            assert r.status_code == 201, data
+            assert data['submit_time'] == '2022-08-24T06:54:57.123456'
 
     def test_create_result_submit_time_as_invalid(self):
         ref_data = json.dumps(dict(
@@ -653,7 +655,7 @@ class TestFuncApiV20():
                     "loc": ["submit_time"],
                     "msg": (
                         "Expected timestamp in milliseconds or datetime"
-                        " (in format YYYY-MM-DDTHH:MM:SS.ffffff), got <class 'str'>"
+                        " (in format YYYY-MM-DDTHH:MM:SS.ffffff), got 'now'"
                     ),
                     "type": "value_error"
                 }]
