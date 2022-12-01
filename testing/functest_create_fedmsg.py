@@ -26,34 +26,31 @@ import resultsdb.messaging
 
 
 class MyResultData(object):
-
     def __init__(self, key, value):
         self.key = key
         self.value = value
 
 
 class MyResult(object):
-
     def __init__(self, id, testcase_name, outcome, item, item_type, arch):
         self.id = id
         self.testcase_name = testcase_name
         self.outcome = outcome
         self.data = [
-            MyResultData('item', item),
-            MyResultData('type', item_type),
-            MyResultData('arch', arch),
+            MyResultData("item", item),
+            MyResultData("type", item_type),
+            MyResultData("arch", arch),
         ]
 
 
 class AboutTime(object):
-
     def __eq__(self, value):
         start = (datetime.datetime.utcnow() - datetime.timedelta(seconds=10)).isoformat()
         stop = (datetime.datetime.utcnow() + datetime.timedelta(seconds=10)).isoformat()
         return start <= value <= stop
 
 
-class TestFuncCreateFedmsg():
+class TestFuncCreateFedmsg:
     def setup_method(self, method):
         resultsdb.db.session.rollback()
         resultsdb.db.drop_all()
@@ -65,23 +62,29 @@ class TestFuncCreateFedmsg():
         self.ref_testcase_name = "scratch.testing.mytestcase"
 
         # Group data
-        self.ref_group_uuid = '3ce5f6d7-ce34-489b-ab61-325ce634eab5'
+        self.ref_group_uuid = "3ce5f6d7-ce34-489b-ab61-325ce634eab5"
 
         # Result data
-        self.ref_result_outcome = 'PASSED'
-        self.ref_result_note = 'Result Note'
-        self.ref_result_item = 'perl-Specio-0.25-1.fc26'
-        self.ref_result_type = 'koji_build'
-        self.ref_result_arch = 'x86_64'
+        self.ref_result_outcome = "PASSED"
+        self.ref_result_note = "Result Note"
+        self.ref_result_item = "perl-Specio-0.25-1.fc26"
+        self.ref_result_type = "koji_build"
+        self.ref_result_arch = "x86_64"
         self.ref_result_data = {
-            'item': self.ref_result_item,
-            'type': self.ref_result_type,
-            'arch': self.ref_result_arch,
-            'moo': ['boo', 'woof'],
+            "item": self.ref_result_item,
+            "type": self.ref_result_type,
+            "arch": self.ref_result_arch,
+            "moo": ["boo", "woof"],
         }
-        self.ref_result_ref_url = 'http://example.com/testing.result'
+        self.ref_result_ref_url = "http://example.com/testing.result"
         self.ref_result_obj = MyResult(
-            0, self.ref_testcase_name, self.ref_result_outcome, self.ref_result_item, self.ref_result_type, self.ref_result_arch)
+            0,
+            self.ref_testcase_name,
+            self.ref_result_outcome,
+            self.ref_result_item,
+            self.ref_result_type,
+            self.ref_result_arch,
+        )
 
     def teardown_method(self, method):
         # Reset this for each test.
@@ -97,16 +100,18 @@ class TestFuncCreateFedmsg():
         if data is None:
             data = self.ref_result_data
 
-        ref_data = json.dumps(dict(
-            outcome=outcome,
-            testcase=testcase,
-            groups=groups,
-            note=self.ref_result_note,
-            data=data,
-            ref_url=self.ref_result_ref_url,
-        ))
+        ref_data = json.dumps(
+            dict(
+                outcome=outcome,
+                testcase=testcase,
+                groups=groups,
+                note=self.ref_result_note,
+                data=data,
+                ref_url=self.ref_result_ref_url,
+            )
+        )
 
-        r = self.app.post('/api/v2.0/results', data=ref_data, content_type='application/json')
+        r = self.app.post("/api/v2.0/results", data=ref_data, content_type="application/json")
         data = json.loads(r.data)
 
         return r, data
@@ -123,11 +128,11 @@ class TestFuncCreateFedmsg():
         assert prev_result.outcome == self.ref_result_outcome
         assert prev_result.testcase_name == self.ref_testcase_name
         for result_data in prev_result.data:
-            if result_data.key == 'item':
+            if result_data.key == "item":
                 assert result_data.value == self.ref_result_item
-            if result_data.key == 'type':
+            if result_data.key == "type":
                 assert result_data.value == self.ref_result_type
-            if result_data.key == 'arch':
+            if result_data.key == "arch":
                 assert result_data.value == self.ref_result_arch
 
         self.helper_create_result()
@@ -137,16 +142,16 @@ class TestFuncCreateFedmsg():
         assert prev_result.outcome == self.ref_result_outcome
         assert prev_result.testcase_name == self.ref_testcase_name
         for result_data in prev_result.data:
-            if result_data.key == 'item':
+            if result_data.key == "item":
                 assert result_data.value == self.ref_result_item
-            if result_data.key == 'type':
+            if result_data.key == "type":
                 assert result_data.value == self.ref_result_type
-            if result_data.key == 'arch':
+            if result_data.key == "arch":
                 assert result_data.value == self.ref_result_arch
 
-        ref_outcome = 'FAILED'
+        ref_outcome = "FAILED"
         if self.ref_result_outcome == ref_outcome:
-            ref_outcome = 'PASSED'
+            ref_outcome = "PASSED"
         self.helper_create_result(outcome=ref_outcome)
         prev_result = resultsdb.messaging.get_prev_result(self.ref_result_obj)
 
@@ -154,16 +159,16 @@ class TestFuncCreateFedmsg():
         assert prev_result.outcome == ref_outcome
         assert prev_result.testcase_name == self.ref_testcase_name
         for result_data in prev_result.data:
-            if result_data.key == 'item':
+            if result_data.key == "item":
                 assert result_data.value == self.ref_result_item
-            if result_data.key == 'type':
+            if result_data.key == "type":
                 assert result_data.value == self.ref_result_type
-            if result_data.key == 'arch':
+            if result_data.key == "arch":
                 assert result_data.value == self.ref_result_arch
 
     def test_get_prev_result_different_item(self):
         data = copy.deepcopy(self.ref_result_data)
-        data['item'] = data['item'] + '.fake'
+        data["item"] = data["item"] + ".fake"
         self.helper_create_result(data=data)
 
         prev_result = resultsdb.messaging.get_prev_result(self.ref_result_obj)
@@ -171,7 +176,7 @@ class TestFuncCreateFedmsg():
 
     def test_get_prev_result_different_type(self):
         data = copy.deepcopy(self.ref_result_data)
-        data['type'] = data['type'] + '.fake'
+        data["type"] = data["type"] + ".fake"
         self.helper_create_result(data=data)
 
         prev_result = resultsdb.messaging.get_prev_result(self.ref_result_obj)
@@ -179,14 +184,14 @@ class TestFuncCreateFedmsg():
 
     def test_get_prev_result_different_arch(self):
         data = copy.deepcopy(self.ref_result_data)
-        data['arch'] = data['arch'] + '.fake'
+        data["arch"] = data["arch"] + ".fake"
         self.helper_create_result(data=data)
 
         prev_result = resultsdb.messaging.get_prev_result(self.ref_result_obj)
         assert prev_result is None
 
     def test_get_prev_result_different_testcase_name(self):
-        self.helper_create_result(testcase={'name': self.ref_testcase_name + '.fake'})
+        self.helper_create_result(testcase={"name": self.ref_testcase_name + ".fake"})
 
         prev_result = resultsdb.messaging.get_prev_result(self.ref_result_obj)
         assert prev_result is None

@@ -17,7 +17,6 @@
 # Authors:
 #   Josef Skladanka <jskladan@redhat.com>
 
-import os
 import sys
 from optparse import OptionParser
 
@@ -30,11 +29,12 @@ from resultsdb.models.results import Group, Testcase, Result, ResultData
 
 from sqlalchemy.engine import reflection
 
+
 def get_alembic_config():
     # the location of the alembic ini file and alembic scripts changes when
     # installed via package
     alembic_cfg = Config()
-    alembic_cfg.set_main_option('script_location', 'resultsdb:alembic')
+    alembic_cfg.set_main_option("script_location", "resultsdb:alembic")
     return alembic_cfg
 
 
@@ -73,7 +73,7 @@ def initialize_db(destructive):
     # if it does, we assume that the database is empty
     insp = reflection.Inspector.from_engine(db.engine)
     table_names = insp.get_table_names()
-    if 'testcase' not in table_names and 'Testcase' not in table_names:
+    if "testcase" not in table_names and "Testcase" not in table_names:
         print(" - Creating tables")
         db.create_all()
         print(" - Stamping alembic's current version to 'head'")
@@ -99,18 +99,15 @@ def mock_data(destructive):
         tc1 = Testcase(ref_url="http://example.com/depcheck", name="depcheck")
         tc2 = Testcase(ref_url="http://example.com/rpmlint", name="rpmlint")
 
-        j1 = Group(uuid='5b3f47b4-2ba2-11e5-a343-5254007dccf9', ref_url="http://example.com/job1")
+        j1 = Group(uuid="5b3f47b4-2ba2-11e5-a343-5254007dccf9", ref_url="http://example.com/job1")
 
-        j2 = Group(uuid='4e575b2c-2ba2-11e5-a343-5254007dccf9', ref_url="http://example.com/job2")
+        j2 = Group(uuid="4e575b2c-2ba2-11e5-a343-5254007dccf9", ref_url="http://example.com/job2")
 
-        r1 = Result(groups=[j1], testcase=tc1, outcome='PASSED', ref_url="http://example.com/r1")
+        r1 = Result(groups=[j1], testcase=tc1, outcome="PASSED", ref_url="http://example.com/r1")
         r2 = Result(
-            groups=[j1, j2],
-            testcase=tc1,
-            outcome='FAILED',
-            ref_url="http://example.com/r2"
-            )
-        r3 = Result(groups=[j2], testcase=tc2, outcome='FAILED', ref_url="http://example.com/r2")
+            groups=[j1, j2], testcase=tc1, outcome="FAILED", ref_url="http://example.com/r2"
+        )
+        r3 = Result(groups=[j2], testcase=tc2, outcome="FAILED", ref_url="http://example.com/r2")
 
         ResultData(r1, "item", "cabal-rpm-0.8.3-1.fc18")
         ResultData(r1, "arch", "x86_64")
@@ -134,28 +131,33 @@ def mock_data(destructive):
 
 
 def main():
-    possible_commands = ['init_db', 'mock_data', 'upgrade_db', 'init_alembic']
+    possible_commands = ["init_db", "mock_data", "upgrade_db", "init_alembic"]
 
-    usage = 'usage: [DEV=true] %prog ' + "(%s)" % ' | '.join(possible_commands)
+    usage = "usage: [DEV=true] %prog " + "(%s)" % " | ".join(possible_commands)
     parser = OptionParser(usage=usage)
-    parser.add_option("-d", "--destructive",
-                      action="store_true", dest="destructive", default=False,
-                      help="Drop tables in `init_db`; Store data in `mock_data` "
-                      "even if the tables are not empty")
+    parser.add_option(
+        "-d",
+        "--destructive",
+        action="store_true",
+        dest="destructive",
+        default=False,
+        help="Drop tables in `init_db`; Store data in `mock_data` "
+        "even if the tables are not empty",
+    )
 
     (options, args) = parser.parse_args()
 
     if len(args) != 1 or args[0] not in possible_commands:
         print(usage)
         print
-        print('Please use one of the following commands: %s' % str(possible_commands))
+        print("Please use one of the following commands: %s" % str(possible_commands))
         sys.exit(1)
 
     command = {
-        'init_db': initialize_db,
-        'upgrade_db': upgrade_db,
-        'mock_data': mock_data,
-        'init_alembic': init_alembic,
+        "init_db": initialize_db,
+        "upgrade_db": upgrade_db,
+        "mock_data": mock_data,
+        "init_alembic": init_alembic,
     }[args[0]]
 
     if not options.destructive:
@@ -166,5 +168,5 @@ def main():
     sys.exit(0)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

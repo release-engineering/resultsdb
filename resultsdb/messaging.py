@@ -28,15 +28,26 @@ from resultsdb.models.results import Result, ResultData
 from resultsdb.serializers.api_v2 import Serializer
 
 import logging
+
 log = logging.getLogger(__name__)
 
 try:
     from fedora_messaging.api import Message, publish
-    from fedora_messaging.exceptions import PublishReturned, PublishTimeout, PublishForbidden, ConnectionException
+    from fedora_messaging.exceptions import (
+        PublishReturned,
+        PublishTimeout,
+        PublishForbidden,
+        ConnectionException,
+    )
 except ImportError:
-    if app.config.get('MESSAGE_BUS_PUBLISH_TASKOTRON') or app.config.get('MESSAGE_BUS_PLUGIN') == 'fedmsg':
-        log.error('fedora-messaging must be installed if "MESSAGE_BUS_PUBLISH_TASKOTRON" is '
-                  'enabled or "MESSAGE_BUS_PLUGIN" is set to "fedmsg"')
+    if (
+        app.config.get("MESSAGE_BUS_PUBLISH_TASKOTRON")
+        or app.config.get("MESSAGE_BUS_PLUGIN") == "fedmsg"
+    ):
+        log.error(
+            'fedora-messaging must be installed if "MESSAGE_BUS_PUBLISH_TASKOTRON" is '
+            'enabled or "MESSAGE_BUS_PLUGIN" is set to "fedmsg"'
+        )
         raise
 
 
@@ -58,10 +69,11 @@ def get_prev_result(result):
     q = q.filter_by(testcase_name=result.testcase_name)
 
     for result_data in result.data:
-        if result_data.key in ['item', 'type', 'arch']:
+        if result_data.key in ["item", "type", "arch"]:
             alias = db.aliased(ResultData)
             q = q.join(alias).filter(
-                db.and_(alias.key == result_data.key, alias.value == result_data.value))
+                db.and_(alias.key == result_data.key, alias.value == result_data.value)
+            )
 
     q = q.order_by(db.desc(Result.submit_time))
     return q.first()
@@ -88,35 +100,36 @@ def publish_taskotron_message(result):
     task = dict(
         (datum.key, datum.value)
         for datum in result.data
-        if datum.key in ('item', 'type',)
+        if datum.key
+        in (
+            "item",
+            "type",
+        )
     )
-    task['name'] = result.testcase.name
+    task["name"] = result.testcase.name
     body = {
-        'task': task,
-        'result': {
-            'id': result.id,
-            'submit_time': result.submit_time.strftime("%Y-%m-%d %H:%M:%S UTC"),
-            'prev_outcome': prev_result.outcome if prev_result else None,
-            'outcome': result.outcome,
-            'log_url': result.ref_url,
-        }
+        "task": task,
+        "result": {
+            "id": result.id,
+            "submit_time": result.submit_time.strftime("%Y-%m-%d %H:%M:%S UTC"),
+            "prev_outcome": prev_result.outcome if prev_result else None,
+            "outcome": result.outcome,
+            "log_url": result.ref_url,
+        },
     }
 
     try:
-        msg = Message (
-            topic='taskotron.result.new',
-            body=body
-        )
+        msg = Message(topic="taskotron.result.new", body=body)
         publish(msg)
         log.debug("Message published")
     except PublishReturned as e:
-        log.error('Fedora Messaging broker rejected message {}: {}'.format(msg.id, e))
+        log.error("Fedora Messaging broker rejected message {}: {}".format(msg.id, e))
     except PublishTimeout:
-        log.error('Timeout publishing message {}'.format(msg.id))
+        log.error("Timeout publishing message {}".format(msg.id))
     except PublishForbidden as e:
-        log.error('Permission error publishing message {}: {}'.format(msg.id, e))
+        log.error("Permission error publishing message {}: {}".format(msg.id, e))
     except ConnectionException as e:
-        log.error('Error sending message {}: {}'.format(msg.id, e.reason))
+        log.error("Error sending message {}: {}".format(msg.id, e.reason))
 
 
 def create_message(result):
@@ -125,12 +138,13 @@ def create_message(result):
 
 
 class MessagingPlugin(object):
-    """ Abstract base class that messaging plugins must extend.
+    """Abstract base class that messaging plugins must extend.
 
     One abstract method is declared which must be implemented:
         - publish(message)
 
     """
+
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, **kwargs):
@@ -143,7 +157,8 @@ class MessagingPlugin(object):
 
 
 class DummyPlugin(MessagingPlugin):
-    """ A dummy plugin used for testing.  Just logs the messages. """
+    """A dummy plugin used for testing.  Just logs the messages."""
+
     # A class attribute where we store all messages published.
     # Used by the test suite.  This would cause a memory leak if used in prod.
     history = []
@@ -154,56 +169,53 @@ class DummyPlugin(MessagingPlugin):
 
 
 class FedmsgPlugin(MessagingPlugin):
-    """ A fedmsg plugin, used to publish to the fedmsg bus. """
+    """A fedmsg plugin, used to publish to the fedmsg bus."""
 
     def publish(self, message):
 
         try:
-            msg = Message(
-                topic='{}.result.new'.format(self.modname),
-                body=message
-            )
+            msg = Message(topic="{}.result.new".format(self.modname), body=message)
             publish(msg)
             log.debug("Message published")
         except PublishReturned as e:
-            log.error('Fedora Messaging broker rejected message {}: {}'.format(msg.id, e))
+            log.error("Fedora Messaging broker rejected message {}: {}".format(msg.id, e))
         except PublishTimeout:
-            log.error('Timeout publishing message {}'.format(msg.id))
+            log.error("Timeout publishing message {}".format(msg.id))
         except PublishForbidden as e:
-            log.error('Permission error publishing message {}: {}'.format(msg.id, e))
+            log.error("Permission error publishing message {}: {}".format(msg.id, e))
         except ConnectionException as e:
-            log.error('Error sending message {}: {}'.format(msg.id, e.reason))
+            log.error("Error sending message {}: {}".format(msg.id, e.reason))
 
 
 class StompPlugin(MessagingPlugin):
     def __init__(self, **kwargs):
         args = kwargs.copy()
-        conn_args = args['connection'].copy()
-        if 'use_ssl' in conn_args:
-            use_ssl = conn_args['use_ssl']
-            del conn_args['use_ssl']
+        conn_args = args["connection"].copy()
+        if "use_ssl" in conn_args:
+            use_ssl = conn_args["use_ssl"]
+            del conn_args["use_ssl"]
         else:
             use_ssl = False
 
-        ssl_args = {'for_hosts': conn_args.get('host_and_ports', [])}
-        for attr in ('key_file', 'cert_file', 'ca_certs'):
-            conn_attr = f'ssl_{attr}'
+        ssl_args = {"for_hosts": conn_args.get("host_and_ports", [])}
+        for attr in ("key_file", "cert_file", "ca_certs"):
+            conn_attr = f"ssl_{attr}"
             if conn_attr in conn_args:
                 ssl_args[attr] = conn_args[conn_attr]
                 del conn_args[conn_attr]
 
-        if 'ssl_version' in conn_args:
-            ssl_args['ssl_version'] = conn_args['ssl_version']
-            del conn_args['ssl_version']
+        if "ssl_version" in conn_args:
+            ssl_args["ssl_version"] = conn_args["ssl_version"]
+            del conn_args["ssl_version"]
 
-        args['connection'] = conn_args
-        args['use_ssl'] = use_ssl
-        args['ssl_args'] = ssl_args
+        args["connection"] = conn_args
+        args["use_ssl"] = use_ssl
+        args["ssl_args"] = ssl_args
 
         super(StompPlugin, self).__init__(**args)
 
         # Validate that some required config is present
-        required = ['connection', 'destination']
+        required = ["connection", "destination"]
         for attr in required:
             if getattr(self, attr, None) is None:
                 raise ValueError("%r required for %r." % (attr, self))
@@ -226,9 +238,9 @@ class StompPlugin(MessagingPlugin):
 
 
 def load_messaging_plugin(name, kwargs):
-    """ Instantiate and return the appropriate messaging plugin. """
-    points = pkg_resources.iter_entry_points('resultsdb.messaging.plugins')
-    classes = {'dummy': DummyPlugin}
+    """Instantiate and return the appropriate messaging plugin."""
+    points = pkg_resources.iter_entry_points("resultsdb.messaging.plugins")
+    classes = {"dummy": DummyPlugin}
     classes.update(dict([(point.name, point.load()) for point in points]))
 
     log.debug("Found the following installed messaging plugin %r" % classes)

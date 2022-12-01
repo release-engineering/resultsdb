@@ -22,15 +22,14 @@ from resultsdb.serializers import BaseSerializer
 
 
 class Serializer(BaseSerializer):
-
     def _serialize_Group(self, o, **kwargs):
         rv = dict(
             uuid=o.uuid,
             description=o.description,
             ref_url=o.ref_url,
-            results=url_for('api_v2.get_results', groups=[o.uuid], _external=True),
+            results=url_for("api_v2.get_results", groups=[o.uuid], _external=True),
             results_count=len(o.results),
-            href=url_for('api_v2.get_group', group_id=o.uuid, _external=True),
+            href=url_for("api_v2.get_group", group_id=o.uuid, _external=True),
         )
 
         return {key: self.serialize(value) for key, value in rv.items()}
@@ -39,7 +38,7 @@ class Serializer(BaseSerializer):
         rv = dict(
             name=o.name,
             ref_url=o.ref_url,
-            href=url_for('api_v2.get_testcase', testcase_name=o.name, _external=True),
+            href=url_for("api_v2.get_testcase", testcase_name=o.name, _external=True),
         )
 
         return {key: self.serialize(value) for key, value in rv.items()}
@@ -61,7 +60,7 @@ class Serializer(BaseSerializer):
             note=o.note,
             ref_url=o.ref_url,
             data=result_data,
-            href=url_for('api_v2.get_result', result_id=o.id, _external=True),
+            href=url_for("api_v2.get_result", result_id=o.id, _external=True),
         )
 
         return {key: self.serialize(value) for key, value in rv.items()}

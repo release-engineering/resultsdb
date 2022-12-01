@@ -24,24 +24,25 @@ from resultsdb import db, app
 from resultsdb.serializers import DBSerialize
 
 
-__all__ = ['Testcase', 'Group', 'Result', 'ResultData', 'GroupsToResults', 'RESULT_OUTCOME']
+__all__ = ["Testcase", "Group", "Result", "ResultData", "GroupsToResults", "RESULT_OUTCOME"]
 
-PRESET_OUTCOMES = ('PASSED', 'INFO', 'FAILED', 'NEEDS_INSPECTION')
-ADDITIONAL_RESULT_OUTCOMES = tuple(app.config.get('ADDITIONAL_RESULT_OUTCOMES', []))
+PRESET_OUTCOMES = ("PASSED", "INFO", "FAILED", "NEEDS_INSPECTION")
+ADDITIONAL_RESULT_OUTCOMES = tuple(app.config.get("ADDITIONAL_RESULT_OUTCOMES", []))
 RESULT_OUTCOME = PRESET_OUTCOMES + ADDITIONAL_RESULT_OUTCOMES
 JOB_STATUS = []
 
 
 class GroupsToResults(db.Model):
-    __tablename__ = 'groups_to_results'
+    __tablename__ = "groups_to_results"
     id = db.Column(db.Integer, primary_key=True)
-    group_uuid = db.Column(db.String(36), db.ForeignKey('group.uuid'))
-    result_id = db.Column(db.Integer, db.ForeignKey('result.id'))
+    group_uuid = db.Column(db.String(36), db.ForeignKey("group.uuid"))
+    result_id = db.Column(db.Integer, db.ForeignKey("result.id"))
 
     __table_args__ = (
-        db.Index('gtr_fk_group_uuid', 'group_uuid', postgresql_ops={'uuid': 'text_pattern_ops'}),
-        db.Index('gtr_fk_result_id', 'result_id'),
+        db.Index("gtr_fk_group_uuid", "group_uuid", postgresql_ops={"uuid": "text_pattern_ops"}),
+        db.Index("gtr_fk_result_id", "result_id"),
     )
+
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #
@@ -57,12 +58,14 @@ class Group(db.Model, DBSerialize):
     description = db.Column(db.Text)
     ref_url = db.Column(db.Text)
 
-    results = db.relationship("Result", secondary='groups_to_results', backref="groups")
+    results = db.relationship("Result", secondary="groups_to_results", backref="groups")
 
     __table_args__ = (
-        db.Index('group_idx_uuid', 'uuid',
-                 postgresql_ops={'uuid': 'text_pattern_ops'},
-                 ),
+        db.Index(
+            "group_idx_uuid",
+            "uuid",
+            postgresql_ops={"uuid": "text_pattern_ops"},
+        ),
     )
 
     def __init__(self, uuid=None, ref_url=None, description=None):
@@ -80,9 +83,11 @@ class Testcase(db.Model, DBSerialize):
     ref_url = db.Column(db.Text)
 
     __table_args__ = (
-        db.Index('testcase_idx_name', 'name',
-                 postgresql_ops={'name': 'text_pattern_ops'},
-                 ),
+        db.Index(
+            "testcase_idx_name",
+            "name",
+            postgresql_ops={"name": "text_pattern_ops"},
+        ),
     )
 
     def __init__(self, name, ref_url=None):
@@ -93,23 +98,28 @@ class Testcase(db.Model, DBSerialize):
 class Result(db.Model, DBSerialize):
 
     id = db.Column(db.Integer, primary_key=True)
-    testcase_name = db.Column(db.Text, db.ForeignKey('testcase.name'))
+    testcase_name = db.Column(db.Text, db.ForeignKey("testcase.name"))
 
     submit_time = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     outcome = db.Column(db.String(32))
     note = db.Column(db.Text)
     ref_url = db.Column(db.Text)
 
-    testcase = db.relation('Testcase', backref='results')  # , lazy = False)
-    data = db.relation('ResultData', backref='result')  # , lazy = False)
+    testcase = db.relation("Testcase", backref="results")  # , lazy = False)
+    data = db.relation("ResultData", backref="result")  # , lazy = False)
 
     __table_args__ = (
-        db.Index('result_fk_testcase_name', 'testcase_name',
-                 postgresql_ops={'testcase_name': 'text_pattern_ops'}),
-        db.Index('result_submit_time', 'submit_time'),
-        db.Index('result_idx_outcome', 'outcome',
-                 postgresql_ops={'outcome': 'text_pattern_ops'},
-                 ),
+        db.Index(
+            "result_fk_testcase_name",
+            "testcase_name",
+            postgresql_ops={"testcase_name": "text_pattern_ops"},
+        ),
+        db.Index("result_submit_time", "submit_time"),
+        db.Index(
+            "result_idx_outcome",
+            "outcome",
+            postgresql_ops={"outcome": "text_pattern_ops"},
+        ),
     )
 
     def __init__(self, testcase, outcome, groups=None, ref_url=None, note=None, submit_time=None):
@@ -124,16 +134,19 @@ class Result(db.Model, DBSerialize):
 class ResultData(db.Model, DBSerialize):
 
     id = db.Column(db.Integer, primary_key=True)
-    result_id = db.Column(db.Integer, db.ForeignKey('result.id'))
+    result_id = db.Column(db.Integer, db.ForeignKey("result.id"))
 
     key = db.Column(db.Text)
     value = db.Column(db.Text)
 
     __table_args__ = (
-        db.Index('result_data_idx_key_value', 'key', 'value',
-                 postgresql_ops={'key': 'text_pattern_ops', 'value': 'text_pattern_ops'},
-                 ),
-        db.Index('result_data_fk_result_id', 'result_id'),
+        db.Index(
+            "result_data_idx_key_value",
+            "key",
+            "value",
+            postgresql_ops={"key": "text_pattern_ops", "value": "text_pattern_ops"},
+        ),
+        db.Index("result_data_fk_result_id", "result_id"),
     )
 
     def __init__(self, result, key, value):

@@ -1,1 +1,3 @@
-from resultsdb import app as application
+# SPDX-License-Identifier: GPL-2.0+
+import resultsdb
+application = resultsdb.app

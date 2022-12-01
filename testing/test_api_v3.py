@@ -18,9 +18,7 @@ def app():
 def mock_ldap():
     with patch("ldap.initialize") as ldap_init:
         con = Mock()
-        con.search_s.return_value = [
-            ("ou=Groups,dc=example,dc=com", {"cn": [b"testgroup1"]})
-        ]
+        con.search_s.return_value = [("ou=Groups,dc=example,dc=com", {"cn": [b"testgroup1"]})]
         ldap_init.return_value = con
         yield con
 
@@ -244,10 +242,7 @@ def test_api_v3_permission_denied(client, permissions):
     data = brew_build_request_data()
     r = client.post("/api/v3/results/brew-builds", json=data)
     assert r.status_code == 401, r.text
-    assert (
-        "You are not authorized to submit a result for the test case testcase1"
-        in r.text
-    )
+    assert "You are not authorized to submit a result for the test case testcase1" in r.text
 
 
 def test_api_v3_permission_matches_username(client, permissions):

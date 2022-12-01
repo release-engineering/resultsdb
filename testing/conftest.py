@@ -8,20 +8,21 @@ import pytest
 def mock_db(tmpdir_factory):
     postgres_port = os.getenv("POSTGRES_5432_TCP", None)
     if postgres_port:
-        dburi = (
-            "postgresql+psycopg2://resultsdb:resultsdb@"
-            f"localhost:{postgres_port}/resultsdb"
-        )
+        dburi = "postgresql+psycopg2://resultsdb:resultsdb@" f"localhost:{postgres_port}/resultsdb"
     else:
         dbfile = tmpdir_factory.mktemp("data").join("test_db.sqlite")
         dburi = f"sqlite:///{dbfile}"
 
-    with patch.dict("resultsdb.app.config", {
+    with patch.dict(
+        "resultsdb.app.config",
+        {
             "SQLALCHEMY_DATABASE_URI": dburi,
             "MESSAGE_BUS_PUBLISH": True,
             "MESSAGE_BUS_PLUGIN": "dummy",
-    }):
+        },
+    ):
         import resultsdb
+
         resultsdb.db.drop_all()
         resultsdb.db.create_all()
         yield
@@ -33,16 +34,17 @@ def pytest_addoption(parser):
     should be detected and run
     """
 
-    parser.addoption('-F', '--functional', action='store_true', default=False,
-                     help='Add functional tests')
+    parser.addoption(
+        "-F", "--functional", action="store_true", default=False, help="Add functional tests"
+    )
 
 
 def pytest_ignore_collect(path, config):
     """Prevents collection of any files named functest* to speed up non
-        integration tests"""
-    if path.fnmatch('*functest*'):
+    integration tests"""
+    if path.fnmatch("*functest*"):
         try:
-            is_functional = config.getvalue('functional')
+            is_functional = config.getvalue("functional")
         except KeyError:
             return True
 
@@ -53,4 +55,4 @@ def pytest_configure(config):
     """Called after command line options have been parsed and all plugins and
     initial conftest files been loaded."""
 
-    os.environ['TEST'] = 'true'
+    os.environ["TEST"] = "true"
