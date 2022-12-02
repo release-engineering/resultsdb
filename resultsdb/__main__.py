@@ -135,9 +135,5 @@ def mock_data():
         print(" - skipped Testcase, Job, Result, ResultData")
 
 
-def main():
-    cli(obj={})
-
-
 if __name__ == "__main__":
-    main()
+    cli()
