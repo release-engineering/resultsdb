@@ -1,8 +1,5 @@
-#!/usr/bin/bash
-# this is a simple script to aid in the setup of a new db for F18
-
-# init db
-python run_cli.py init_db
-
-# insert mock data
-python run_cli.py mock_data
+#!/bin/bash
+set -e
+poetry run resultsdb init_alembic
+poetry run resultsdb init_db
+poetry run resultsdb mock_data
