@@ -15,7 +15,7 @@ QUERY_LIMIT = 20
 def parse_since(since):
     since_start = None
     since_end = None
-    s = since.split(',')
+    s = since.split(",")
     since_start = iso8601.parse_date(s[0])
     try:
         since_start = since_start.replace(tzinfo=None)  # we need to strip timezone info
@@ -46,7 +46,7 @@ class BaseListParams(BaseModel):
 class GroupsParams(BaseListParams):
     uuid: Optional[str]
     description: Optional[str]
-    description_like_: Optional[str] = Field(alias='description:like')
+    description_like_: Optional[str] = Field(alias="description:like")
 
 
 class CreateGroupParams(BaseModel):
@@ -63,34 +63,30 @@ class QueryList(List[str]):
     @classmethod
     def validate(cls, v):
         if isinstance(v, str):
-            return cls([
-                x for x in (x.strip() for x in v.split(',')) if x
-            ])
+            return cls([x for x in (x.strip() for x in v.split(",")) if x])
         if isinstance(v, list) and len(v) == 1 and isinstance(v[0], str):
-            return cls([
-                x for x in (x.strip() for x in v[0].split(',')) if x
-            ])
+            return cls([x for x in (x.strip() for x in v[0].split(",")) if x])
         return cls(v)
 
 
 class ResultsParams(BaseListParams):
-    sort_: str = Field(alias='_sort', default='')
-    since: dict = {'start': None, 'end': None}
+    sort_: str = Field(alias="_sort", default="")
+    since: dict = {"start": None, "end": None}
     outcome: Optional[QueryList]
     groups: Optional[QueryList]
     testcases: Optional[QueryList]
-    testcases_like_: Optional[QueryList] = Field(alias='testcases:like')
-    distinct_on_: Optional[QueryList] = Field(alias='_distinct_on')
+    testcases_like_: Optional[QueryList] = Field(alias="testcases:like")
+    distinct_on_: Optional[QueryList] = Field(alias="_distinct_on")
 
-    @validator('since', pre=True)
+    @validator("since", pre=True)
     def parse_since(cls, v):
         try:
             s, e = parse_since(v[0])
         except iso8601.iso8601.ParseError:
-            raise ValueError('must be in ISO8601 format')
-        return {'start': s, 'end': e}
+            raise ValueError("must be in ISO8601 format")
+        return {"start": s, "end": e}
 
-    @validator('outcome')
+    @validator("outcome")
     def outcome_must_be_valid(cls, v):
         outcomes = [x.upper() for x in v]
         if any(x not in RESULT_OUTCOME for x in outcomes):
@@ -107,15 +103,15 @@ class CreateResultParams(BaseModel):
     ref_url: Optional[str]
     submit_time: Any
 
-    @validator('testcase', pre=True)
+    @validator("testcase", pre=True)
     def parse_testcase(cls, v):
-        if not v or (isinstance(v, dict) and not v.get('name')):
-            raise ValueError('testcase name must be non-empty')
+        if not v or (isinstance(v, dict) and not v.get("name")):
+            raise ValueError("testcase name must be non-empty")
         if isinstance(v, str):
-            return {'name': v}
+            return {"name": v}
         return v
 
-    @validator('submit_time', pre=True)
+    @validator("submit_time", pre=True)
     def parse_submit_time(cls, v):
         if isinstance(v, datetime):
             return v
@@ -124,9 +120,9 @@ class CreateResultParams(BaseModel):
         if isinstance(v, Number):
             return time_from_milliseconds(v)
         if isinstance(v, str):
-            for suffix in ('Z', '', '%z', '+00'):
+            for suffix in ("Z", "", "%z", "+00"):
                 try:
-                    return datetime.strptime(v, f'%Y-%m-%dT%H:%M:%S.%f{suffix}')
+                    return datetime.strptime(v, f"%Y-%m-%dT%H:%M:%S.%f{suffix}")
                 except ValueError:
                     pass
 
@@ -140,13 +136,13 @@ class CreateResultParams(BaseModel):
             " got %r" % v
         )
 
-    @validator('testcase')
+    @validator("testcase")
     def testcase_must_be_valid(cls, v):
-        if isinstance(v, dict) and not v.get('name'):
+        if isinstance(v, dict) and not v.get("name"):
             raise ""
         return v
 
-    @validator('outcome')
+    @validator("outcome")
     def outcome_must_be_valid(cls, v):
         if v not in RESULT_OUTCOME:
             raise ValueError(f'must be one of: {", ".join(RESULT_OUTCOME)}')
@@ -155,7 +151,7 @@ class CreateResultParams(BaseModel):
 
 class TestcasesParams(BaseListParams):
     name: Optional[str]
-    name_like_: Optional[str] = Field(alias='name:like')
+    name_like_: Optional[str] = Field(alias="name:like")
 
 
 class CreateTestcaseParams(BaseModel):

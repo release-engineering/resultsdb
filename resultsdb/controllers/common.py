@@ -36,9 +36,7 @@ def commit_result(result):
         plugin.publish(create_message(result))
 
     if app.config["MESSAGE_BUS_PUBLISH_TASKOTRON"]:
-        app.logger.debug(
-            "Preparing to publish Taskotron message for result id %d", result.id
-        )
+        app.logger.debug("Preparing to publish Taskotron message for result id %d", result.id)
         publish_taskotron_message(result)
 
     return jsonify(SERIALIZE(result)), 201

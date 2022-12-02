@@ -230,12 +230,10 @@ class ResultParamsBase(BaseModel):
 
     @root_validator
     def only_available_for_error_outcome(cls, values):
-        if (
-            values["error_reason"] is not None or values["issue_url"] is not None
-        ) and values.get("outcome") != "ERROR":
-            raise ValueError(
-                "error_reason and issue_url can be only set for ERROR outcome"
-            )
+        if (values["error_reason"] is not None or values["issue_url"] is not None) and values.get(
+            "outcome"
+        ) != "ERROR":
+            raise ValueError("error_reason and issue_url can be only set for ERROR outcome")
         return values
 
     @classmethod

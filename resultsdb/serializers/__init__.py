@@ -24,17 +24,17 @@ try:
 except NameError:
     basestring = (str, bytes)
 
+
 class DBSerialize(object):
     pass
 
 
 class BaseSerializer(object):
-
     def serialize(self, value, **kwargs):
         # serialize the database objects
         #   the specific serializer needs to implement serialize_CLASSNAME methods
         if DBSerialize in value.__class__.__bases__:
-            return getattr(self, '_serialize_%s' % value.__class__.__name__)(value, **kwargs)
+            return getattr(self, "_serialize_%s" % value.__class__.__name__)(value, **kwargs)
 
         # convert datetimes to the right format
         if type(value) in (datetime, date):
@@ -46,12 +46,12 @@ class BaseSerializer(object):
                 ret[k] = self.serialize(v, **kwargs)
             return ret
 
-        #in py3 string-like types have __iter__ causing endless loops
+        # in py3 string-like types have __iter__ causing endless loops
         if isinstance(value, basestring):
             return value
 
         # convert iterables to list of serialized stuff
-        if hasattr(value, '__iter__'):
+        if hasattr(value, "__iter__"):
             ret = []
             for v in value:
                 ret.append(self.serialize(v, **kwargs))

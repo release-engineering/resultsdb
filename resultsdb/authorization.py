@@ -36,8 +36,7 @@ def match_testcase_permissions(testcase, permissions):
     for permission in permissions:
         if "testcases" in permission:
             testcase_match = any(
-                fnmatch(testcase, testcase_pattern)
-                for testcase_pattern in permission["testcases"]
+                fnmatch(testcase, testcase_pattern) for testcase_pattern in permission["testcases"]
             )
         elif "_testcase_regex_pattern" in permission:
             testcase_match = re.search(permission["_testcase_regex_pattern"], testcase)
@@ -51,8 +50,7 @@ def match_testcase_permissions(testcase, permissions):
 def verify_authorization(user, testcase, permissions, ldap_host, ldap_searches):
     if not (ldap_host and ldap_searches):
         raise InternalServerError(
-            "LDAP_HOST and LDAP_SEARCHES also need to be defined "
-            "if PERMISSIONS is defined."
+            "LDAP_HOST and LDAP_SEARCHES also need to be defined " "if PERMISSIONS is defined."
         )
 
     allowed_groups = []
@@ -64,9 +62,7 @@ def verify_authorization(user, testcase, permissions, ldap_host, ldap_searches):
     try:
         import ldap
     except ImportError:
-        raise InternalServerError(
-            "If PERMISSIONS is defined, python-ldap needs to be installed."
-        )
+        raise InternalServerError("If PERMISSIONS is defined, python-ldap needs to be installed.")
 
     try:
         con = ldap.initialize(ldap_host)
@@ -84,6 +80,4 @@ def verify_authorization(user, testcase, permissions, ldap_host, ldap_searches):
     if not any_groups_found:
         raise Unauthorized(f"Failed to find user {user} in LDAP")
 
-    raise Unauthorized(
-        f"You are not authorized to submit a result for the test case {testcase}"
-    )
+    raise Unauthorized(f"You are not authorized to submit a result for the test case {testcase}")

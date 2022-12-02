@@ -40,7 +40,7 @@ from resultsdb.parsers.api_v2 import (
 from resultsdb.models.results import Group, Result, Testcase, ResultData
 from resultsdb.models.results import RESULT_OUTCOME
 
-api = Blueprint('api_v2', __name__)
+api = Blueprint("api_v2", __name__)
 
 try:
     basestring
@@ -63,17 +63,19 @@ def bad_request(error):
 def not_found(error):
     return jsonify({"message": "Not found"}), 404
 
+
 # =============================================================================
 #                               GLOBAL VARIABLES
 # =============================================================================
 
 RE_PAGE = re.compile(r"([?&])page=([0-9]+)")
 RE_CALLBACK = re.compile(r"([?&])callback=[^&]*&?")
-RE_CLEAN_AMPERSANDS = re.compile(r'&+')
+RE_CLEAN_AMPERSANDS = re.compile(r"&+")
 
 # =============================================================================
 #                               GLOBAL METHODS
 # =============================================================================
+
 
 def pagination(q, page, limit):
     """
@@ -117,7 +119,7 @@ def prev_next_urls(data, limit=QUERY_LIMIT):
         baseurl = RE_PAGE.sub("%spage=%s" % (flag, placeholder), request.url)
 
     baseurl = RE_CALLBACK.sub(r"\1", baseurl)
-    baseurl = RE_CLEAN_AMPERSANDS.sub('&', baseurl)
+    baseurl = RE_CLEAN_AMPERSANDS.sub("&", baseurl)
 
     if page > 0:
         prev = baseurl.replace(placeholder, str(page - 1))
@@ -133,20 +135,20 @@ def prev_next_urls(data, limit=QUERY_LIMIT):
 # =============================================================================
 
 
-@api.route('/groups', methods=['GET'])
+@api.route("/groups", methods=["GET"])
 @validate()
 def get_groups(query: GroupsParams):
     q = db.session.query(Group).order_by(db.desc(Group.id))
 
     desc_filters = []
     if query.description:
-        for description in query.description.split(','):
+        for description in query.description.split(","):
             if not description.strip():
                 continue
             desc_filters.append(Group.description == description)
-#        desc_filters.append(Group.description.in_(query.description.split(',')))
+    #        desc_filters.append(Group.description.in_(query.description.split(',')))
     elif query.description_like_:
-        for description in query.description_like_.split(','):
+        for description in query.description_like_.split(","):
             if not description.strip():
                 continue
             desc_filters.append(Group.description.like(description.replace("*", "%")))
@@ -155,29 +157,31 @@ def get_groups(query: GroupsParams):
 
     # Filter by uuid
     if query.uuid:
-        q = q.filter(Group.uuid.in_(query.uuid.split(',')))
+        q = q.filter(Group.uuid.in_(query.uuid.split(",")))
 
     q = pagination(q, query.page, query.limit)
     data, prev, next = prev_next_urls(q.all(), query.limit)
 
-    return jsonify(dict(
-        prev=prev,
-        next=next,
-        data=[SERIALIZE(o) for o in data],
-    ))
+    return jsonify(
+        dict(
+            prev=prev,
+            next=next,
+            data=[SERIALIZE(o) for o in data],
+        )
+    )
 
 
-@api.route('/groups/<group_id>', methods=['GET'])
+@api.route("/groups/<group_id>", methods=["GET"])
 def get_group(group_id):
     q = Group.query.filter_by(uuid=group_id)
     group = q.first()
     if not group:
-        return jsonify({'message': "Group not found"}), 404
+        return jsonify({"message": "Group not found"}), 404
 
     return jsonify(SERIALIZE(group))
 
 
-@api.route('/groups', methods=['POST'])
+@api.route("/groups", methods=["POST"])
 @validate()
 def create_group(body: CreateGroupParams):
     if body.uuid:
@@ -201,19 +205,28 @@ def create_group(body: CreateGroupParams):
 # =============================================================================
 #                                     RESULTS
 # =============================================================================
-def select_results(since_start=None, since_end=None, outcomes=None, groups=None, testcases=None, testcases_like=None, result_data=None, _sort=None):
+def select_results(
+    since_start=None,
+    since_end=None,
+    outcomes=None,
+    groups=None,
+    testcases=None,
+    testcases_like=None,
+    result_data=None,
+    _sort=None,
+):
     # Checks if the sort parameter specified in the request is valid before querying.
     # Sorts by submit_time in a descending order if the sort parameter is absent or invalid.
     q = db.session.query(Result)
     query_sorted = False
     if _sort:
-        sort_match = re.match(r'^(?P<order>asc|desc):(?P<column>.+)$', _sort)
-        if sort_match and sort_match.group('column') == 'submit_time':
-            sort_order = {'asc': db.asc, 'desc': db.desc}[sort_match.group('order')]
-            sort_column = getattr(Result, sort_match.group('column'))
+        sort_match = re.match(r"^(?P<order>asc|desc):(?P<column>.+)$", _sort)
+        if sort_match and sort_match.group("column") == "submit_time":
+            sort_order = {"asc": db.asc, "desc": db.desc}[sort_match.group("order")]
+            sort_column = getattr(Result, sort_match.group("column"))
             q = q.order_by(sort_order(sort_column))
             query_sorted = True
-    if _sort and _sort == 'disable_sorting':
+    if _sort and _sort == "disable_sorting":
         query_sorted = True
     if not query_sorted:
         q = q.order_by(db.desc(Result.submit_time))
@@ -238,7 +251,7 @@ def select_results(since_start=None, since_end=None, outcomes=None, groups=None,
         filter_by_testcase.append(Result.testcase_name.in_(testcases))
     if testcases_like:
         for testcase in testcases_like:
-            testcase = testcase.replace('*', '%')
+            testcase = testcase.replace("*", "%")
             filter_by_testcase.append(Result.testcase_name.like(testcase))
     if filter_by_testcase:
         q = q.filter(db.or_(*filter_by_testcase))
@@ -247,11 +260,11 @@ def select_results(since_start=None, since_end=None, outcomes=None, groups=None,
     if result_data is not None:
         for key, values in result_data.items():
             try:
-                key, modifier = key.split(':')
+                key, modifier = key.split(":")
             except ValueError:  # no : in key
                 key, modifier = (key, None)
 
-            if modifier == 'like':
+            if modifier == "like":
                 alias = db.aliased(ResultData)
                 if len(values) > 1:  # multiple values
                     likes = []
@@ -262,7 +275,7 @@ def select_results(since_start=None, since_end=None, outcomes=None, groups=None,
                     # put it together to (key = key AND (value LIKE foo OR value LIKE bar OR ...))
                     q = q.join(alias).filter(db.and_(alias.key == key, db.or_(*likes)))
                 else:
-                    value = values[0].replace('*', '%')
+                    value = values[0].replace("*", "%")
                     q = q.join(alias).filter(db.and_(alias.key == key, alias.value.like(value)))
 
             else:
@@ -273,15 +286,15 @@ def select_results(since_start=None, since_end=None, outcomes=None, groups=None,
 
 def __get_results_parse_args(query: ResultsParams):
     args = {
-        '_sort': query.sort_,
-        'limit': query.limit,
-        'page': query.page,
-        'testcases': query.testcases,
-        'testcases:like': query.testcases_like_,
-        'groups': query.groups,
-        '_distinct_on': query.distinct_on_,
-        'outcome': query.outcome,
-        'since': query.since,
+        "_sort": query.sort_,
+        "limit": query.limit,
+        "page": query.page,
+        "testcases": query.testcases,
+        "testcases:like": query.testcases_like_,
+        "groups": query.groups,
+        "_distinct_on": query.distinct_on_,
+        "outcome": query.outcome,
+        "since": query.since,
     }
 
     # find results_data with the query parameters
@@ -293,61 +306,63 @@ def __get_results_parse_args(query: ResultsParams):
     results_data = {k: request.args.getlist(k) for k in request.args.keys() if k not in args}
     for param, values in results_data.items():
         for i, value in enumerate(values):
-            results_data[param][i] = value.split(',')
+            results_data[param][i] = value.split(",")
         # flatten the list
         results_data[param] = [item for sublist in results_data[param] for item in sublist]
 
     return {
-        'result_data': results_data if results_data else None,
-        'args': args,
+        "result_data": results_data if results_data else None,
+        "args": args,
     }
 
 
 def __get_results(query: ResultsParams, group_ids=None, testcase_names=None):
     p = __get_results_parse_args(query)
-    args = p['args']
+    args = p["args"]
 
-    groups = group_ids if group_ids is not None else args['groups']
-    testcases = testcase_names if testcase_names is not None else args['testcases']
+    groups = group_ids if group_ids is not None else args["groups"]
+    testcases = testcase_names if testcase_names is not None else args["testcases"]
 
     q = select_results(
-        since_start=args['since']['start'],
-        since_end=args['since']['end'],
-        outcomes=args['outcome'],
+        since_start=args["since"]["start"],
+        since_end=args["since"]["end"],
+        outcomes=args["outcome"],
         groups=groups,
         testcases=testcases,
-        testcases_like=args['testcases:like'],
-        result_data=p['result_data'],
-        _sort=args['_sort'],
+        testcases_like=args["testcases:like"],
+        result_data=p["result_data"],
+        _sort=args["_sort"],
     )
 
-    q = pagination(q, args['page'], args['limit'])
-    data, prev, next = prev_next_urls(q.all(), args['limit'])
+    q = pagination(q, args["page"], args["limit"])
+    data, prev, next = prev_next_urls(q.all(), args["limit"])
 
-    return jsonify(dict(
-        prev=prev,
-        next=next,
-        data=[SERIALIZE(o) for o in data],
-    ))
+    return jsonify(
+        dict(
+            prev=prev,
+            next=next,
+            data=[SERIALIZE(o) for o in data],
+        )
+    )
 
 
-@api.route('/results', methods=['GET'])
+@api.route("/results", methods=["GET"])
 @validate()
 def get_results(query: ResultsParams):
     return __get_results(query)
 
 
-@api.route('/results/latest', methods=['GET'])
+@api.route("/results/latest", methods=["GET"])
 @validate()
 def get_results_latest(query: ResultsParams):
     p = __get_results_parse_args(query)
-    args = p['args']
-    since_start = args['since'].get('start', None)
-    since_end = args['since'].get('end', None)
-    groups = args.get('groups', None)
-    testcases = args.get('testcases', None)
-    testcases_like = args.get('testcases:like', None)
-    distinct_on = args.get('_distinct_on', None)
+    args = p["args"]
+    since_start = args["since"].get("start", None)
+    since_end = args["since"].get("end", None)
+    groups = args.get("groups", None)
+    testcases = args.get("testcases", None)
+    testcases_like = args.get("testcases:like", None)
+    distinct_on = args.get("_distinct_on", None)
 
     if not distinct_on:
         q = select_results(
@@ -356,48 +371,67 @@ def get_results_latest(query: ResultsParams):
             groups=groups,
             testcases=testcases,
             testcases_like=testcases_like,
-            result_data=p['result_data'],
+            result_data=p["result_data"],
         )
 
         # Produce a subquery with the same filter criteria as above *except*
         # test case name, which we group by and join on.
-        sq = select_results(
-            since_start=since_start,
-            since_end=since_end,
-            groups=groups,
-            result_data=p['result_data'],
-            )\
-            .order_by(None)\
+        sq = (
+            select_results(
+                since_start=since_start,
+                since_end=since_end,
+                groups=groups,
+                result_data=p["result_data"],
+            )
+            .order_by(None)
             .with_entities(
-                Result.testcase_name.label('testcase_name'),
-                db.func.max(Result.submit_time).label('max_submit_time'))\
-            .group_by(Result.testcase_name)\
+                Result.testcase_name.label("testcase_name"),
+                db.func.max(Result.submit_time).label("max_submit_time"),
+            )
+            .group_by(Result.testcase_name)
             .subquery()
-        q = q.join(sq, db.and_(Result.testcase_name == sq.c.testcase_name,
-                               Result.submit_time == sq.c.max_submit_time))
+        )
+        q = q.join(
+            sq,
+            db.and_(
+                Result.testcase_name == sq.c.testcase_name,
+                Result.submit_time == sq.c.max_submit_time,
+            ),
+        )
 
         results = q.all()
 
-        return jsonify(dict(
-            data=[SERIALIZE(o) for o in results],
-        ))
+        return jsonify(
+            dict(
+                data=[SERIALIZE(o) for o in results],
+            )
+        )
 
-
-    if not any([testcases, testcases_like, since_start, since_end, groups, p['result_data']]):
-        return jsonify({'message': ("Please, provide at least one "
-                                    "filter beside '_distinct_on'")}), 400
+    if not any([testcases, testcases_like, since_start, since_end, groups, p["result_data"]]):
+        return (
+            jsonify({"message": ("Please, provide at least one " "filter beside '_distinct_on'")}),
+            400,
+        )
 
     q = db.session.query(Result)
-    q = select_results(since_start=since_start, since_end=since_end,
-                       groups=groups, testcases=testcases,
-                       testcases_like=testcases_like, result_data=p['result_data'], _sort="disable_sorting")
+    q = select_results(
+        since_start=since_start,
+        since_end=since_end,
+        groups=groups,
+        testcases=testcases,
+        testcases_like=testcases_like,
+        result_data=p["result_data"],
+        _sort="disable_sorting",
+    )
 
     values_distinct_on = [Result.testcase_name]
     for i, key in enumerate(distinct_on):
-        name = 'result_data_%s_%s' % (i, key)
-        alias = db.aliased(db.session.query(ResultData).filter(ResultData.key == key).subquery(), name=name)
+        name = "result_data_%s_%s" % (i, key)
+        alias = db.aliased(
+            db.session.query(ResultData).filter(ResultData.key == key).subquery(), name=name
+        )
         q = q.outerjoin(alias)
-        values_distinct_on.append(db.text('{}.value'.format(name)))
+        values_distinct_on.append(db.text("{}.value".format(name)))
 
     q = q.distinct(*values_distinct_on)
     q = q.order_by(*values_distinct_on).order_by(db.desc(Result.submit_time))
@@ -406,54 +440,54 @@ def get_results_latest(query: ResultsParams):
     results = dict(
         data=[SERIALIZE(o) for o in results],
     )
-    results['data'] = sorted(results['data'], key=lambda x: x['submit_time'], reverse=True)
+    results["data"] = sorted(results["data"], key=lambda x: x["submit_time"], reverse=True)
     return jsonify(results)
 
 
-@api.route('/groups/<group_id>/results', methods=['GET'])
+@api.route("/groups/<group_id>/results", methods=["GET"])
 @validate()
 def get_results_by_group(group_id: str, query: ResultsParams):
     group = Group.query.filter_by(uuid=group_id).first()
     if not group:
-        return jsonify({'message': "Group not found: %s" % (group_id,)}), 404
+        return jsonify({"message": "Group not found: %s" % (group_id,)}), 404
     return __get_results(query, group_ids=[group.uuid])
 
 
-@api.route('/testcases/<path:testcase_name>/results', methods=['GET'])
+@api.route("/testcases/<path:testcase_name>/results", methods=["GET"])
 @validate()
 def get_results_by_testcase(testcase_name: str, query: ResultsParams):
     testcase = Testcase.query.filter_by(name=testcase_name).first()
     if not testcase:
-        return jsonify({'message': "Testcase not found"}), 404
+        return jsonify({"message": "Testcase not found"}), 404
     return __get_results(query, testcase_names=[testcase.name])
 
 
-@api.route('/results/<result_id>', methods=['GET'])
+@api.route("/results/<result_id>", methods=["GET"])
 def get_result(result_id):
     try:
         result = Result.query.filter_by(id=result_id).one()
     except orm_exc.NoResultFound:
-        return jsonify({'message': "Result not found"}), 404
+        return jsonify({"message": "Result not found"}), 404
 
     return jsonify(SERIALIZE(result))
 
 
-@api.route('/results', methods=['POST'])
+@api.route("/results", methods=["POST"])
 @validate()
 def create_result(body: CreateResultParams):
     if body.data:
-        invalid_keys = [key for key in body.data.keys() if ':' in key]
+        invalid_keys = [key for key in body.data.keys() if ":" in key]
         if invalid_keys:
             app.logger.warning("Colon not allowed in key name: %s", invalid_keys)
-            return jsonify({'message': "Colon not allowed in key name: %r" % invalid_keys}), 400
+            return jsonify({"message": "Colon not allowed in key name: %r" % invalid_keys}), 400
 
     tc = body.testcase
 
-    testcase = Testcase.query.filter_by(name=tc['name']).first()
+    testcase = Testcase.query.filter_by(name=tc["name"]).first()
     if not testcase:
-        app.logger.debug("Testcase %s does not exist yet. Creating", tc['name'])
-        testcase = Testcase(name=tc['name'])
-    testcase.ref_url = tc.get('ref_url', testcase.ref_url)
+        app.logger.debug("Testcase %s does not exist yet. Creating", tc["name"])
+        testcase = Testcase(name=tc["name"])
+    testcase.ref_url = tc.get("ref_url", testcase.ref_url)
     db.session.add(testcase)
 
     # groups is a list of strings(uuid) or dicts(group object)
@@ -466,14 +500,14 @@ def create_result(body: CreateResultParams):
             if isinstance(grp, basestring):
                 grp = dict(uuid=grp)
             elif isinstance(grp, dict):
-                grp['uuid'] = grp.get('uuid', str(uuid.uuid1()))
+                grp["uuid"] = grp.get("uuid", str(uuid.uuid1()))
 
-            group = Group.query.filter_by(uuid=grp['uuid']).first()
+            group = Group.query.filter_by(uuid=grp["uuid"]).first()
             if not group:
-                group = Group(uuid=grp['uuid'])
+                group = Group(uuid=grp["uuid"])
 
-            group.description = grp.get('description', group.description)
-            group.ref_url = grp.get('ref_url', group.ref_url)
+            group.description = grp.get("description", group.description)
+            group.ref_url = grp.get("ref_url", group.ref_url)
 
             db.session.add(group)
             groups.append(group)
@@ -483,7 +517,8 @@ def create_result(body: CreateResultParams):
     #  for each key-value pair in body.data
     #    convert keys to unicode
     #    if value is string: NOP
-    #    if value is list or tuple: convert values to unicode, create key-value pair for each value from the list
+    #    if value is list or tuple:
+    #      convert values to unicode, create key-value pair for each value from the list
     #    if value is something else: convert to unicode
     #  Store all the key-value pairs
     if isinstance(body.data, dict):
@@ -492,10 +527,10 @@ def create_result(body: CreateResultParams):
             if not (isinstance(key, str) or isinstance(key, unicode)):
                 key = unicode(key)
 
-            if (isinstance(value, str) or isinstance(value, unicode)):
+            if isinstance(value, str) or isinstance(value, unicode):
                 to_store.append((key, value))
 
-            elif (isinstance(value, list) or isinstance(value, tuple)):
+            elif isinstance(value, list) or isinstance(value, tuple):
                 for v in value:
                     if not (isinstance(v, str) or isinstance(v, unicode)):
                         v = unicode(v)
@@ -514,15 +549,16 @@ def create_result(body: CreateResultParams):
 #                                    TESTCASES
 # =============================================================================
 
+
 def select_testcases(args_name=None, args_name_like=None):
     q = db.session.query(Testcase).order_by(db.asc(Testcase.name))
 
     name_filters = []
     if args_name:
-        for name in [name.strip() for name in args_name.split(',') if name.strip()]:
+        for name in [name.strip() for name in args_name.split(",") if name.strip()]:
             name_filters.append(Testcase.name == name)
     elif args_name_like:
-        for name in [name.strip() for name in args_name_like.split(',') if name.strip()]:
+        for name in [name.strip() for name in args_name_like.split(",") if name.strip()]:
             name_filters.append(Testcase.name.like(name.replace("*", "%")))
     if name_filters:
         q = q.filter(db.or_(*name_filters))
@@ -530,31 +566,33 @@ def select_testcases(args_name=None, args_name_like=None):
     return q
 
 
-@api.route('/testcases', methods=['GET'])
+@api.route("/testcases", methods=["GET"])
 @validate()
 def get_testcases(query: TestcasesParams):
     q = select_testcases(query.name, query.name_like_)
     q = pagination(q, query.page, query.limit)
     data, prev, next = prev_next_urls(q.all(), query.limit)
 
-    return jsonify(dict(
-        prev=prev,
-        next=next,
-        data=[SERIALIZE(o) for o in data],
-    ))
+    return jsonify(
+        dict(
+            prev=prev,
+            next=next,
+            data=[SERIALIZE(o) for o in data],
+        )
+    )
 
 
-@api.route('/testcases/<path:testcase_name>', methods=['GET'])
+@api.route("/testcases/<path:testcase_name>", methods=["GET"])
 def get_testcase(testcase_name):
     try:
         testcase = Testcase.query.filter_by(name=testcase_name).one()
     except orm_exc.NoResultFound:
-        return jsonify({'message': "Testcase not found"}), 404
+        return jsonify({"message": "Testcase not found"}), 404
 
     return jsonify(SERIALIZE(testcase))
 
 
-@api.route('/testcases', methods=['POST'])
+@api.route("/testcases", methods=["POST"])
 @validate()
 def create_testcase(body: CreateTestcaseParams):
     testcase = Testcase.query.filter_by(name=body.name).first()
@@ -569,7 +607,7 @@ def create_testcase(body: CreateTestcaseParams):
     return jsonify(SERIALIZE(testcase)), 201
 
 
-@api.route('/healthcheck', methods=['GET'])
+@api.route("/healthcheck", methods=["GET"])
 def healthcheck():
     """
     Request handler for performing an application-level health check. This is
@@ -581,21 +619,27 @@ def healthcheck():
     try:
         db.session.execute("SELECT 1 FROM result LIMIT 0").fetchall()
     except Exception:
-        app.logger.exception('Healthcheck failed on DB query.')
-        return jsonify({"message": 'Unable to communicate with database'}), 503
+        app.logger.exception("Healthcheck failed on DB query.")
+        return jsonify({"message": "Unable to communicate with database"}), 503
 
-    return jsonify({"message": 'Health check OK'}), 200
+    return jsonify({"message": "Health check OK"}), 200
 
 
-@api.route('', methods=['GET'])
-@api.route('/', methods=['GET'])
+@api.route("", methods=["GET"])
+@api.route("/", methods=["GET"])
 def landing_page():
-    return jsonify({"message": "Everything is fine. But choose wisely, for while "
-                               "the true Grail will bring you life, the false "
-                               "Grail will take it from you.",
-                    "documentation": "http://docs.resultsdb20.apiary.io/",
-                    "groups": url_for('.get_groups', _external=True),
-                    "results": url_for('.get_results', _external=True),
-                    "testcases": url_for('.get_testcases', _external=True),
-                    "outcomes": RESULT_OUTCOME,
-                    }), 300
+    return (
+        jsonify(
+            {
+                "message": "Everything is fine. But choose wisely, for while "
+                "the true Grail will bring you life, the false "
+                "Grail will take it from you.",
+                "documentation": "http://docs.resultsdb20.apiary.io/",
+                "groups": url_for(".get_groups", _external=True),
+                "results": url_for(".get_results", _external=True),
+                "testcases": url_for(".get_testcases", _external=True),
+                "outcomes": RESULT_OUTCOME,
+            }
+        ),
+        300,
+    )
