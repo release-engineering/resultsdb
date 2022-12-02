@@ -57,7 +57,7 @@ test = [
 ]
 
 [tool.poetry.scripts]
-resultsdb = "resultsdb.cli:main"
+resultsdb = "resultsdb.__main__:main"
 
 [tool.poetry.plugins."resultsdb.messaging.plugins"]
 dummy = "resultsdb.messaging:DummyPlugin"
