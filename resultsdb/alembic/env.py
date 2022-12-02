@@ -1,7 +1,8 @@
-from __future__ import with_statement
 from alembic import context
+from flask import current_app as app
 from sqlalchemy import engine_from_config, pool
-from logging.config import fileConfig
+
+from resultsdb import db
 
 # add '.' to the pythonpath to support migration inside development env
 import sys
@@ -18,7 +19,6 @@ config = context.config
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-from resultsdb import db
 
 target_metadata = db.metadata
 # target_metadata = None
@@ -57,7 +57,6 @@ def run_migrations_online():
     """
 
     alembic_config = config.get_section(config.config_ini_section)
-    from resultsdb import app
 
     alembic_config["sqlalchemy.url"] = app.config["SQLALCHEMY_DATABASE_URI"]
 

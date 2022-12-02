@@ -1,31 +1,18 @@
 import os
-from unittest.mock import patch
 
 import pytest
 
+from resultsdb import create_app
+from resultsdb.models import db
+
 
 @pytest.fixture(scope="session", autouse=True)
-def mock_db(tmpdir_factory):
-    postgres_port = os.getenv("POSTGRES_5432_TCP", None)
-    if postgres_port:
-        dburi = "postgresql+psycopg2://resultsdb:resultsdb@" f"localhost:{postgres_port}/resultsdb"
-    else:
-        dbfile = tmpdir_factory.mktemp("data").join("test_db.sqlite")
-        dburi = f"sqlite:///{dbfile}"
-
-    with patch.dict(
-        "resultsdb.app.config",
-        {
-            "SQLALCHEMY_DATABASE_URI": dburi,
-            "MESSAGE_BUS_PUBLISH": True,
-            "MESSAGE_BUS_PLUGIN": "dummy",
-        },
-    ):
-        import resultsdb
-
-        resultsdb.db.drop_all()
-        resultsdb.db.create_all()
-        yield
+def app():
+    app = create_app("resultsdb.config.TestingConfig")
+    with app.app_context():
+        db.drop_all()
+        db.create_all()
+        yield app
 
 
 def pytest_addoption(parser):

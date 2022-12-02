@@ -23,8 +23,11 @@ import os
 import copy
 from unittest import TestCase
 
+from flask import current_app as app
+
 import resultsdb
 import resultsdb.messaging
+from resultsdb.models import db
 
 try:
     basestring
@@ -44,22 +47,26 @@ class TestFuncApiV20(TestCase):
         if os.getenv("NO_CAN_HAS_POSTGRES", None):
             self.skipTest("PostgreSQL server not available (disabled with NO_CAN_HAS_POSTGRES)")
 
-        if resultsdb.app.config["SQLALCHEMY_DATABASE_URI"].startswith("sqlite"):
+        if app.config["SQLALCHEMY_DATABASE_URI"].startswith("sqlite"):
             raise RuntimeError(
                 "This test requires PostgreSQL to work properly. "
                 "You can disable it by setting NO_CAN_HAS_POSTGRES "
-                "env variable to any non-empty value"
+                "env variable to any non-empty value.\n"
+                f'Current DB URI: { app.config["SQLALCHEMY_DATABASE_URI"] }'
             )
+
+        assert db.engine.name == "postgresql"
 
     @classmethod
     def setup_class(cls):
-        resultsdb.app.config["MESSAGE_BUS_PUBLISH"] = True
-        resultsdb.app.config["MESSAGE_BUS_PLUGIN"] = "dummy"
+        app.config["MESSAGE_BUS_PUBLISH"] = True
+        app.config["MESSAGE_BUS_PLUGIN"] = "dummy"
 
     def setup_method(self, method):
-        resultsdb.db.drop_all()
-        resultsdb.db.create_all()
-        self.app = resultsdb.app.test_client()
+        db.session.rollback()
+        db.drop_all()
+        db.create_all()
+        self.app = app.test_client()
         self.ref_url_prefix = "http://localhost/api/v2.0"
 
         # Testcase data
@@ -1105,11 +1112,21 @@ class TestFuncApiV20(TestCase):
         r = self.app.get("/api/v2.0/results/latest?item=grub&_distinct_on=scenario")
         data = json.loads(r.data)
 
-        assert len(data["data"]) == 5
-        tc_1s = [r for r in data["data"] if r["testcase"]["name"] == "tc_1"]
-        assert len(tc_1s) == 2
-        assert tc_1s[0]["outcome"] == "INFO"
-        assert tc_1s[1]["outcome"] == "FAILED"
+        items = [
+            (
+                x["data"].get("scenario", [None])[0],
+                x["testcase"]["name"],
+                x["outcome"],
+            )
+            for x in data["data"]
+        ]
+        assert items == [
+            ("s_1", "tc_1", "INFO"),
+            (None, "tc_1", "FAILED"),
+            (None, "tc_3", "PASSED"),
+            ("s_2", "tc_2", "PASSED"),
+            ("s_1", "tc_2", "PASSED"),
+        ]
 
     def test_get_results_latest_distinct_on_with_scenario_not_defined(self):
         """This test requires PostgreSQL, because DISTINCT ON does work differently in SQLite"""
@@ -1162,7 +1179,7 @@ class TestFuncApiV20(TestCase):
         assert data.get("message") == "Health check OK"
 
     def test_healthcheck_fail(self):
-        resultsdb.db.session.execute("DROP TABLE result CASCADE")
+        db.drop_all()
         r = self.app.get("/api/v2.0/healthcheck")
         assert r.status_code == 503
 

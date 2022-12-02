@@ -72,6 +72,8 @@ And run as usual.
 
 ## Running test suite
 
+After making changes run `tox -e black-format` to reformat the code.
+
 You can run the test suite with the following command::
 
     $ tox

@@ -18,16 +18,27 @@
 #   Josef Skladanka <jskladan@redhat.com>
 
 import sys
+from functools import wraps
 from optparse import OptionParser
 
 from alembic.config import Config
 from alembic import command as al_command
 from alembic.migration import MigrationContext
+from flask import current_app as app
 
-from resultsdb import db
+from resultsdb import create_app, db
 from resultsdb.models.results import Group, Testcase, Result, ResultData
 
 from sqlalchemy.engine import reflection
+
+
+def with_app_context(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        with app.app_context():
+            return fn(*args, **kwargs)
+
+    return wrapper
 
 
 def get_alembic_config():
@@ -44,6 +55,7 @@ def upgrade_db(*args):
     al_command.upgrade(alembic_cfg, "head")
 
 
+@with_app_context
 def init_alembic(*args):
     alembic_cfg = get_alembic_config()
 
@@ -60,6 +72,7 @@ def init_alembic(*args):
         print("Alembic already initialized")
 
 
+@with_app_context
 def initialize_db(destructive):
     alembic_cfg = get_alembic_config()
 
@@ -91,6 +104,7 @@ def initialize_db(destructive):
         print("      Run 'init_alembic' sub-command first.")
 
 
+@with_app_context
 def mock_data(destructive):
     print("Populating tables with mock-data")
 
@@ -163,6 +177,7 @@ def main():
     if not options.destructive:
         print("Proceeding in non-destructive mode. To perform destructive steps use -d option.")
 
+    create_app()
     command(options.destructive)
 
     sys.exit(0)

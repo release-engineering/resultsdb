@@ -24,11 +24,10 @@ import logging.config as logging_config
 import os
 
 from resultsdb import proxy
+from resultsdb.models import db
 from . import config
 
 import flask
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 
 
 # the version as used in setup.py
@@ -40,69 +39,67 @@ except NameError:
     basestring = (str, bytes)
 
 
-# Flask App
-app = Flask(__name__)
-app.secret_key = "replace-me-with-something-random"
+def create_app(config_obj=None):
+    app = flask.Flask(__name__)
+    app.secret_key = "replace-me-with-something-random"
 
-# make sure app behaves when behind a proxy
-app.wsgi_app = proxy.ReverseProxied(app.wsgi_app)
+    # make sure app behaves when behind a proxy
+    app.wsgi_app = proxy.ReverseProxied(app.wsgi_app)
 
-# Monkey patch Flask's "jsonify" to also handle JSONP
-original_jsonify = flask.jsonify
+    # Expose the __version__ variable in templates
+    app.jinja_env.globals["app_version"] = __version__
 
-# Expose the __version__ variable in templates
-app.jinja_env.globals["app_version"] = __version__
+    # Checks for env variable OPENSHIFT_PROD to trigger OpenShift codepath on init
+    # The main difference is that settings will be queried from env
+    # (check config.openshift_config())
+    # Possible values are:
+    # "1" - OpenShift production deployment
+    # "0" - OpenShift testing deployment
+    openshift = os.getenv("OPENSHIFT_PROD")
 
+    # Load default config, then override that with a config file
+    if not config_obj:
+        if os.getenv("DEV") == "true":
+            config_obj = "resultsdb.config.DevelopmentConfig"
+        elif os.getenv("TEST") == "true" or openshift == "0":
+            config_obj = "resultsdb.config.TestingConfig"
+        else:
+            config_obj = "resultsdb.config.ProductionConfig"
 
-def jsonify_with_jsonp(*args, **kwargs):
-    response = original_jsonify(*args, **kwargs)
+    app.config.from_object(config_obj)
 
-    callback = flask.request.args.get("callback", None)
+    if openshift:
+        config.openshift_config(app.config, openshift)
 
-    if callback:
-        if not isinstance(callback, basestring):
-            callback = callback[0]
-        response.mimetype = "application/javascript"
-        response.set_data("%s(%s);" % (callback, response.get_data()))
+    default_config_file = app.config.get("DEFAULT_CONFIG_FILE")
+    config_file = os.environ.get("RESULTSDB_CONFIG", default_config_file)
+    if config_file and os.path.exists(config_file):
+        app.config.from_pyfile(config_file)
 
-    return response
+    if app.config["PRODUCTION"]:
+        if app.secret_key == "replace-me-with-something-random":
+            raise Warning("You need to change the app.secret_key value for production")
 
+    setup_logging(app)
 
-flask.jsonify = jsonify_with_jsonp
+    app.logger.info("Using configuration object: %s", config_obj)
+    if openshift:
+        app.logger.info("Using OpenShift configuration")
+    app.logger.info("Using configuration file: %s", config_file)
 
-# Checks for env variable OPENSHIFT_PROD to trigger OpenShift codepath on init
-# The main difference is that settings will be queried from env (check config.openshift_config())
-# Possible values are:
-# "1" - OpenShift production deployment
-# "0" - OpenShift testing deployment
-openshift = os.getenv("OPENSHIFT_PROD")
+    if app.config["SHOW_DB_URI"]:
+        app.logger.debug("Using DBURI: %s", app.config["SQLALCHEMY_DATABASE_URI"])
 
-# Load default config, then override that with a config file
-if os.getenv("DEV") == "true":
-    default_config_obj = "resultsdb.config.DevelopmentConfig"
-    default_config_file = os.getcwd() + "/conf/settings.py"
-elif os.getenv("TEST") == "true" or openshift == "0":
-    default_config_obj = "resultsdb.config.TestingConfig"
-    default_config_file = ""
-else:
-    default_config_obj = "resultsdb.config.ProductionConfig"
-    default_config_file = "/etc/resultsdb/settings.py"
+    db.init_app(app)
 
-app.config.from_object(default_config_obj)
+    register_handlers(app)
+    register_blueprints(app)
 
-if openshift:
-    config.openshift_config(app.config, openshift)
-
-config_file = os.environ.get("RESULTSDB_CONFIG", default_config_file)
-if os.path.exists(config_file):
-    app.config.from_pyfile(config_file)
-
-if app.config["PRODUCTION"]:
-    if app.secret_key == "replace-me-with-something-random":
-        raise Warning("You need to change the app.secret_key value for production")
+    app.logger.debug("Finished ResultsDB initialization")
+    return app
 
 
-def setup_logging():
+def setup_logging(app):
     # Use LOGGING if defined instead of the old options
     log_config = app.config.get("LOGGING")
     if log_config:
@@ -152,39 +149,42 @@ def setup_logging():
         app.logger.addHandler(file_handler)
 
 
-setup_logging()
+def register_handlers(app):
+    # TODO: find out why error handler works for 404 but not for 400
+    @app.errorhandler(400)
+    def bad_request(error):
+        return flask.jsonify({"message": "Bad request"}), 400
 
-if app.config["SHOW_DB_URI"]:
-    app.logger.debug("using DBURI: %s" % app.config["SQLALCHEMY_DATABASE_URI"])
+    @app.errorhandler(404)
+    def not_found(error):
+        return flask.jsonify({"message": "Not found"}), 404
 
-db = SQLAlchemy(app)
 
-from resultsdb.controllers.main import main  # noqa: E402
+def register_blueprints(app):
+    from resultsdb.controllers.main import main  # noqa: E402
 
-app.register_blueprint(main)
+    app.register_blueprint(main)
 
-from resultsdb.controllers.api_v2 import api as api_v2  # noqa: E402
+    from resultsdb.controllers.api_v2 import api as api_v2  # noqa: E402
 
-app.register_blueprint(api_v2, url_prefix="/api/v2.0")
+    app.register_blueprint(api_v2, url_prefix="/api/v2.0")
 
-from resultsdb.controllers.api_v3 import api as api_v3, oidc  # noqa: E402
+    from resultsdb.controllers.api_v3 import api as api_v3, oidc  # noqa: E402
 
-app.register_blueprint(api_v3, url_prefix="/api/v3")
+    app.register_blueprint(api_v3, url_prefix="/api/v3")
 
-if app.config["AUTH_MODULE"] == "oidc":
+    if app.config["AUTH_MODULE"] == "oidc":
 
-    @app.route("/auth/oidclogin")
-    @oidc.require_login
-    def login():
-        return {
-            "username": oidc.user_getfield(app.config["OIDC_USERNAME_FIELD"]),
-            "token": oidc.get_access_token(),
-        }
+        @app.route("/auth/oidclogin")
+        @oidc.require_login
+        def login():
+            return {
+                "username": oidc.user_getfield(app.config["OIDC_USERNAME_FIELD"]),
+                "token": oidc.get_access_token(),
+            }
 
-    oidc.init_app(app)
-    app.oidc = oidc
-    app.logger.info("OpenIDConnect authentication is enabled")
-else:
-    app.logger.info("OpenIDConnect authentication is disabled")
-
-app.logger.debug("Finished ResultsDB initialization")
+        oidc.init_app(app)
+        app.oidc = oidc
+        app.logger.info("OpenIDConnect authentication is enabled")
+    else:
+        app.logger.info("OpenIDConnect authentication is disabled")

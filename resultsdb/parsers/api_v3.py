@@ -13,9 +13,9 @@ from pydantic import (
 )
 from pydantic.types import constr
 
-from resultsdb.models.results import RESULT_OUTCOME
+from resultsdb.models.results import result_outcomes
 
-RESULT_OUTCOME_EXTENDED = set(RESULT_OUTCOME) | {
+RESULT_OUTCOMES_ADDITIONAL = {
     "QUEUED",
     "RUNNING",
     "ERROR",
@@ -44,6 +44,14 @@ MAIN_RESULT_ATTRIBUTES = frozenset(
 MAX_STRING_SIZE = 8192
 
 
+def result_outcomes_extended():
+    outcomes = result_outcomes()
+    additional_outcomes = tuple(
+        outcome for outcome in RESULT_OUTCOMES_ADDITIONAL if outcome not in outcomes
+    )
+    return outcomes + additional_outcomes
+
+
 def field(description: str, **kwargs):
     return Field(description=dedent(description).strip(), **kwargs)
 
@@ -60,12 +68,10 @@ class ResultParamsBase(BaseModel):
     """
 
     outcome: str = field(
-        f"""
+        """
         Result of the test run. Can also indicate the intention to run
         the test in the near future (QUEUED), an unfinished run (RUNNING)
         or a CI error (ERROR).
-
-        Valid values: {", ".join(sorted(RESULT_OUTCOME_EXTENDED))}
         """
     )
     testcase: constr(min_length=1) = field(
@@ -224,8 +230,8 @@ class ResultParamsBase(BaseModel):
 
     @validator("outcome")
     def outcome_must_be_valid(cls, v):
-        if v not in RESULT_OUTCOME_EXTENDED:
-            raise ValueError(f'must be one of: {", ".join(RESULT_OUTCOME_EXTENDED)}')
+        if v not in result_outcomes_extended():
+            raise ValueError(f'must be one of: {", ".join(result_outcomes_extended())}')
         return v
 
     @root_validator

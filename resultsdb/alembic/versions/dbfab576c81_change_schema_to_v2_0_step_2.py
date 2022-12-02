@@ -26,9 +26,6 @@ Base = declarative_base()
 db.relationship = relationship
 db.relation = relation
 
-RESULT_OUTCOME = ("PASSED", "INFO", "FAILED", "NEEDS_INSPECTION")
-JOB_STATUS = []
-
 
 class GroupsToResults(Base):
     __tablename__ = "groups_to_results"

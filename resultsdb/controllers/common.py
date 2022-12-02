@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: GPL-2.0+
 from flask import jsonify
+from flask import current_app as app
 
-from resultsdb import app, db
+from resultsdb import db
 from resultsdb.messaging import (
     load_messaging_plugin,
     create_message,

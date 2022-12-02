@@ -26,8 +26,9 @@
 import resultsdb
 
 if __name__ == '__main__':
-    resultsdb.app.run(
-        host=resultsdb.app.config['HOST'],
-        port=resultsdb.app.config['PORT'],
-        debug=resultsdb.app.config['DEBUG'],
+    app = resultsdb.create_app()
+    app.run(
+        host=app.config['HOST'],
+        port=app.config['PORT'],
+        debug=app.config['DEBUG'],
     )

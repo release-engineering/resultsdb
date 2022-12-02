@@ -4,14 +4,8 @@ from unittest.mock import ANY, patch, Mock
 import flask
 import pytest
 
-import resultsdb
 from resultsdb.parsers.api_v3 import RESULTS_PARAMS_CLASSES
-
-
-@pytest.fixture(scope="module")
-def app():
-    with resultsdb.app.app_context():
-        yield resultsdb.app
+from resultsdb.controllers.api_v3 import oidc
 
 
 @pytest.fixture(autouse=True)
@@ -25,7 +19,7 @@ def mock_ldap():
 
 @pytest.fixture(autouse=True)
 def mock_oidc():
-    with patch.object(resultsdb.oidc, "validate_token") as validate:
+    with patch.object(oidc, "validate_token") as validate:
 
         def validate_side_effect(*args, **kwargs):
             flask.g.oidc_token_info = {"uid": "testuser1"}
@@ -41,9 +35,9 @@ def client(app):
 
 
 @pytest.fixture
-def permissions():
-    with patch.dict(resultsdb.app.config, {"PERMISSIONS": []}):
-        yield resultsdb.app.config["PERMISSIONS"]
+def permissions(app):
+    with patch.dict(app.config, {"PERMISSIONS": []}):
+        yield app.config["PERMISSIONS"]
 
 
 def brew_build_request_data(**kwargs):

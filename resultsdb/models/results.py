@@ -20,16 +20,19 @@
 import datetime
 import uuid as lib_uuid
 
-from resultsdb import db, app
+from flask import current_app
+
+from resultsdb.models import db
 from resultsdb.serializers import DBSerialize
 
-
-__all__ = ["Testcase", "Group", "Result", "ResultData", "GroupsToResults", "RESULT_OUTCOME"]
+__all__ = ["Testcase", "Group", "Result", "ResultData", "GroupsToResults", "result_outcomes"]
 
 PRESET_OUTCOMES = ("PASSED", "INFO", "FAILED", "NEEDS_INSPECTION")
-ADDITIONAL_RESULT_OUTCOMES = tuple(app.config.get("ADDITIONAL_RESULT_OUTCOMES", []))
-RESULT_OUTCOME = PRESET_OUTCOMES + ADDITIONAL_RESULT_OUTCOMES
-JOB_STATUS = []
+
+
+def result_outcomes():
+    additional_result_outcomes = tuple(current_app.config.get("ADDITIONAL_RESULT_OUTCOMES", []))
+    return PRESET_OUTCOMES + additional_result_outcomes
 
 
 class GroupsToResults(db.Model):
