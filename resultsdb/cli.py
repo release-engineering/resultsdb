@@ -17,28 +17,16 @@
 # Authors:
 #   Josef Skladanka <jskladan@redhat.com>
 
-import sys
-from functools import wraps
-from optparse import OptionParser
-
+import click
 from alembic.config import Config
 from alembic import command as al_command
 from alembic.migration import MigrationContext
-from flask import current_app as app
+from flask.cli import FlaskGroup
 
 from resultsdb import create_app, db
 from resultsdb.models.results import Group, Testcase, Result, ResultData
 
 from sqlalchemy.engine import reflection
-
-
-def with_app_context(fn):
-    @wraps(fn)
-    def wrapper(*args, **kwargs):
-        with app.app_context():
-            return fn(*args, **kwargs)
-
-    return wrapper
 
 
 def get_alembic_config():
@@ -49,14 +37,20 @@ def get_alembic_config():
     return alembic_cfg
 
 
-def upgrade_db(*args):
+@click.group(cls=FlaskGroup, create_app=create_app)
+def cli():
+    """Management script for ResultsDB server."""
+
+
+@cli.command(name="upgrade_db")
+def upgrade_db():
     print("Upgrading Database to Latest Revision")
     alembic_cfg = get_alembic_config()
     al_command.upgrade(alembic_cfg, "head")
 
 
-@with_app_context
-def init_alembic(*args):
+@cli.command(name="init_alembic")
+def init_alembic():
     alembic_cfg = get_alembic_config()
 
     # check to see if the db has already been initialized by checking for an
@@ -72,15 +66,12 @@ def init_alembic(*args):
         print("Alembic already initialized")
 
 
-@with_app_context
-def initialize_db(destructive):
+@cli.command(name="init_db")
+@click.pass_context
+def initialize_db(ctx):
     alembic_cfg = get_alembic_config()
 
     print("Initializing database")
-
-    if destructive:
-        print(" - Dropping all tables")
-        db.drop_all()
 
     # check whether the table 'group' exists
     # if it does, we assume that the database is empty
@@ -98,17 +89,17 @@ def initialize_db(destructive):
     current_rev = context.get_current_revision()
     if current_rev:
         print(" - Database is currently at rev %s" % current_rev)
-        upgrade_db(destructive)
+        ctx.invoke(upgrade_db)
     else:
         print("WARN: You need to have your db stamped with an alembic revision")
         print("      Run 'init_alembic' sub-command first.")
 
 
-@with_app_context
-def mock_data(destructive):
+@cli.command(name="mock_data")
+def mock_data():
     print("Populating tables with mock-data")
 
-    if destructive or not db.session.query(Testcase).count():
+    if not db.session.query(Testcase).count():
         print(" - Testcase, Job, Result, ResultData")
         tc1 = Testcase(ref_url="http://example.com/depcheck", name="depcheck")
         tc2 = Testcase(ref_url="http://example.com/rpmlint", name="rpmlint")
@@ -145,42 +136,7 @@ def mock_data(destructive):
 
 
 def main():
-    possible_commands = ["init_db", "mock_data", "upgrade_db", "init_alembic"]
-
-    usage = "usage: [DEV=true] %prog " + "(%s)" % " | ".join(possible_commands)
-    parser = OptionParser(usage=usage)
-    parser.add_option(
-        "-d",
-        "--destructive",
-        action="store_true",
-        dest="destructive",
-        default=False,
-        help="Drop tables in `init_db`; Store data in `mock_data` "
-        "even if the tables are not empty",
-    )
-
-    (options, args) = parser.parse_args()
-
-    if len(args) != 1 or args[0] not in possible_commands:
-        print(usage)
-        print
-        print("Please use one of the following commands: %s" % str(possible_commands))
-        sys.exit(1)
-
-    command = {
-        "init_db": initialize_db,
-        "upgrade_db": upgrade_db,
-        "mock_data": mock_data,
-        "init_alembic": init_alembic,
-    }[args[0]]
-
-    if not options.destructive:
-        print("Proceeding in non-destructive mode. To perform destructive steps use -d option.")
-
-    create_app()
-    command(options.destructive)
-
-    sys.exit(0)
+    cli(obj={})
 
 
 if __name__ == "__main__":

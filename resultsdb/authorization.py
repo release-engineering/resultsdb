@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0+
 import logging
-import re
 from fnmatch import fnmatch
 
 from werkzeug.exceptions import (
