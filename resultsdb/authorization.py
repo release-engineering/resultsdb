@@ -38,13 +38,8 @@ def match_testcase_permissions(testcase, permissions):
             testcase_match = any(
                 fnmatch(testcase, testcase_pattern) for testcase_pattern in permission["testcases"]
             )
-        elif "_testcase_regex_pattern" in permission:
-            testcase_match = re.search(permission["_testcase_regex_pattern"], testcase)
-        else:
-            continue
-
-        if testcase_match:
-            yield permission
+            if testcase_match:
+                yield permission
 
 
 def verify_authorization(user, testcase, permissions, ldap_host, ldap_searches):
