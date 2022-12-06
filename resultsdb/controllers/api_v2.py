@@ -27,7 +27,7 @@ from flask_pydantic import validate
 
 from sqlalchemy.orm import exc as orm_exc
 
-from resultsdb import db
+from resultsdb.models import db
 from resultsdb.controllers.common import commit_result, SERIALIZE
 from resultsdb.parsers.api_v2 import (
     CreateGroupParams,

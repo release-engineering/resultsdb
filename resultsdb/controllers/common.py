@@ -2,7 +2,7 @@
 from flask import jsonify
 from flask import current_app as app
 
-from resultsdb import db
+from resultsdb.models import db
 from resultsdb.messaging import (
     load_messaging_plugin,
     create_message,
