@@ -2,7 +2,7 @@ from alembic import context
 from flask import current_app as app
 from sqlalchemy import engine_from_config, pool
 
-from resultsdb import db
+from resultsdb.models import db
 
 # add '.' to the pythonpath to support migration inside development env
 import sys

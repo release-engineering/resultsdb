@@ -4,7 +4,7 @@ from flask import current_app as app
 from flask_oidc import OpenIDConnect
 from flask_pydantic import validate
 
-from resultsdb import db
+from resultsdb.models import db
 from resultsdb.authorization import match_testcase_permissions, verify_authorization
 from resultsdb.controllers.common import commit_result
 from resultsdb.models.results import (

@@ -23,7 +23,8 @@ from alembic import command as al_command
 from alembic.migration import MigrationContext
 from flask.cli import FlaskGroup
 
-from resultsdb import create_app, db
+from resultsdb import create_app
+from resultsdb.models import db
 from resultsdb.models.results import Group, Testcase, Result, ResultData
 
 from sqlalchemy.engine import reflection

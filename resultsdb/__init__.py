@@ -23,7 +23,10 @@ import logging.handlers
 import logging.config as logging_config
 import os
 
-from resultsdb import proxy
+from resultsdb.proxy import ReverseProxied
+from resultsdb.controllers.main import main
+from resultsdb.controllers.api_v2 import api as api_v2
+from resultsdb.controllers.api_v3 import api as api_v3, oidc
 from resultsdb.models import db
 from . import config
 
@@ -44,7 +47,7 @@ def create_app(config_obj=None):
     app.secret_key = "replace-me-with-something-random"
 
     # make sure app behaves when behind a proxy
-    app.wsgi_app = proxy.ReverseProxied(app.wsgi_app)
+    app.wsgi_app = ReverseProxied(app.wsgi_app)
 
     # Expose the __version__ variable in templates
     app.jinja_env.globals["app_version"] = __version__
@@ -161,16 +164,8 @@ def register_handlers(app):
 
 
 def register_blueprints(app):
-    from resultsdb.controllers.main import main  # noqa: E402
-
     app.register_blueprint(main)
-
-    from resultsdb.controllers.api_v2 import api as api_v2  # noqa: E402
-
     app.register_blueprint(api_v2, url_prefix="/api/v2.0")
-
-    from resultsdb.controllers.api_v3 import api as api_v3, oidc  # noqa: E402
-
     app.register_blueprint(api_v3, url_prefix="/api/v3")
 
     if app.config["AUTH_MODULE"] == "oidc":

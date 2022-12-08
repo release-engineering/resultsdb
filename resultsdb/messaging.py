@@ -23,7 +23,7 @@ import json
 import pkg_resources
 import stomp
 
-from resultsdb import db
+from resultsdb.models import db
 from resultsdb.models.results import Result, ResultData
 from resultsdb.serializers.api_v2 import Serializer
 

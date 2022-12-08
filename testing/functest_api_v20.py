@@ -25,7 +25,6 @@ from unittest import TestCase
 
 from flask import current_app as app
 
-import resultsdb
 import resultsdb.messaging
 from resultsdb.models import db
 
