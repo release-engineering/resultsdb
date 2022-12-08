@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0+
-from flask import Blueprint, jsonify, g, render_template
+from flask import Blueprint, jsonify, render_template
 from flask import current_app as app
-from flask_oidc import OpenIDConnect
 from flask_pydantic import validate
 
 from resultsdb.models import db
@@ -20,7 +19,6 @@ from resultsdb.parsers.api_v3 import (
 )
 
 api = Blueprint("api_v3", __name__)
-oidc = OpenIDConnect()
 
 
 def permissions():
@@ -34,7 +32,9 @@ def _verify_authorization(user, testcase):
 
 
 def create_result(body: ResultParamsBase):
-    user = g.oidc_token_info[app.config["OIDC_USERNAME_FIELD"]]
+    token = app.oauth.resultsdb.authorize_access_token()
+    userinfo = token["userinfo"]
+    user = userinfo[app.config["OIDC_USERNAME_FIELD"]]
     _verify_authorization(user, body.testcase)
 
     testcase = Testcase.query.filter_by(name=body.testcase).first()
@@ -68,7 +68,6 @@ def create_result(body: ResultParamsBase):
 def create_endpoint(params_class):
     params = params_class.construct()
 
-    @oidc.accept_token(require_token=True)
     @validate()
     def create(body: params_class):
         return create_result(body)
@@ -134,6 +133,3 @@ def index():
         endpoints=endpoints,
         result_outcomes_extended=", ".join(result_outcomes_extended()),
     )
-
-
-create_endpoints()

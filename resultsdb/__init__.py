@@ -18,19 +18,21 @@
 #   Josef Skladanka <jskladan@redhat.com>
 #   Ralph Bean <rbean@redhat.com>
 
+import json
 import logging
 import logging.handlers
 import logging.config as logging_config
 import os
 
+from authlib.integrations.flask_client import OAuth
+from flask import Flask, jsonify, request, session, url_for
+
 from resultsdb.proxy import ReverseProxied
 from resultsdb.controllers.main import main
 from resultsdb.controllers.api_v2 import api as api_v2
-from resultsdb.controllers.api_v3 import api as api_v3, oidc
+from resultsdb.controllers.api_v3 import api as api_v3, create_endpoints
 from resultsdb.models import db
 from . import config
-
-import flask
 
 
 # the version as used in setup.py
@@ -43,7 +45,7 @@ except NameError:
 
 
 def create_app(config_obj=None):
-    app = flask.Flask(__name__)
+    app = Flask(__name__)
     app.secret_key = "replace-me-with-something-random"
 
     # make sure app behaves when behind a proxy
@@ -96,6 +98,14 @@ def create_app(config_obj=None):
     db.init_app(app)
 
     register_handlers(app)
+
+    if app.config["AUTH_MODULE"] == "oidc":
+        app.logger.info("OpenIDConnect authentication is enabled")
+        enable_oidc(app)
+    else:
+        app.logger.info("OpenIDConnect authentication is disabled")
+        app.oauth = None
+
     register_blueprints(app)
 
     app.logger.debug("Finished ResultsDB initialization")
@@ -153,14 +163,9 @@ def setup_logging(app):
 
 
 def register_handlers(app):
-    # TODO: find out why error handler works for 404 but not for 400
-    @app.errorhandler(400)
-    def bad_request(error):
-        return flask.jsonify({"message": "Bad request"}), 400
-
     @app.errorhandler(404)
     def not_found(error):
-        return flask.jsonify({"message": "Not found"}), 404
+        return jsonify({"message": "Not found"}), 404
 
 
 def register_blueprints(app):
@@ -168,18 +173,45 @@ def register_blueprints(app):
     app.register_blueprint(api_v2, url_prefix="/api/v2.0")
     app.register_blueprint(api_v3, url_prefix="/api/v3")
 
-    if app.config["AUTH_MODULE"] == "oidc":
 
-        @app.route("/auth/oidclogin")
-        @oidc.require_login
-        def login():
-            return {
-                "username": oidc.user_getfield(app.config["OIDC_USERNAME_FIELD"]),
-                "token": oidc.get_access_token(),
+def enable_oidc(app):
+    with open(app.config["OIDC_CLIENT_SECRETS"]) as client_secrets_file:
+        client_secrets = json.load(client_secrets_file)
+
+    provider = app.config.get("OIDC_PROVIDER", "web")
+    metadata = client_secrets[provider]
+    oauth = OAuth(app)
+    oauth.register(
+        "resultsdb",
+        client_id=metadata["client_id"],
+        client_secret=metadata["client_secret"],
+        server_metadata_url=app.config["OIDC_METADATA_URL"],
+        client_kwargs=app.config["OIDC_CLIENT_KWARGS"],
+    )
+
+    @app.route("/auth/oidclogin")
+    def login():
+        redirect_uri = url_for("oidc_callback", _external=True)
+        return oauth.resultsdb.authorize_redirect(redirect_uri)
+
+    @app.route("/oidc_callback")
+    def oidc_callback():
+        token = oauth.resultsdb.authorize_access_token()
+        userinfo = token["userinfo"]
+        username = userinfo[app.config["OIDC_USERNAME_FIELD"]]
+        access_token = token["access_token"]
+        return jsonify(
+            {
+                "username": username,
+                "token": access_token,
             }
+        )
 
-        oidc.init_app(app)
-        app.oidc = oidc
-        app.logger.info("OpenIDConnect authentication is enabled")
-    else:
-        app.logger.info("OpenIDConnect authentication is disabled")
+    @app.route("/auth/logout")
+    def logout():
+        session.pop("user", None)
+        return jsonify({"message": "Logged out"})
+
+    app.oauth = oauth
+
+    create_endpoints()

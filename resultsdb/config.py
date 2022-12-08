@@ -84,8 +84,12 @@ class Config(object):
     AUTH_MODULE = None
 
     OIDC_CLIENT_SECRETS = "/etc/resultsdb/oauth2_client_secrets.json"
-    OIDC_REQUIRED_SCOPE = "resultsdb_scope"
+    OIDC_METADATA_URL = "https://oauth.example.com/.well-known/openid-configuration"
     OIDC_USERNAME_FIELD = "uid"
+    OIDC_SESSION_REFRESH_INTERVAL_SECONDS = 300
+    OIDC_SESSION_PERMANENT = False
+    OIDC_CLIENT_KWARGS = {"scope": "openid profile email"}
+    PERMANENT_SESSION_LIFETIME = 300
 
     FEDMENU_URL = "https://apps.fedoraproject.org/fedmenu"
     FEDMENU_DATA_URL = "https://apps.fedoraproject.org/js/data.js"
@@ -148,6 +152,8 @@ class TestingConfig(DevelopmentConfig):
             "SEARCH_STRING": "(memberUid={user})",
         }
     ]
+
+    OIDC_CLIENT_SECRETS = os.getcwd() + "/conf/oauth2_client_secrets.json.example"
 
 
 def openshift_config(config_object, openshift_production):

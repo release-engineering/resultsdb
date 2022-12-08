@@ -1,4 +1,5 @@
 import os
+from unittest.mock import patch
 
 import pytest
 
@@ -7,7 +8,14 @@ from resultsdb.models import db
 
 
 @pytest.fixture(scope="session", autouse=True)
-def app():
+def mock_oidc():
+    with patch("resultsdb.OAuth") as oauth:
+        oauth().resultsdb.authorize_access_token.return_value = {"userinfo": {"uid": "testuser1"}}
+        yield
+
+
+@pytest.fixture(scope="session", autouse=True)
+def app(mock_oidc):
     app = create_app("resultsdb.config.TestingConfig")
     with app.app_context():
         db.drop_all()
