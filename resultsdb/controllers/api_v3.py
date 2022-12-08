@@ -73,6 +73,11 @@ def create_endpoint(params_class):
     def create(body: params_class):
         return create_result(body)
 
+    @oidc.require_login
+    @validate()
+    def create_with_login(body: params_class):
+        return create_result(body)
+
     def get_schema():
         return jsonify(params.construct().schema()), 200
 
@@ -82,6 +87,12 @@ def create_endpoint(params_class):
         endpoint=f"results_{artifact_type}s",
         methods=["POST"],
         view_func=create,
+    )
+    api.add_url_rule(
+        f"/oidc/results/{artifact_type}s",
+        endpoint=f"oidc_results_{artifact_type}s",
+        methods=["POST"],
+        view_func=create_with_login,
     )
     api.add_url_rule(
         f"/schemas/{artifact_type}s",
