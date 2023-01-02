@@ -42,7 +42,7 @@ iso8601 = "^1.0.2"
 Flask-Pydantic = "^0.11.0"
 
 # https://github.com/puiterwijk/flask-oidc/issues/147
-itsdangerous = {version = "==2.0.1", optional = true}
+itsdangerous = {version = "==2.1.2", optional = true}
 
 email-validator = "^1.3.0"
 python-ldap = "^3.4.3"
