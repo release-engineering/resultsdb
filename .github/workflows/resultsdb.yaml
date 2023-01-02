@@ -38,10 +38,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install poetry 'tox-docker>=4.0.0a2' 'tox>=4.0.0b2'
+          pip install poetry
+          poetry install --no-root --extras=test
 
       - name: Test with tox
-        run: tox
+        run: poetry run tox
 
       - name: Run coveralls-python
         env:

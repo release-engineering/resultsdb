@@ -26,7 +26,7 @@ import sys
 
 
 def db_uri_for_testing():
-    postgres_port = os.getenv("POSTGRES_5432_TCP", None)
+    postgres_port = os.getenv("POSTGRES_5432_TCP")
     if postgres_port:
         return f"postgresql+psycopg2://resultsdb:resultsdb@localhost:{postgres_port}/resultsdb"
 
