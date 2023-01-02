@@ -3,8 +3,8 @@ set -euo pipefail
 
 podman_service_pid=""
 cleanup() {
-    containers=$(podman ps --filter 'name=resultsdb-postgres.*' --format '{{.Names}}')
-    podman rm --force resultsdb-postgres $containers
+    podman ps --filter 'name=resultsdb-.*' --format '{{.Names}}' |
+        xargs --no-run-if-empty podman rm --force
     if [[ -n "$podman_service_pid" ]]; then
         kill "$podman_service_pid"
     fi
@@ -18,4 +18,5 @@ podman system service --time=0 "$DOCKER_HOST" &
 podman_service_pid=$!
 sleep 1
 
-tox "$@"
+poetry install --no-root --extras=test
+poetry run tox "$@"
