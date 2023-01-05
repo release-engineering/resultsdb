@@ -1,11 +1,17 @@
 # SPDX-License-Identifier: GPL-2.0+
 from unittest.mock import ANY, patch, Mock
 
-import flask
 import pytest
 
+from resultsdb.models import db
 from resultsdb.parsers.api_v3 import RESULTS_PARAMS_CLASSES
-from resultsdb.controllers.api_v3 import oidc
+
+
+@pytest.fixture(scope="function", autouse=True)
+def db_session():
+    db.session.rollback()
+    db.drop_all()
+    db.create_all()
 
 
 @pytest.fixture(autouse=True)
@@ -15,18 +21,6 @@ def mock_ldap():
         con.search_s.return_value = [("ou=Groups,dc=example,dc=com", {"cn": [b"testgroup1"]})]
         ldap_init.return_value = con
         yield con
-
-
-@pytest.fixture(autouse=True)
-def mock_oidc():
-    with patch.object(oidc, "validate_token") as validate:
-
-        def validate_side_effect(*args, **kwargs):
-            flask.g.oidc_token_info = {"uid": "testuser1"}
-            return True
-
-        validate.side_effect = validate_side_effect
-        yield
 
 
 @pytest.fixture
@@ -133,7 +127,7 @@ def test_api_v3_create_redhat_container_image(client):
     assert r.json["testcase"] == {
         "href": "http://localhost/api/v2.0/testcases/testcase1",
         "name": "testcase1",
-        "ref_url": "https://test.example.com/docs/testcase1",
+        "ref_url": None,
     }
     assert r.json["data"]["item"] == [data["item"]]
     assert r.json["data"]["type"] == ["redhat-container-image"]
