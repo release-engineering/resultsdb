@@ -89,6 +89,12 @@ class Config(object):
     OIDC_SESSION_PERMANENT = False
     PERMANENT_SESSION_LIFETIME = 300
 
+    SESSION_TYPE = "sqlalchemy"
+    SESSION_PERMANENT = True
+    SESSION_USE_SIGNER = True
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_SAMESITE = "Lax"
+
     FEDMENU_URL = "https://apps.fedoraproject.org/fedmenu"
     FEDMENU_DATA_URL = "https://apps.fedoraproject.org/js/data.js"
 

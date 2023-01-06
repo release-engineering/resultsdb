@@ -32,6 +32,7 @@ from flask_pyoidc.provider_configuration import (
     ProviderMetadata,
 )
 from flask_pyoidc.user_session import UserSession
+from flask_session import Session
 
 from resultsdb.proxy import ReverseProxied
 from resultsdb.controllers.main import main
@@ -102,6 +103,9 @@ def create_app(config_obj=None):
         app.logger.debug("Using DBURI: %s", app.config["SQLALCHEMY_DATABASE_URI"])
 
     db.init_app(app)
+
+    app.config["SESSION_SQLALCHEMY"] = db
+    app.server_session = Session(app)
 
     register_handlers(app)
 
