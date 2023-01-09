@@ -22,6 +22,7 @@ import datetime
 import os
 import copy
 from unittest import TestCase
+from unittest.mock import patch
 
 from flask import current_app as app
 
@@ -1178,8 +1179,9 @@ class TestFuncApiV20(TestCase):
         assert data.get("message") == "Health check OK"
 
     def test_healthcheck_fail(self):
-        db.drop_all()
-        r = self.app.get("/api/v2.0/healthcheck")
+        with patch("resultsdb.controllers.api_v2.db") as db:
+            db.session.execute.side_effect = RuntimeError("Testing DB outage")
+            r = self.app.get("/api/v2.0/healthcheck")
         assert r.status_code == 503
 
         data = json.loads(r.data)
