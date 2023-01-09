@@ -6,19 +6,10 @@
 
 <p>This is API reference for ResultsDB REST API v3.</p>
 
-{% if supports_oidc %}
-<p>
-    This API supports OpenIDConnect authentication. You can get your access
-    token manually at
-    <a href="{{ url_for("login") }}">/auth/oidclogin</a>.
-</p>
-{% endif %}
-
-<p>List of valid test case outcomes: {{ result_outcomes_extended }}</p>
-
 Index:
 
 <p><ul>
+    <li><a href="#authentication">Authentication</a></li>
     {% for endpoint in endpoints %}
         <li>
             <a href="#{{ endpoint.name }}">
@@ -27,6 +18,55 @@ Index:
         </li>
     {% endfor %}
 </ul></p>
+
+<section id="authentication">
+    <h2>
+        Authentication
+        <a class="anchor-link" href="#authentication">#</a>
+    </h2>
+
+    <p>
+    This API supports OpenIDConnect authentication. You can get your access token
+    manually at <a href="{{ url_for("login") }}">/auth/oidclogin</a>.
+    </p>
+
+    <p>
+    If you have a valid Kerberos ticket, you can retrieve the token using the
+    following Python code:
+    </p>
+
+<pre>
+import requests
+import requests_gssapi
+
+session = requests.Session()
+session.auth = requests_gssapi.HTTPKerberosAuth(mutual_authentication=requests_gssapi.OPTIONAL)
+response = session.get("{{ url_for("login", _external=True) }}")
+response.raise_for_status()
+token = response.json()["token"]
+</pre>
+
+    <p>
+    To publish a test result, pass the token to the "Authorization" HTTP header
+    in POST requests:
+    </p>
+
+<pre>
+response = session.post(
+    "{{ url_for("api_v3.results_brew-builds", _external=True) }}",
+    headers={"Authorization": f"Bearer {token}"},
+    json=test_result_data,
+)
+response.raise_for_status()
+</pre>
+
+    <p>Similar POST request with curl:</p>
+
+<pre>
+curl --json "$test_result_data" -H "Authorization: Bearer $token" \
+  {{ url_for("api_v3.results_brew-builds", _external=True) }}
+</pre>
+</section>
 
 {% for endpoint in endpoints %}
 <section id="{{ endpoint.name }}">
@@ -57,6 +97,9 @@ Index:
                     <a class="anchor-link" href="#{{ endpoint.name }}/{{ name }}">#</a>
                     <p>
                         {{ endpoint.schema.properties[name].description | replace('\n\n', '<br>') | safe }}
+                        {% if name == "outcome" %}
+                            <br>Valid outcomes: {{ result_outcomes_extended }}
+                        {% endif %}
                     </p>
                 </section>
             </li>
