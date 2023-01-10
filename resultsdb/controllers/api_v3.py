@@ -128,7 +128,6 @@ def index():
     )
     return render_template(
         "api_v3.html",
-        supports_oidc=app.config["AUTH_MODULE"] == "oidc",
         endpoints=endpoints,
         result_outcomes_extended=", ".join(result_outcomes_extended()),
     )

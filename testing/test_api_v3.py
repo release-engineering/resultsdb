@@ -52,10 +52,15 @@ def brew_build_request_data(**kwargs):
 def test_api_v3_documentation(client):
     r = client.get("/api/v3/")
     assert r.status_code == 200, r.text
-    assert "POST /api/v3/results/brew-builds" in r.text
-    assert "POST /api/v3/results/redhat-container-images" in r.text
-    assert "GET /api/v3/permissions" in r.text
-    assert '<section id="results/brew-builds/outcome">' in r.text
+    assert "POST /api/v3/results/brew-builds" in r.text, r.text
+    assert "POST /api/v3/results/redhat-container-images" in r.text, r.text
+    assert "GET /api/v3/permissions" in r.text, r.text
+    assert '<section id="results/brew-builds/outcome">' in r.text, r.text
+    assert (
+        'curl --json "$test_result_data" -H "Authorization: Bearer $token" \\\n'
+        "  http://localhost/api/v3/results/brew-builds"
+    ) in r.text, r.text
+    assert 'response = session.get("http://localhost/auth/oidclogin")' in r.text, r.text
 
 
 def test_api_v3_create_brew_build(client):

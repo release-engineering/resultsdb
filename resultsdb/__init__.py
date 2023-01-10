@@ -109,13 +109,15 @@ def create_app(config_obj=None):
 
     register_handlers(app)
 
+    app.register_blueprint(main)
+    app.register_blueprint(api_v2, url_prefix="/api/v2.0")
+
     if app.config["AUTH_MODULE"] == "oidc":
         app.logger.info("OpenIDConnect authentication is enabled")
         enable_oidc(app)
+        app.register_blueprint(api_v3, url_prefix="/api/v3")
     else:
         app.logger.info("OpenIDConnect authentication is disabled")
-
-    register_blueprints(app)
 
     app.logger.debug("Finished ResultsDB initialization")
     return app
@@ -180,12 +182,6 @@ def register_handlers(app):
     @app.errorhandler(404)
     def not_found(error):
         return jsonify({"message": "Not found"}), 404
-
-
-def register_blueprints(app):
-    app.register_blueprint(main)
-    app.register_blueprint(api_v2, url_prefix="/api/v2.0")
-    app.register_blueprint(api_v3, url_prefix="/api/v3")
 
 
 def enable_oidc(app):
