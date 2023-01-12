@@ -6,8 +6,7 @@
 
 <p>This is API reference for ResultsDB REST API v3.</p>
 
-Index:
-
+<h4>Index</h4>
 <p><ul>
     <li><a href="#authentication">Authentication</a></li>
     {% for endpoint in endpoints %}
@@ -35,8 +34,8 @@ Index:
     following Python code:
     </p>
 
-<pre>
-import requests
+
+<pre><code class="language-python" data-lang="python">import requests
 import requests_gssapi
 
 session = requests.Session()
@@ -44,28 +43,26 @@ session.auth = requests_gssapi.HTTPKerberosAuth(mutual_authentication=requests_g
 response = session.get("{{ url_for("login", _external=True) }}")
 response.raise_for_status()
 token = response.json()["token"]
-</pre>
+</code></pre>
 
     <p>
     To publish a test result, pass the token to the "Authorization" HTTP header
     in POST requests:
     </p>
 
-<pre>
-response = session.post(
+<pre><code>response = session.post(
     "{{ url_for("api_v3.results_brew-builds", _external=True) }}",
     headers={"Authorization": f"Bearer {token}"},
     json=test_result_data,
 )
 response.raise_for_status()
-</pre>
+</code></pre>
 
     <p>Similar POST request with curl:</p>
 
-<pre>
-curl --json "$test_result_data" -H "Authorization: Bearer $token" \
+<pre><code>curl --json "$test_result_data" -H "Authorization: Bearer $token" \
   {{ url_for("api_v3.results_brew-builds", _external=True) }}
-</pre>
+</code></pre>
 </section>
 
 {% for endpoint in endpoints %}
@@ -83,7 +80,7 @@ curl --json "$test_result_data" -H "Authorization: Bearer $token" \
 
     {% if endpoint.example %}
         <h3>Example</h3>
-        <pre>{{ endpoint.example }}</pre>
+        <pre><code>{{ endpoint.example }}</code></pre>
     {% endif %}
 
     <h3>{{ type }} Parameters</h3>
