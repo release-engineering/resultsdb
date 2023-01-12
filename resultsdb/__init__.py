@@ -24,7 +24,7 @@ import logging.handlers
 import logging.config as logging_config
 import os
 
-from flask import Flask, jsonify, session
+from flask import Flask, current_app, jsonify, send_from_directory, session
 from flask_pyoidc import OIDCAuthentication
 from flask_pyoidc.provider_configuration import (
     ClientMetadata,
@@ -111,6 +111,7 @@ def create_app(config_obj=None):
 
     app.register_blueprint(main)
     app.register_blueprint(api_v2, url_prefix="/api/v2.0")
+    app.add_url_rule("/favicon.png", view_func=favicon)
 
     if app.config["AUTH_MODULE"] == "oidc":
         app.logger.info("OpenIDConnect authentication is enabled")
@@ -232,3 +233,11 @@ def enable_oidc(app):
     app.oidc = oidc
 
     create_endpoints(oidc, provider)
+
+
+def favicon():
+    return send_from_directory(
+        os.path.join(current_app.root_path, "static"),
+        "favicon.png",
+        mimetype="image/png",
+    )

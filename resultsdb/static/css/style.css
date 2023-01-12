@@ -11,10 +11,6 @@ body > .container {
     padding-bottom: 30px;
 }
 
-.navbar {
-    padding: .75rem 0;
-}
-
 /* consider navbar when jumping to sections */
 section::before {
     display: block;
@@ -34,4 +30,11 @@ section::before {
 
 .param {
     font-weight: bold;
+}
+
+pre {
+    background-color: var(--bs-light);
+    padding: 1em;
+    margin: 0.5em;
+    border: 1px solid var(--bs-border-color);
 }
