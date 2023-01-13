@@ -368,7 +368,7 @@ class RedHatContainerImageResultParams(ResultParamsBase):
             issuer="CPaaS",
             component="rhoam-operator-bundle-container",
             full_names=[
-                "registry.example.com/rh-osbs/operator"
+                "registry.example.com/rh-osbs/operator@"
                 "sha256:27a51bc590483f0cd8c6085825a82a5697832e1d8b0e6aab0651262b84855803",
             ],
             **EXAMPLE_COMMON_PARAMS,
