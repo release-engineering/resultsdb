@@ -74,4 +74,6 @@ def verify_authorization(user, testcase, permissions, ldap_host, ldap_searches):
     if not any_groups_found:
         raise Unauthorized(f"Failed to find user {user} in LDAP")
 
-    raise Unauthorized(f"You are not authorized to submit a result for the test case {testcase}")
+    raise Unauthorized(
+        f"User {user} is not authorized to submit a result for the test case {testcase}"
+    )
