@@ -235,7 +235,9 @@ def test_api_v3_permission_denied(client, permissions):
     data = brew_build_request_data()
     r = client.post("/api/v3/results/brew-builds", json=data)
     assert r.status_code == 401, r.text
-    assert "You are not authorized to submit a result for the test case testcase1" in r.text
+    assert (
+        "User testuser1 is not authorized to submit a result for the test case testcase1" in r.text
+    )
 
 
 def test_api_v3_permission_matches_username(client, permissions):
