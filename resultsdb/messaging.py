@@ -160,7 +160,6 @@ class FedmsgPlugin(MessagingPlugin):
     """A fedmsg plugin, used to publish to the fedmsg bus."""
 
     def publish(self, message):
-
         try:
             msg = Message(topic="{}.result.new".format(self.modname), body=message)
             publish(msg)

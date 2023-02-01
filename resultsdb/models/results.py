@@ -55,7 +55,6 @@ class GroupsToResults(db.Model):
 
 
 class Group(db.Model, DBSerialize):
-
     id = db.Column(db.Integer, primary_key=True)
     uuid = db.Column(db.String(36), unique=True)
     description = db.Column(db.Text)
@@ -80,7 +79,6 @@ class Group(db.Model, DBSerialize):
 
 
 class Testcase(db.Model, DBSerialize):
-
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Text, unique=True)
     ref_url = db.Column(db.Text)
@@ -99,7 +97,6 @@ class Testcase(db.Model, DBSerialize):
 
 
 class Result(db.Model, DBSerialize):
-
     id = db.Column(db.Integer, primary_key=True)
     testcase_name = db.Column(db.Text, db.ForeignKey("testcase.name"))
 
@@ -135,7 +132,6 @@ class Result(db.Model, DBSerialize):
 
 
 class ResultData(db.Model, DBSerialize):
-
     id = db.Column(db.Integer, primary_key=True)
     result_id = db.Column(db.Integer, db.ForeignKey("result.id"))
 
