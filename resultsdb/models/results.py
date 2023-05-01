@@ -21,6 +21,7 @@ import datetime
 import uuid as lib_uuid
 
 from flask import current_app
+from sqlalchemy.orm import relationship
 
 from resultsdb.models import db
 from resultsdb.serializers import DBSerialize
@@ -60,7 +61,7 @@ class Group(db.Model, DBSerialize):
     description = db.Column(db.Text)
     ref_url = db.Column(db.Text)
 
-    results = db.relationship("Result", secondary="groups_to_results", backref="groups")
+    results = relationship("Result", secondary="groups_to_results", backref="groups")
 
     __table_args__ = (
         db.Index(
@@ -105,8 +106,8 @@ class Result(db.Model, DBSerialize):
     note = db.Column(db.Text)
     ref_url = db.Column(db.Text)
 
-    testcase = db.relation("Testcase", backref="results")  # , lazy = False)
-    data = db.relation("ResultData", backref="result")  # , lazy = False)
+    testcase = relationship("Testcase", backref="results")  # , lazy = False)
+    data = relationship("ResultData", backref="result")  # , lazy = False)
 
     __table_args__ = (
         db.Index(

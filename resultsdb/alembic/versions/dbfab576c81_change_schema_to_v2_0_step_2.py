@@ -15,7 +15,7 @@ depends_on = None
 from alembic import op
 import sqlalchemy as db
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, relation, sessionmaker
+from sqlalchemy.orm import relationship, sessionmaker
 import uuid
 import logging
 
@@ -24,7 +24,6 @@ Base = declarative_base()
 
 
 db.relationship = relationship
-db.relation = relation
 
 
 class GroupsToResults(Base):
@@ -61,8 +60,8 @@ def upgrade():
         testcase_name = db.Column(db.Text)
 
         groups = db.relationship("Group", secondary="groups_to_results", backref="results")
-        job = db.relation("Group")  # , lazy = False)
-        testcase = db.relation("Testcase", backref="results")  # , lazy = False)
+        job = db.relationship("Group")  # , lazy = False)
+        testcase = db.relationship("Testcase", backref="results")  # , lazy = False)
 
     logger = logging.getLogger("alembic")
     connection = op.get_bind()
@@ -105,8 +104,8 @@ def downgrade():
         testcase_name = db.Column(db.Text, db.ForeignKey("testcase.name"))
 
         groups = db.relationship("Group", secondary="groups_to_results", backref="results")
-        job = db.relation("Group")  # , lazy = False)
-        testcase = db.relation("Testcase", backref="results")  # , lazy = False)
+        job = db.relationship("Group")  # , lazy = False)
+        testcase = db.relationship("Testcase", backref="results")  # , lazy = False)
 
     op.add_column("result", db.Column("job_id", db.INTEGER(), autoincrement=False, nullable=True))
     op.add_column(

@@ -13,6 +13,7 @@ branch_labels = None
 depends_on = None
 
 from alembic import op
+from sqlalchemy import text
 import sqlalchemy as sa
 
 
@@ -29,6 +30,8 @@ def upgrade():
 
 def downgrade():
     op.execute(
-        "ALTER TABLE result ALTER COLUMN outcome TYPE resultoutcome USING outcome::resultoutcome;"
+        text(
+            "ALTER TABLE result ALTER COLUMN outcome TYPE resultoutcome USING outcome::resultoutcome;"
+        )
     )
     op.drop_index("result_idx_outcome", table_name="result")

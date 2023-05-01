@@ -607,7 +607,7 @@ def healthcheck():
     Returns a 200 response if the application is alive and able to serve requests.
     """
     try:
-        db.session.execute("SELECT 1 FROM result LIMIT 0").fetchall()
+        db.session.execute(db.text("SELECT 1 FROM result LIMIT 0")).fetchall()
     except Exception:
         app.logger.exception("Healthcheck failed on DB query.")
         return jsonify({"message": "Unable to communicate with database"}), 503
