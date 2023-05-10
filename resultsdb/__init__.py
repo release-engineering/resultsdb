@@ -55,6 +55,8 @@ def create_app(config_obj=None):
     app = Flask(__name__)
     app.secret_key = "replace-me-with-something-random"
 
+    app.session_cookie_name = "session"
+
     # make sure app behaves when behind a proxy
     app.wsgi_app = ReverseProxied(app.wsgi_app)
 

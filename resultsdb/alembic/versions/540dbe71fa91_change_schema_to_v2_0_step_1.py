@@ -15,7 +15,7 @@ depends_on = None
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relation, sessionmaker
+from sqlalchemy.orm import relationship, sessionmaker
 from sqlalchemy.sql import text
 import logging
 
@@ -28,7 +28,7 @@ class Job(Base):
 
     id = sa.Column(sa.Integer, primary_key=True)
     uuid = sa.Column(sa.String(36), unique=True)
-    results = relation("Result", backref="job")
+    results = relationship("Result", backref="job")
 
 
 class Result(Base):
@@ -47,7 +47,9 @@ def upgrade():
     jobs_to_delete = []
 
     job_count_query = connection.execute(
-        "select count(*) from job where uuid in (select uuid from job group by uuid having count(uuid) > 1);"
+        text(
+            "select count(*) from job where uuid in (select uuid from job group by uuid having count(uuid) > 1);"
+        )
     )
     job_count = -1
     for row in job_count_query:

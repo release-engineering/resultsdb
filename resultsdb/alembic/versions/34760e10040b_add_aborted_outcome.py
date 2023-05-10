@@ -13,6 +13,7 @@ branch_labels = None
 depends_on = None
 
 from alembic import op
+from sqlalchemy import text
 import sqlalchemy as sa
 
 old_values = ("PASSED", "INFO", "FAILED", "ERROR", "WAIVED", "NEEDS_INSPECTION")
@@ -28,14 +29,18 @@ def upgrade():
     if op.get_bind().engine.url.drivername.startswith("postgresql"):
         tmp_enum.create(op.get_bind(), checkfirst=False)
         op.execute(
-            "ALTER TABLE result ALTER COLUMN outcome TYPE resultoutcome_tmp "
-            " USING outcome::text::resultoutcome_tmp"
+            text(
+                "ALTER TABLE result ALTER COLUMN outcome TYPE resultoutcome_tmp "
+                " USING outcome::text::resultoutcome_tmp"
+            )
         )
         old_enum.drop(op.get_bind(), checkfirst=False)
         new_enum.create(op.get_bind(), checkfirst=False)
         op.execute(
-            "ALTER TABLE result ALTER COLUMN outcome TYPE resultoutcome "
-            " USING outcome::text::resultoutcome"
+            text(
+                "ALTER TABLE result ALTER COLUMN outcome TYPE resultoutcome "
+                " USING outcome::text::resultoutcome"
+            )
         )
         tmp_enum.drop(op.get_bind(), checkfirst=False)
 
@@ -43,17 +48,21 @@ def upgrade():
 def downgrade():
     # this migration is postgresql specific and fails on sqlite
     if op.get_bind().engine.url.drivername.startswith("postgresql"):
-        op.execute("UPDATE result SET outcome='ERROR' WHERE outcome='ABORTED'")
+        op.execute(text("UPDATE result SET outcome='ERROR' WHERE outcome='ABORTED'"))
 
         tmp_enum.create(op.get_bind(), checkfirst=False)
         op.execute(
-            "ALTER TABLE result ALTER COLUMN outcome TYPE resultoutcome_tmp "
-            " USING outcome::text::resultoutcome_tmp"
+            text(
+                "ALTER TABLE result ALTER COLUMN outcome TYPE resultoutcome_tmp "
+                " USING outcome::text::resultoutcome_tmp"
+            )
         )
         new_enum.drop(op.get_bind(), checkfirst=False)
         old_enum.create(op.get_bind(), checkfirst=False)
         op.execute(
-            "ALTER TABLE result ALTER COLUMN outcome TYPE resultoutcome "
-            " USING outcome::text::resultoutcome"
+            text(
+                "ALTER TABLE result ALTER COLUMN outcome TYPE resultoutcome "
+                " USING outcome::text::resultoutcome"
+            )
         )
         tmp_enum.drop(op.get_bind(), checkfirst=False)
