@@ -90,6 +90,7 @@ class Config(object):
     PERMANENT_SESSION_LIFETIME = 300
 
     SESSION_TYPE = "sqlalchemy"
+    SESSION_SQLALCHEMY_TABLE = "sessions"
     SESSION_PERMANENT = True
     SESSION_USE_SIGNER = True
     SESSION_COOKIE_SECURE = True

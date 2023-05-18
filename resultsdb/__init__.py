@@ -106,8 +106,7 @@ def create_app(config_obj=None):
 
     db.init_app(app)
 
-    app.config["SESSION_SQLALCHEMY"] = db
-    app.server_session = Session(app)
+    init_session(app)
 
     register_handlers(app)
 
@@ -185,6 +184,19 @@ def register_handlers(app):
     @app.errorhandler(404)
     def not_found(error):
         return jsonify({"message": "Not found"}), 404
+
+
+def init_session(app):
+    app.config["SESSION_SQLALCHEMY"] = db
+    app.server_session = Session(app)
+    if app.config["SESSION_TYPE"] == "sqlalchemy":
+        import sqlalchemy
+
+        with app.app_context():
+            inspect = sqlalchemy.inspect(db.engine)
+            table = app.config["SESSION_SQLALCHEMY_TABLE"]
+            if not inspect.has_table(table):
+                db.create_all()
 
 
 def enable_oidc(app):
