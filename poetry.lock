@@ -689,19 +689,19 @@ requests = "*"
 
 [[package]]
 name = "flask-session"
-version = "0.4.0"
-description = "Adds server-side session support to your Flask application"
+version = "0.5.0"
+description = "Server-side session support for Flask"
 category = "main"
 optional = false
-python-versions = "*"
+python-versions = ">=3.7"
 files = [
-    {file = "Flask-Session-0.4.0.tar.gz", hash = "sha256:c9ed54321fa8c4ca0132ffd3369582759eda7252fb4b3bee480e690d1ba41f46"},
-    {file = "Flask_Session-0.4.0-py2.py3-none-any.whl", hash = "sha256:1e3f8a317005db72c831f85d884a5a9d23145f256c730d80b325a3150a22c3db"},
+    {file = "Flask-Session-0.5.0.tar.gz", hash = "sha256:190875e6aebf2953c6803d42379ef3b934bc209ef8ef006f97aecb08f5aaeb86"},
+    {file = "flask_session-0.5.0-py3-none-any.whl", hash = "sha256:1619bcbc16f04f64e90f8e0b17145ba5c9700090bb1294e889956c1282d58631"},
 ]
 
 [package.dependencies]
 cachelib = "*"
-Flask = ">=0.8"
+flask = ">=2.2"
 
 [[package]]
 name = "flask-sqlalchemy"
@@ -2113,4 +2113,4 @@ test = ["flake8", "pytest", "pytest-cov", "tox", "tox-docker"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.10"
-content-hash = "67fd6804f0b2625579df269566f177d3c4f7931befa6edad42c6243be9ad4caa"
+content-hash = "0efb3fe87285f6f3f19e2041e9bd39c07a27d759f52aa5ad4df445faab214c74"
