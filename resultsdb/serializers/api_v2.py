@@ -19,6 +19,7 @@
 
 from flask import url_for
 from resultsdb.serializers import BaseSerializer
+from resultsdb.models.results import GroupsToResults
 
 
 class Serializer(BaseSerializer):
@@ -28,7 +29,7 @@ class Serializer(BaseSerializer):
             description=o.description,
             ref_url=o.ref_url,
             results=url_for("api_v2.get_results", groups=[o.uuid], _external=True),
-            results_count=len(o.results),
+            results_count=GroupsToResults.query.filter_by(group_uuid=o.uuid).count(),
             href=url_for("api_v2.get_group", group_id=o.uuid, _external=True),
         )
 
