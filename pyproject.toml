@@ -23,7 +23,7 @@ include = [
 [tool.poetry.dependencies]
 python = ">=3.9,<3.10"
 flask = "^2.3.1"
-gunicorn = "^20.1.0"
+gunicorn = "^21.2.0"
 fedora-messaging = "^3.4.1"
 "stomp.py" = "^8.1.0"
 
