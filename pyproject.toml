@@ -34,7 +34,7 @@ tox-docker = {version = "^4.0.0", optional = true}
 
 Flask-SQLAlchemy = "^3.0.5"
 SQLAlchemy = {version = "^2.0.17"}
-psycopg2-binary = {version = "^2.9.3"}
+psycopg2-binary = {version = "^2.9.7"}
 alembic = "^1.11.1"
 iso8601 = "^2.0.0"
 pydantic = "^1.10.12"
