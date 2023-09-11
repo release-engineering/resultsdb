@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi8/ubi:8.7 as builder
+FROM registry.fedoraproject.org/fedora:38 as builder
 
 # hadolint ignore=DL3033,DL4006,SC2039,SC3040
 RUN set -exo pipefail \
@@ -7,29 +7,31 @@ RUN set -exo pipefail \
     && yum install -y \
         --setopt install_weak_deps=false \
         --nodocs \
+        --disablerepo=* \
+        --enablerepo=fedora,updates \
         gcc \
         krb5-devel \
         openldap-devel \
-        python39 \
-        python39-devel \
+        python3 \
+        python3-devel \
     # install runtime dependencies
     && yum install -y \
         --installroot=/mnt/rootfs \
-        --releasever=8 \
+        --releasever=38 \
         --setopt install_weak_deps=false \
         --nodocs \
+        --disablerepo=* \
+        --enablerepo=fedora,updates \
         krb5-libs \
         mod_ssl \
         openldap \
-        python39 \
-        python39-mod_wsgi \
+        python3 \
+        python3-mod_wsgi \
     && yum --installroot=/mnt/rootfs clean all \
     && rm -rf /mnt/rootfs/var/cache/* /mnt/rootfs/var/log/dnf* /mnt/rootfs/var/log/yum.* \
     # https://python-poetry.org/docs/master/#installing-with-the-official-installer
     && curl -sSL https://install.python-poetry.org | python3 - \
-    && python3 -m venv --system-site-packages /venv \
-    # compatibility with previous images
-    && ln -s mod_wsgi-express-3.9 /mnt/rootfs/usr/bin/mod_wsgi-express-3
+    && python3 -m venv --system-site-packages /venv
 
 ENV \
     PIP_DEFAULT_TIMEOUT=100 \
@@ -89,13 +91,16 @@ ENV \
     WEB_CONCURRENCY=8
 
 COPY --from=builder /mnt/rootfs/ /
-COPY --from=builder /etc/yum.repos.d/ubi.repo /etc/yum.repos.d/ubi.repo
+COPY --from=builder \
+    /etc/yum.repos.d/fedora.repo \
+    /etc/yum.repos.d/fedora-updates.repo \
+    /etc/yum.repos.d/
 WORKDIR /app
 
 USER 1001
 EXPOSE 5001
 ENTRYPOINT ["/app/entrypoint.sh"]
-CMD ["mod_wsgi-express-3.9", "start-server", "/usr/share/resultsdb/resultsdb.wsgi", \
+CMD ["mod_wsgi-express-3", "start-server", "/usr/share/resultsdb/resultsdb.wsgi", \
     "--user", "apache", "--group", "apache", \
     "--port", "5001", "--threads", "5", \
     "--include-file", "/etc/httpd/conf.d/resultsdb.conf", \

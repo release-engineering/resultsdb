@@ -93,7 +93,7 @@ Should you, for some reason avoid docker, you could run the following command (w
 To use tox-docker with podman without requiring root, you can use
 `tox-podman.sh` script that wraps `tox`::
 
-    $ ./tox-podman.sh -e py39
+    $ ./tox-podman.sh -e py311
 
 ## Deployment
 
