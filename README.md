@@ -88,7 +88,7 @@ Note, that in order for some of the tests to work properly, tox is configured to
 
 Should you, for some reason avoid docker, you could run the following command (with virtualenv active)::
 
-    $ NO_CAN_HAS_POSTGRES=sadly pytest
+    $ tox -e py311-nodocker
 
 To use tox-docker with podman without requiring root, you can use
 `tox-podman.sh` script that wraps `tox`::
