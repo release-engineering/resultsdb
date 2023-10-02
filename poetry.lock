@@ -2154,4 +2154,4 @@ test = ["pytest", "pytest-cov", "tox", "tox-docker"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.12"
-content-hash = "0b163f1c6e3220b2e253c7dfa7d4439f337040b0e5d60dc218c6d02e782eafdb"
+content-hash = "f242e31299c9bc42dc5b237537188c419e8313431b968f3220edc6c04c40f776"
