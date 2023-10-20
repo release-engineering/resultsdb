@@ -211,9 +211,9 @@ If you ran `python setup.py develop` and are still seeing this error, then:
         with raises(stomp.exception.ConnectFailedException):
             plugin.publish({})
 
-        assert len(mock_stomp().send.mock_calls) == 0
-        assert len(mock_stomp().connect.mock_calls) == 1
-        assert len(mock_stomp().disconnect.mock_calls) == 0
+        mock_stomp().connect.assert_called_once()
+        mock_stomp().send.assert_not_called()
+        mock_stomp().disconnect.assert_not_called()
 
     def test_stomp_publish_send_failed(self, mock_stomp):
         plugin = messaging.load_messaging_plugin("stomp", MESSAGE_BUS_KWARGS)
@@ -222,9 +222,10 @@ If you ran `python setup.py develop` and are still seeing this error, then:
         with raises(stomp.exception.StompException):
             plugin.publish({})
 
-        assert len(mock_stomp().send.mock_calls) == 1
-        assert len(mock_stomp().connect.mock_calls) == 1
-        assert len(mock_stomp().disconnect.mock_calls) == 1
+        mock_stomp().connect.assert_called_once()
+        mock_stomp().send.assert_called_once()
+        mock_stomp().disconnect.assert_called_once()
+
 
 class TestGetResultsParseArgs:
     # TODO: write something!

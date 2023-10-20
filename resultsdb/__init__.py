@@ -38,6 +38,7 @@ from resultsdb.proxy import ReverseProxied
 from resultsdb.controllers.main import main
 from resultsdb.controllers.api_v2 import api as api_v2
 from resultsdb.controllers.api_v3 import api as api_v3, create_endpoints
+from resultsdb.messaging import load_messaging_plugin
 from resultsdb.models import db
 from . import config
 
@@ -119,6 +120,8 @@ def create_app(config_obj=None):
     else:
         app.logger.info("OpenIDConnect authentication is disabled")
 
+    setup_messaging(app)
+
     app.logger.debug("Finished ResultsDB initialization")
     return app
 
@@ -171,6 +174,21 @@ def setup_logging(app):
         file_handler.setFormatter(formatter)
         root_logger.addHandler(file_handler)
         app.logger.addHandler(file_handler)
+
+
+def setup_messaging(app):
+    app.messaging_plugin = None
+    if not app.config["MESSAGE_BUS_PUBLISH"]:
+        app.logger.info("No messaging plugin selected")
+        return
+
+    plugin_name = app.config["MESSAGE_BUS_PLUGIN"]
+    app.logger.info("Using messaging plugin %s", plugin_name)
+    plugin_args = app.config["MESSAGE_BUS_KWARGS"]
+    app.messaging_plugin = load_messaging_plugin(
+        name=plugin_name,
+        kwargs=plugin_args,
+    )
 
 
 def register_handlers(app):

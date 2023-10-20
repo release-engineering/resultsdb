@@ -205,7 +205,7 @@ class StompPlugin(MessagingPlugin):
         required = ["connection", "destination"]
         for attr in required:
             if getattr(self, attr, None) is None:
-                raise ValueError("%r required for %r." % (attr, self))
+                raise ValueError(f"Missing {attr!r} option for STOMP messaging plugin")
 
     def publish(self, msg):
         msg = json.dumps(msg)
