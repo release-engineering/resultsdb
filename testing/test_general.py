@@ -1,9 +1,32 @@
 import datetime
 import ssl
+from unittest.mock import patch
+
+import stomp
+from pytest import fixture, raises
 
 import resultsdb.controllers.api_v2 as apiv2
 import resultsdb.messaging as messaging
 from resultsdb.parsers.api_v2 import parse_since
+
+MESSAGE_BUS_KWARGS = {
+    "destination": "results.new",
+    "connection": {
+        "host_and_ports": [("localhost", 1234)],
+        "use_ssl": True,
+        "ssl_version": ssl.PROTOCOL_TLSv1_2,
+        "ssl_key_file": "/etc/secret/umb-client.key",
+        "ssl_cert_file": "/etc/secret/umb-client.crt",
+        "ssl_ca_certs": "/etc/secret/ca.pem",
+    },
+}
+
+
+@fixture
+def mock_stomp():
+    with patch("resultsdb.messaging.stomp.connect.StompConnection11") as mock:
+        mock().is_connected.return_value = False
+        yield mock
 
 
 class MyRequest(object):
@@ -136,7 +159,7 @@ If you ran `python setup.py develop` and are still seeing this error, then:
             " resultsdb.messaging:FedmsgPlugin"
         )
 
-    def test_load_stomp(self):
+    def test_stomp_load(self):
         message_bus_kwargs = {
             "destination": "results.new",
             "connection": {
@@ -147,22 +170,20 @@ If you ran `python setup.py develop` and are still seeing this error, then:
         assert isinstance(plugin, messaging.StompPlugin)
         assert plugin.destination == "results.new"
 
-    def test_stomp_ssl(self):
+    def test_stomp_missing_destination(self):
         message_bus_kwargs = {
-            "destination": "results.new",
             "connection": {
                 "host_and_ports": [("localhost", 1234)],
-                "use_ssl": True,
-                "ssl_version": ssl.PROTOCOL_TLSv1_2,
-                "ssl_key_file": "/etc/secret/umb-client.key",
-                "ssl_cert_file": "/etc/secret/umb-client.crt",
-                "ssl_ca_certs": "/etc/secret/ca.pem",
             },
         }
+        expected_error = "Missing 'destination' option for STOMP messaging plugin"
+        with raises(ValueError, match=expected_error):
+            messaging.load_messaging_plugin("stomp", message_bus_kwargs)
 
+    def test_stomp_ssl(self):
         # Run twice to ensure that the original configuration is not modified.
         for _ in (1, 2):
-            plugin = messaging.load_messaging_plugin("stomp", message_bus_kwargs)
+            plugin = messaging.load_messaging_plugin("stomp", MESSAGE_BUS_KWARGS)
             assert plugin.connection == {
                 "host_and_ports": [("localhost", 1234)],
             }
@@ -175,6 +196,35 @@ If you ran `python setup.py develop` and are still seeing this error, then:
                 "ssl_version": ssl.PROTOCOL_TLSv1_2,
             }
 
+    def test_stomp_publish(self, mock_stomp):
+        plugin = messaging.load_messaging_plugin("stomp", MESSAGE_BUS_KWARGS)
+        assert mock_stomp().is_connected() is False
+        plugin.publish({})
+        mock_stomp().connect.assert_called_once()
+        mock_stomp().send.assert_called_once()
+        mock_stomp().disconnect.assert_called_once()
+
+    def test_stomp_publish_connect_failed(self, mock_stomp):
+        plugin = messaging.load_messaging_plugin("stomp", MESSAGE_BUS_KWARGS)
+
+        mock_stomp().connect.side_effect = stomp.exception.ConnectFailedException()
+        with raises(stomp.exception.ConnectFailedException):
+            plugin.publish({})
+
+        assert len(mock_stomp().send.mock_calls) == 0
+        assert len(mock_stomp().connect.mock_calls) == 1
+        assert len(mock_stomp().disconnect.mock_calls) == 0
+
+    def test_stomp_publish_send_failed(self, mock_stomp):
+        plugin = messaging.load_messaging_plugin("stomp", MESSAGE_BUS_KWARGS)
+
+        mock_stomp().send.side_effect = stomp.exception.StompException()
+        with raises(stomp.exception.StompException):
+            plugin.publish({})
+
+        assert len(mock_stomp().send.mock_calls) == 1
+        assert len(mock_stomp().connect.mock_calls) == 1
+        assert len(mock_stomp().disconnect.mock_calls) == 1
 
 class TestGetResultsParseArgs:
     # TODO: write something!
