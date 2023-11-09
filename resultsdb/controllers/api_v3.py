@@ -2,6 +2,7 @@
 from flask import Blueprint, jsonify, render_template
 from flask import current_app as app
 from flask_pydantic import validate
+from pydantic import BaseModel
 
 from resultsdb.models import db
 from resultsdb.authorization import match_testcase_permissions, verify_authorization
@@ -19,6 +20,20 @@ from resultsdb.parsers.api_v3 import (
 )
 
 api = Blueprint("api_v3", __name__)
+
+
+def ensure_dict_input(cls):
+    """
+    Wraps Pydantic model to ensure that the input type is dict.
+
+    This is a workaround for a bug in flask-pydantic that causes validation to
+    fail with unexpected exception.
+    """
+
+    class EnsureJsonObject(BaseModel):
+        __root__: cls
+
+    return EnsureJsonObject
 
 
 def permissions():
@@ -68,7 +83,7 @@ def create_endpoint(params_class, oidc, provider):
 
     @oidc.token_auth(provider)
     @validate()
-    def create(body: params_class):
+    def create(body: ensure_dict_input(params_class)):
         return create_result(body)
 
     def get_schema():

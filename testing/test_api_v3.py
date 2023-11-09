@@ -318,3 +318,113 @@ def test_api_v3_consistency(params_class, client):
     assert r.status_code == 200, r.text
     assert f"POST /api/v3/results/{artifact_type}s" in r.text
     assert f'<a class="anchor-link" href="#results/{artifact_type}s">#</a>' in r.text
+
+
+@pytest.mark.parametrize("params_class", RESULTS_PARAMS_CLASSES)
+def test_api_v3_bad_param_type_int(params_class, client):
+    """
+    Passing unexpected JSON type must propagate an error to the user.
+    """
+    artifact_type = params_class.artifact_type()
+    r = client.post(f"/api/v3/results/{artifact_type}s", json=0)
+    assert r.status_code == 400, r.text
+    assert r.json == {
+        "validation_error": {
+            "body_params": [
+                {
+                    "loc": ["__root__"],
+                    "msg": "value is not a valid dict",
+                    "type": "type_error.dict",
+                }
+            ]
+        }
+    }
+
+
+@pytest.mark.parametrize("params_class", RESULTS_PARAMS_CLASSES)
+def test_api_v3_bad_param_type_str(params_class, client):
+    """
+    Passing unexpected JSON type must propagate an error to the user.
+    """
+    artifact_type = params_class.artifact_type()
+    r = client.post(f"/api/v3/results/{artifact_type}s", json="BAD")
+    assert r.status_code == 400, r.text
+    assert r.json == {
+        "validation_error": {
+            "body_params": [
+                {
+                    "loc": ["__root__"],
+                    "msg": "value is not a valid dict",
+                    "type": "type_error.dict",
+                }
+            ]
+        }
+    }
+
+
+@pytest.mark.parametrize("params_class", RESULTS_PARAMS_CLASSES)
+def test_api_v3_bad_param_type_null(params_class, client):
+    """
+    Passing unexpected JSON type must propagate an error to the user.
+    """
+    artifact_type = params_class.artifact_type()
+    r = client.post(
+        f"/api/v3/results/{artifact_type}s", content_type="application/json", data="null"
+    )
+    assert r.status_code == 400, r.text
+    assert r.json == {
+        "validation_error": {
+            "body_params": [
+                {
+                    "loc": ["__root__"],
+                    "msg": "none is not an allowed value",
+                    "type": "type_error.none.not_allowed",
+                }
+            ]
+        }
+    }
+
+
+@pytest.mark.parametrize("params_class", RESULTS_PARAMS_CLASSES)
+def test_api_v3_bad_param_invalid_json(params_class, client):
+    """
+    Passing unexpected JSON type must propagate an error to the user.
+    """
+    artifact_type = params_class.artifact_type()
+    r = client.post(f"/api/v3/results/{artifact_type}s", content_type="application/json", data="{")
+    assert r.status_code == 400, r.text
+    assert r.json == {"message": "Bad request"}
+
+
+@pytest.mark.parametrize("params_class", RESULTS_PARAMS_CLASSES)
+def test_api_v3_example(params_class, client):
+    """
+    Passing unexpected JSON type must propagate an error to the user.
+    """
+    artifact_type = params_class.artifact_type()
+    example = params_class.example().dict()
+    r = client.post(f"/api/v3/results/{artifact_type}s", json=example)
+    assert r.status_code == 201, r.text
+
+
+@pytest.mark.parametrize("params_class", RESULTS_PARAMS_CLASSES)
+def test_api_v3_missing_param(params_class, client):
+    """
+    Passing unexpected JSON type must propagate an error to the user.
+    """
+    artifact_type = params_class.artifact_type()
+    example = params_class.example().dict()
+    del example["outcome"]
+    r = client.post(f"/api/v3/results/{artifact_type}s", json=example)
+    assert r.status_code == 400, r.text
+    assert r.json == {
+        "validation_error": {
+            "body_params": [
+                {
+                    "loc": ["__root__", "outcome"],
+                    "msg": "field required",
+                    "type": "value_error.missing",
+                }
+            ]
+        }
+    }
