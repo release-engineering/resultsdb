@@ -187,7 +187,7 @@ def setup_messaging(app):
     plugin_args = app.config["MESSAGE_BUS_KWARGS"]
     app.messaging_plugin = load_messaging_plugin(
         name=plugin_name,
-        kwargs=plugin_args,
+        plugin_args=plugin_args,
     )
 
 

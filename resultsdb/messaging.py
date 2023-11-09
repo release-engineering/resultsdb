@@ -224,7 +224,7 @@ class StompPlugin(MessagingPlugin):
             conn.disconnect()
 
 
-def load_messaging_plugin(name, kwargs):
+def load_messaging_plugin(name, plugin_args):
     """Instantiate and return the appropriate messaging plugin."""
     points = pkg_resources.iter_entry_points("resultsdb.messaging.plugins")
     classes = {"dummy": DummyPlugin}
@@ -241,4 +241,4 @@ def load_messaging_plugin(name, kwargs):
         raise TypeError("%s %r does not extend MessagingPlugin." % (name, cls))
 
     log.debug("Instantiating plugin %r named %s" % (cls, name))
-    return cls(**kwargs)
+    return cls(**plugin_args)
