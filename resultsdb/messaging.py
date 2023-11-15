@@ -213,10 +213,11 @@ class StompPlugin(MessagingPlugin):
                 raise ValueError(f"Missing {attr!r} option for STOMP messaging plugin")
 
     def publish(self, msg):
-        msg = json.dumps(msg)
         # Add telemetry information. This includes an extra key
         # traceparent.
         TraceContextTextMapPropagator().inject(msg)
+
+        msg = json.dumps(msg)
 
         kwargs = dict(body=msg, headers={}, destination=self.destination)
 
