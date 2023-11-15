@@ -115,6 +115,8 @@ class Config(object):
 
     # Publish Taskotron-compatible fedmsgs on the 'taskotron' topic
     MESSAGE_BUS_PUBLISH_TASKOTRON = False
+    OTEL_EXPORTER_OTLP_METRICS_ENDPOINT = None
+    OTEL_EXPORTER_SERVICE_NAME = "resultsdb"
 
 
 class ProductionConfig(Config):

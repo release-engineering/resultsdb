@@ -51,6 +51,13 @@ Flask-Session = "^0.5.0"
 # Flask-Session seems to be incompatible with werkzeug-3.0.0
 werkzeug = "<3.0.0"
 
+# tracing support
+opentelemetry-exporter-otlp = "^1.21.0"
+opentelemetry-instrumentation = "^0.42b0"
+opentelemetry-instrumentation-flask = "^0.42b0"
+opentelemetry-instrumentation-sqlalchemy = "^0.42b0"
+opentelemetry-instrumentation-requests = "^0.42b0"
+
 [tool.poetry.extras]
 test = [
     "pytest",
