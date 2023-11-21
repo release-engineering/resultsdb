@@ -4,7 +4,6 @@ from flask import current_app as app
 
 from resultsdb.models import db
 from resultsdb.messaging import (
-    load_messaging_plugin,
     create_message,
     publish_taskotron_message,
 )
@@ -28,13 +27,10 @@ def commit_result(result):
         result.outcome,
     )
 
-    if app.config["MESSAGE_BUS_PUBLISH"]:
+    if app.messaging_plugin:
         app.logger.debug("Preparing to publish message for result id %d", result.id)
-        plugin = load_messaging_plugin(
-            name=app.config["MESSAGE_BUS_PLUGIN"],
-            kwargs=app.config["MESSAGE_BUS_KWARGS"],
-        )
-        plugin.publish(create_message(result))
+        message = create_message(result)
+        app.messaging_plugin.publish(message)
 
     if app.config["MESSAGE_BUS_PUBLISH_TASKOTRON"]:
         app.logger.debug("Preparing to publish Taskotron message for result id %d", result.id)

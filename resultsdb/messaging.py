@@ -205,7 +205,7 @@ class StompPlugin(MessagingPlugin):
         required = ["connection", "destination"]
         for attr in required:
             if getattr(self, attr, None) is None:
-                raise ValueError("%r required for %r." % (attr, self))
+                raise ValueError(f"Missing {attr!r} option for STOMP messaging plugin")
 
     def publish(self, msg):
         msg = json.dumps(msg)
@@ -224,7 +224,7 @@ class StompPlugin(MessagingPlugin):
             conn.disconnect()
 
 
-def load_messaging_plugin(name, kwargs):
+def load_messaging_plugin(name, plugin_args):
     """Instantiate and return the appropriate messaging plugin."""
     points = pkg_resources.iter_entry_points("resultsdb.messaging.plugins")
     classes = {"dummy": DummyPlugin}
@@ -241,4 +241,4 @@ def load_messaging_plugin(name, kwargs):
         raise TypeError("%s %r does not extend MessagingPlugin." % (name, cls))
 
     log.debug("Instantiating plugin %r named %s" % (cls, name))
-    return cls(**kwargs)
+    return cls(**plugin_args)
