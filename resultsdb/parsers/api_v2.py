@@ -136,7 +136,7 @@ class CreateResultParams(BaseModel):
     @validator("testcase")
     def testcase_must_be_valid(cls, v):
         if isinstance(v, dict) and not v.get("name"):
-            raise ""
+            raise ValueError("testcase name must be non-empty")
         return v
 
     @validator("outcome")
