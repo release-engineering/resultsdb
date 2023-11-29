@@ -40,6 +40,7 @@ from resultsdb.controllers.api_v2 import api as api_v2
 from resultsdb.controllers.api_v3 import api as api_v3, create_endpoints
 from resultsdb.messaging import load_messaging_plugin
 from resultsdb.models import db
+from resultsdb.tracing import setup_tracing
 from . import config
 
 
@@ -94,6 +95,8 @@ def create_app(config_obj=None):
             raise Warning("You need to change the app.secret_key value for production")
 
     setup_logging(app)
+
+    setup_tracing(app)
 
     app.logger.info("Using configuration object: %s", config_obj)
     if openshift:

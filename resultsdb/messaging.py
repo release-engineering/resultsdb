@@ -37,6 +37,8 @@ from fedora_messaging.exceptions import (
     ConnectionException,
 )
 
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
+
 log = logging.getLogger(__name__)
 
 SERIALIZE = Serializer().serialize
@@ -152,6 +154,9 @@ class DummyPlugin(MessagingPlugin):
     history = []
 
     def publish(self, message):
+        # Add telemetry information. This includes an extra key
+        # traceparent.
+        TraceContextTextMapPropagator().inject(message)
         self.history.append(message)
         log.info("%r->%r" % (self, message))
 
@@ -209,6 +214,10 @@ class StompPlugin(MessagingPlugin):
 
     def publish(self, msg):
         msg = json.dumps(msg)
+        # Add telemetry information. This includes an extra key
+        # traceparent.
+        TraceContextTextMapPropagator().inject(msg)
+
         kwargs = dict(body=msg, headers={}, destination=self.destination)
 
         conn = stomp.connect.StompConnection11(**self.connection)
