@@ -27,15 +27,15 @@ gunicorn = "^21.2.0"
 fedora-messaging = "^3.4.1"
 "stomp.py" = "^8.1.0"
 
-pytest = {version = "^7.4.3", optional = true}
+pytest = {version = "^7.4.4", optional = true}
 pytest-cov = {version = "^4.0.0", optional = true}
 tox = {version = "^4.11.4", optional = true}
 tox-docker = {version = "^4.0.0", optional = true}
 
 Flask-SQLAlchemy = "^3.1.1"
-SQLAlchemy = {version = "^2.0.22"}
+SQLAlchemy = {version = "^2.0.24"}
 psycopg2-binary = {version = "^2.9.7"}
-alembic = "^1.12.1"
+alembic = "^1.13.1"
 iso8601 = "^2.1.0"
 pydantic = "^1.10.12"
 Flask-Pydantic = "^0.11.0"
@@ -53,10 +53,10 @@ werkzeug = "<3.0.0"
 
 # tracing support
 opentelemetry-exporter-otlp = "^1.21.0"
-opentelemetry-instrumentation = "^0.42b0"
-opentelemetry-instrumentation-flask = "^0.42b0"
-opentelemetry-instrumentation-sqlalchemy = "^0.42b0"
-opentelemetry-instrumentation-requests = "^0.42b0"
+opentelemetry-instrumentation = "^0.43b0"
+opentelemetry-instrumentation-flask = "^0.43b0"
+opentelemetry-instrumentation-sqlalchemy = "^0.43b0"
+opentelemetry-instrumentation-requests = "^0.43b0"
 
 [tool.poetry.extras]
 test = [
