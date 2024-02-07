@@ -5,7 +5,7 @@ from fnmatch import fnmatch
 from werkzeug.exceptions import (
     BadGateway,
     InternalServerError,
-    Unauthorized,
+    Forbidden,
 )
 
 log = logging.getLogger(__name__)
@@ -24,11 +24,11 @@ def get_group_membership(ldap, user, con, ldap_search):
         log.exception("LDAP_SEARCHES parameter should contain the BASE key")
         raise InternalServerError("LDAP_SEARCHES parameter should contain the BASE key")
     except ldap.SERVER_DOWN:
-        log.exception("The LDAP server is not reachable.")
-        raise BadGateway("The LDAP server is not reachable.")
+        log.exception("The LDAP server is not reachable")
+        raise BadGateway("The LDAP server is not reachable")
     except ldap.LDAPError:
-        log.exception("Some error occurred initializing the LDAP connection.")
-        raise Unauthorized("Some error occurred initializing the LDAP connection.")
+        log.exception("Some error occurred initializing the LDAP connection")
+        raise BadGateway("Some error occurred initializing the LDAP connection")
 
 
 def match_testcase_permissions(testcase, permissions):
@@ -44,7 +44,7 @@ def match_testcase_permissions(testcase, permissions):
 def verify_authorization(user, testcase, permissions, ldap_host, ldap_searches):
     if not (ldap_host and ldap_searches):
         raise InternalServerError(
-            "LDAP_HOST and LDAP_SEARCHES also need to be defined " "if PERMISSIONS is defined."
+            "LDAP_HOST and LDAP_SEARCHES also need to be defined if PERMISSIONS is defined"
         )
 
     allowed_groups = []
@@ -56,13 +56,13 @@ def verify_authorization(user, testcase, permissions, ldap_host, ldap_searches):
     try:
         import ldap
     except ImportError:
-        raise InternalServerError("If PERMISSIONS is defined, python-ldap needs to be installed.")
+        raise InternalServerError("If PERMISSIONS is defined, python-ldap needs to be installed")
 
     try:
         con = ldap.initialize(ldap_host)
     except ldap.LDAPError:
-        log.exception("Some error occurred initializing the LDAP connection.")
-        raise Unauthorized("Some error occurred initializing the LDAP connection.")
+        log.exception("Some error occurred initializing the LDAP connection")
+        raise BadGateway("Some error occurred initializing the LDAP connection")
 
     any_groups_found = False
     for cur_ldap_search in ldap_searches:
@@ -71,9 +71,7 @@ def verify_authorization(user, testcase, permissions, ldap_host, ldap_searches):
             return True
         any_groups_found = any_groups_found or len(groups) > 0
 
-    if not any_groups_found:
-        raise Unauthorized(f"Failed to find user {user} in LDAP")
-
-    raise Unauthorized(
-        f"User {user} is not authorized to submit a result for the test case {testcase}"
+    raise Forbidden(
+        f"User {user} is not authorized to submit results for the test case {testcase}"
+        + ("" if any_groups_found else "; failed to find the user in LDAP")
     )

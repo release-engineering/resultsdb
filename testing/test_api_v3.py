@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0+
 from unittest.mock import ANY, patch, Mock
 
+import ldap
 import pytest
 
 from resultsdb.models import db
@@ -225,7 +226,7 @@ def test_api_v3_permissions_for_testcase_not_matching(client, permissions):
     assert r.json == []
 
 
-def test_api_v3_permission_denied(client, permissions):
+def test_api_v3_permission_denied(client, permissions, caplog):
     permissions.append(
         {
             "users": ["testuser2"],
@@ -234,10 +235,15 @@ def test_api_v3_permission_denied(client, permissions):
     )
     data = brew_build_request_data()
     r = client.post("/api/v3/results/brew-builds", json=data)
-    assert r.status_code == 401, r.text
-    assert (
-        "User testuser1 is not authorized to submit a result for the test case testcase1" in r.text
+    assert r.status_code == 403, r.text
+    expected_error = (
+        "403 Forbidden: User testuser1 is not authorized to submit results"
+        " for the test case testcase1"
     )
+    assert expected_error in r.text
+    assert {"message": ANY} == r.json
+    assert expected_error == r.json["message"]
+    assert f"Permission denied: {expected_error}" in caplog.text
 
 
 def test_api_v3_permission_matches_username(client, permissions):
@@ -267,7 +273,86 @@ def test_api_v3_permission_matches_user_group(client, permissions, mock_ldap):
     )
 
 
-def test_api_v3_permission_no_groups_found(client, permissions, mock_ldap):
+def test_api_v3_permission_ldap_server_down(client, permissions, mock_ldap, caplog):
+    permissions.append(
+        {
+            "groups": ["testgroup1"],
+            "testcases": ["testcase1*"],
+        }
+    )
+    data = brew_build_request_data()
+    mock_ldap.search_s.side_effect = ldap.SERVER_DOWN()
+    r = client.post("/api/v3/results/brew-builds", json=data)
+    assert r.status_code == 502, r.text
+    mock_ldap.search_s.assert_called_once_with(
+        "ou=Groups,dc=example,dc=com", ANY, "(memberUid=testuser1)", ["cn"]
+    )
+    assert {"message": "Bad Gateway"} == r.json
+    assert (
+        "External error received: 502 Bad Gateway: The LDAP server is not reachable"
+    ) in caplog.text
+
+
+def test_api_v3_permission_ldap_error(client, permissions, mock_ldap, caplog):
+    permissions.append(
+        {
+            "groups": ["testgroup1"],
+            "testcases": ["testcase1*"],
+        }
+    )
+    data = brew_build_request_data()
+    mock_ldap.search_s.side_effect = ldap.LDAPError()
+    r = client.post("/api/v3/results/brew-builds", json=data)
+    assert r.status_code == 502, r.text
+    mock_ldap.search_s.assert_called_once_with(
+        "ou=Groups,dc=example,dc=com", ANY, "(memberUid=testuser1)", ["cn"]
+    )
+    assert {"message": "Bad Gateway"} == r.json
+    assert (
+        "External error received: 502 Bad Gateway:"
+        " Some error occurred initializing the LDAP connection"
+    ) in caplog.text
+
+
+def test_api_v3_permission_ldap_misconfigured(client, permissions, mock_ldap, caplog, app):
+    permissions.append(
+        {
+            "groups": ["testgroup1"],
+            "testcases": ["testcase1*"],
+        }
+    )
+    data = brew_build_request_data()
+    with patch.dict(app.config, {"LDAP_SEARCHES": [{}]}):
+        r = client.post("/api/v3/results/brew-builds", json=data)
+        assert r.status_code == 500, r.text
+        mock_ldap.search_s.assert_not_called()
+        assert {"message": "Internal Server Error"} == r.json
+        assert (
+            "Internal error: 500 Internal Server Error:"
+            " LDAP_SEARCHES parameter should contain the BASE key"
+        ) in caplog.text
+
+
+def test_api_v3_permission_ldap_not_configured(client, permissions, mock_ldap, caplog, app):
+    permissions.append(
+        {
+            "groups": ["testgroup1"],
+            "testcases": ["testcase1*"],
+        }
+    )
+    data = brew_build_request_data()
+    with patch.dict(app.config, {"LDAP_HOST": None}):
+        r = client.post("/api/v3/results/brew-builds", json=data)
+        assert r.status_code == 500, r.text
+        mock_ldap.search_s.assert_not_called()
+        assert {"message": "Internal Server Error"} == r.json
+        assert (
+            "Internal error: 500 Internal Server Error:"
+            " LDAP_HOST and LDAP_SEARCHES also need to be defined if PERMISSIONS is defined"
+        ) in caplog.text
+
+
+def test_api_v3_permission_no_groups_found(client, permissions, mock_ldap, caplog):
     permissions.append(
         {
             "users": ["testuser2"],
@@ -277,8 +362,15 @@ def test_api_v3_permission_no_groups_found(client, permissions, mock_ldap):
     mock_ldap.search_s.return_value = []
     data = brew_build_request_data()
     r = client.post("/api/v3/results/brew-builds", json=data)
-    assert r.status_code == 401, r.text
-    assert "Failed to find user testuser1 in LDAP" in r.text
+    assert r.status_code == 403, r.text
+    expected_error = (
+        "403 Forbidden: User testuser1 is not authorized to submit results"
+        " for the test case testcase1; failed to find the user in LDAP"
+    )
+    assert expected_error in r.text
+    assert {"message": ANY} == r.json
+    assert expected_error == r.json["message"]
+    assert f"Permission denied: {expected_error}" in caplog.text
 
 
 @pytest.mark.parametrize("params_class", RESULTS_PARAMS_CLASSES)

@@ -200,9 +200,29 @@ def register_handlers(app):
     def bad_request(error):
         return jsonify({"message": "Bad request"}), 400
 
+    @app.errorhandler(401)
+    def unauthorized(error):
+        app.logger.warning("Unauthorized access: %s", error)
+        return jsonify({"message": str(error)}), 401
+
+    @app.errorhandler(403)
+    def forbidden(error):
+        app.logger.warning("Permission denied: %s", error)
+        return jsonify({"message": str(error)}), 403
+
     @app.errorhandler(404)
     def not_found(error):
         return jsonify({"message": "Not found"}), 404
+
+    @app.errorhandler(500)
+    def internal_server_error(error):
+        app.logger.error("Internal error: %s", error)
+        return jsonify({"message": "Internal Server Error"}), 500
+
+    @app.errorhandler(502)
+    def bad_gateway(error):
+        app.logger.error("External error received: %s", error)
+        return jsonify({"message": "Bad Gateway"}), 502
 
 
 def init_session(app):
