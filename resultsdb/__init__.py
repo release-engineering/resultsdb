@@ -96,8 +96,6 @@ def create_app(config_obj=None):
 
     setup_logging(app)
 
-    setup_tracing(app)
-
     app.logger.info("Using configuration object: %s", config_obj)
     if openshift:
         app.logger.info("Using OpenShift configuration")
@@ -107,6 +105,9 @@ def create_app(config_obj=None):
         app.logger.debug("Using DBURI: %s", app.config["SQLALCHEMY_DATABASE_URI"])
 
     db.init_app(app)
+
+    with app.app_context():
+        setup_tracing(app, db.engine)
 
     init_session(app)
 
