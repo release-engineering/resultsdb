@@ -54,7 +54,6 @@ opentelemetry-exporter-otlp = "^1.21.0"
 opentelemetry-instrumentation = "^0.43b0"
 opentelemetry-instrumentation-flask = "^0.43b0"
 opentelemetry-instrumentation-sqlalchemy = "^0.43b0"
-opentelemetry-instrumentation-requests = "^0.43b0"
 
 [tool.poetry.extras]
 test = [
