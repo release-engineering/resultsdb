@@ -73,6 +73,7 @@ RUN sed -i 's#^WSGISocketPrefix .*#WSGISocketPrefix /tmp/wsgi#' conf/resultsdb.c
 # --- Final image
 FROM scratch
 ARG GITHUB_SHA
+ARG EXPIRES_AFTER
 LABEL \
     name="ResultsDB application" \
     vendor="ResultsDB developers" \
@@ -82,7 +83,8 @@ LABEL \
     url="https://github.com/release-engineering/resultsdb" \
     vcs-type="git" \
     vcs-ref=$GITHUB_SHA \
-    io.k8s.display-name="ResultsDB"
+    io.k8s.display-name="ResultsDB" \
+    quay.expires-after=$EXPIRES_AFTER
 
 ENV \
     PYTHONFAULTHANDLER=1 \
