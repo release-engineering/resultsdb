@@ -54,6 +54,7 @@ opentelemetry-exporter-otlp = "^1.21.0"
 opentelemetry-instrumentation = "^0.43b0"
 opentelemetry-instrumentation-flask = "^0.43b0"
 opentelemetry-instrumentation-sqlalchemy = "^0.43b0"
+tenacity = "^8.2.3"
 
 [tool.poetry.extras]
 test = [

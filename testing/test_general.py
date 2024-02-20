@@ -24,9 +24,10 @@ MESSAGE_BUS_KWARGS = {
 
 @fixture
 def mock_stomp():
-    with patch("resultsdb.messaging.stomp.connect.StompConnection11") as mock:
-        mock().is_connected.return_value = False
-        yield mock
+    with patch("resultsdb.messaging.StompPlugin._publish_with_retry.retry.sleep"):
+        with patch("resultsdb.messaging.stomp.connect.StompConnection11") as mock:
+            mock().is_connected.return_value = False
+            yield mock
 
 
 class MyRequest(object):
@@ -211,7 +212,7 @@ If you ran `python setup.py develop` and are still seeing this error, then:
         with raises(stomp.exception.ConnectFailedException):
             plugin.publish({})
 
-        mock_stomp().connect.assert_called_once()
+        assert mock_stomp().connect.call_count == 3
         mock_stomp().send.assert_not_called()
         mock_stomp().disconnect.assert_not_called()
 
@@ -222,9 +223,9 @@ If you ran `python setup.py develop` and are still seeing this error, then:
         with raises(stomp.exception.StompException):
             plugin.publish({})
 
-        mock_stomp().connect.assert_called_once()
-        mock_stomp().send.assert_called_once()
-        mock_stomp().disconnect.assert_called_once()
+        assert mock_stomp().connect.call_count == 3
+        assert mock_stomp().send.call_count == 3
+        assert mock_stomp().disconnect.call_count == 3
 
 
 class TestGetResultsParseArgs:

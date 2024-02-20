@@ -22,6 +22,7 @@ import json
 
 import pkg_resources
 import stomp
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 from resultsdb.models import db
 from resultsdb.models.results import Result, ResultData
@@ -42,6 +43,9 @@ from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapProp
 log = logging.getLogger(__name__)
 
 SERIALIZE = Serializer().serialize
+
+STOMP_RETRY_STOP = stop_after_attempt(3)
+STOMP_RETRY_WAIT = wait_exponential(multiplier=2, min=5, max=15)
 
 
 def get_prev_result(result):
@@ -218,9 +222,11 @@ class StompPlugin(MessagingPlugin):
         TraceContextTextMapPropagator().inject(msg)
 
         msg = json.dumps(msg)
+        kwargs = {"body": msg, "headers": {}, "destination": self.destination}
+        self._publish_with_retry(**kwargs)
 
-        kwargs = dict(body=msg, headers={}, destination=self.destination)
-
+    @retry(stop=STOMP_RETRY_STOP, wait=STOMP_RETRY_WAIT, reraise=True)
+    def _publish_with_retry(self, **kwargs):
         conn = stomp.connect.StompConnection11(**self.connection)
 
         if self.use_ssl:
@@ -229,7 +235,7 @@ class StompPlugin(MessagingPlugin):
         conn.connect(wait=True)
         try:
             conn.send(**kwargs)
-            log.debug("Published message through stomp: %s", msg)
+            log.debug("Published message through stomp: %s", kwargs["body"])
         finally:
             conn.disconnect()
 
