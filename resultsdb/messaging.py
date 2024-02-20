@@ -19,6 +19,7 @@
 
 import abc
 import json
+from threading import Lock
 
 import pkg_resources
 import stomp
@@ -216,6 +217,11 @@ class StompPlugin(MessagingPlugin):
             if getattr(self, attr, None) is None:
                 raise ValueError(f"Missing {attr!r} option for STOMP messaging plugin")
 
+        self.conn_lock = Lock()
+        self.conn = stomp.connect.StompConnection11(**self.connection)
+        if self.use_ssl:
+            self.conn.set_ssl(**self.ssl_args)
+
     def publish(self, msg):
         # Add telemetry information. This includes an extra key
         # traceparent.
@@ -227,17 +233,16 @@ class StompPlugin(MessagingPlugin):
 
     @retry(stop=STOMP_RETRY_STOP, wait=STOMP_RETRY_WAIT, reraise=True)
     def _publish_with_retry(self, **kwargs):
-        conn = stomp.connect.StompConnection11(**self.connection)
+        with self.conn_lock:
+            if not self.conn.is_connected():
+                log.info("Connecting to message bus")
 
-        if self.use_ssl:
-            conn.set_ssl(**self.ssl_args)
+                # Inactive connection is be closed/disconnected automatically
+                # after a short time.
+                self.conn.connect(wait=True)
 
-        conn.connect(wait=True)
-        try:
-            conn.send(**kwargs)
+            self.conn.send(**kwargs)
             log.debug("Published message through stomp: %s", kwargs["body"])
-        finally:
-            conn.disconnect()
 
 
 def load_messaging_plugin(name, plugin_args):
