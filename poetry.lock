@@ -2116,6 +2116,20 @@ docopt = ">=0.6.2,<0.7.0"
 websocket-client = ">=1.2.3,<2.0.0"
 
 [[package]]
+name = "tenacity"
+version = "8.2.3"
+description = "Retry code until it succeeds"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "tenacity-8.2.3-py3-none-any.whl", hash = "sha256:ce510e327a630c9e1beaf17d42e6ffacc88185044ad85cf74c0a8887c6a0f88c"},
+    {file = "tenacity-8.2.3.tar.gz", hash = "sha256:5398ef0d78e63f40007c1fb4c0bff96e1911394d2fa8d194f77619c05ff6cc8a"},
+]
+
+[package.extras]
+doc = ["reno", "sphinx", "tornado (>=4.5)"]
+
+[[package]]
 name = "tomli"
 version = "2.0.1"
 description = "A lil' TOML parser"
@@ -2467,4 +2481,4 @@ test = ["pytest", "pytest-cov", "tox", "tox-docker"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.13"
-content-hash = "108201da92234fad28125e2c92ad37f75d82767c49fb90d3eee067e77680d489"
+content-hash = "89eca116aee4e8d77a5dff1cad995045e7ec80ec7e2aabbe341407ee41288a62"
