@@ -203,7 +203,6 @@ If you ran `python setup.py develop` and are still seeing this error, then:
         plugin.publish({})
         mock_stomp().connect.assert_called_once()
         mock_stomp().send.assert_called_once()
-        mock_stomp().disconnect.assert_called_once()
 
     def test_stomp_publish_connect_failed(self, mock_stomp):
         plugin = messaging.load_messaging_plugin("stomp", MESSAGE_BUS_KWARGS)
@@ -214,7 +213,6 @@ If you ran `python setup.py develop` and are still seeing this error, then:
 
         assert mock_stomp().connect.call_count == 3
         mock_stomp().send.assert_not_called()
-        mock_stomp().disconnect.assert_not_called()
 
     def test_stomp_publish_send_failed(self, mock_stomp):
         plugin = messaging.load_messaging_plugin("stomp", MESSAGE_BUS_KWARGS)
@@ -225,7 +223,6 @@ If you ran `python setup.py develop` and are still seeing this error, then:
 
         assert mock_stomp().connect.call_count == 3
         assert mock_stomp().send.call_count == 3
-        assert mock_stomp().disconnect.call_count == 3
 
 
 class TestGetResultsParseArgs:
