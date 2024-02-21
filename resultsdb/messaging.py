@@ -23,6 +23,7 @@ from threading import Lock
 
 import pkg_resources
 import stomp
+from opentelemetry import trace
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from resultsdb.models import db
@@ -42,6 +43,7 @@ from fedora_messaging.exceptions import (
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
 log = logging.getLogger(__name__)
+tracer = trace.get_tracer(__name__)
 
 SERIALIZE = Serializer().serialize
 
@@ -222,6 +224,7 @@ class StompPlugin(MessagingPlugin):
         if self.use_ssl:
             self.conn.set_ssl(**self.ssl_args)
 
+    @tracer.start_as_current_span("StompPlugin.publish")
     def publish(self, msg):
         # Add telemetry information. This includes an extra key
         # traceparent.
@@ -239,9 +242,10 @@ class StompPlugin(MessagingPlugin):
 
                 # Inactive connection is be closed/disconnected automatically
                 # after a short time.
-                self.conn.connect(wait=True)
-
-            self.conn.send(**kwargs)
+                with tracer.start_as_current_span("StompPlugin.publish.connect"):
+                    self.conn.connect(wait=True)
+            with tracer.start_as_current_span("StompPlugin.publish.send"):
+                self.conn.send(**kwargs)
             log.debug("Published message through stomp: %s", kwargs["body"])
 
 
