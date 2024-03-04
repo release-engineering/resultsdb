@@ -37,10 +37,10 @@ def pytest_addoption(parser):
     )
 
 
-def pytest_ignore_collect(path, config):
+def pytest_ignore_collect(collection_path, config):
     """Prevents collection of any files named functest* to speed up non
     integration tests"""
-    if path.fnmatch("*functest*"):
+    if collection_path.match("*functest*"):
         try:
             is_functional = config.getvalue("functional")
         except KeyError:
