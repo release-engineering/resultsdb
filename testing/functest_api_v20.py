@@ -22,7 +22,7 @@ import datetime
 import os
 import copy
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 from flask import current_app as app
 
@@ -151,11 +151,15 @@ class TestFuncApiV20(TestCase):
         r = self.app.post("/api/v2.0/testcases", data=ref_data, content_type="application/json")
         assert r.status_code == 400
         assert r.json == {
-            "validation_error": {
-                "body_params": [
-                    {"loc": ["name"], "msg": "field required", "type": "value_error.missing"}
-                ]
-            }
+            "validation_error": [
+                {
+                    "loc": ["name"],
+                    "msg": "Field required",
+                    "type": "missing",
+                    "input": ANY,
+                    "url": ANY,
+                }
+            ]
         }
 
     def test_create_testcase_empty_name(self):
@@ -164,16 +168,15 @@ class TestFuncApiV20(TestCase):
         r = self.app.post("/api/v2.0/testcases", data=ref_data, content_type="application/json")
         assert r.status_code == 400
         assert r.json == {
-            "validation_error": {
-                "body_params": [
-                    {
-                        "ctx": {"limit_value": 1},
-                        "loc": ["name"],
-                        "msg": "ensure this value has at least 1 characters",
-                        "type": "value_error.any_str.min_length",
-                    }
-                ]
-            }
+            "validation_error": [
+                {
+                    "loc": ["name"],
+                    "msg": "String should have at least 1 character",
+                    "type": "string_too_short",
+                    "input": ANY,
+                    "url": ANY,
+                }
+            ]
         }
 
     def test_update_testcase(self):
@@ -430,15 +433,15 @@ class TestFuncApiV20(TestCase):
 
         assert r.status_code == 400
         assert data == {
-            "validation_error": {
-                "body_params": [
-                    {
-                        "loc": ["testcase"],
-                        "msg": "testcase name must be non-empty",
-                        "type": "value_error",
-                    }
-                ]
-            }
+            "validation_error": [
+                {
+                    "loc": ["testcase"],
+                    "msg": "Value error, testcase name must be non-empty",
+                    "type": "value_error",
+                    "input": ANY,
+                    "url": ANY,
+                }
+            ]
         }
 
     def test_create_result_empty_testcase_name(self):
@@ -449,15 +452,15 @@ class TestFuncApiV20(TestCase):
 
         assert r.status_code == 400
         assert data == {
-            "validation_error": {
-                "body_params": [
-                    {
-                        "loc": ["testcase"],
-                        "msg": "testcase name must be non-empty",
-                        "type": "value_error",
-                    }
-                ]
-            }
+            "validation_error": [
+                {
+                    "loc": ["testcase"],
+                    "msg": "Value error, testcase name must be non-empty",
+                    "type": "value_error",
+                    "input": ANY,
+                    "url": ANY,
+                }
+            ]
         }
 
     def test_create_result_empty_testcase_dict(self):
@@ -466,15 +469,15 @@ class TestFuncApiV20(TestCase):
 
         assert r.status_code == 400
         assert data == {
-            "validation_error": {
-                "body_params": [
-                    {
-                        "loc": ["testcase"],
-                        "msg": "testcase name must be non-empty",
-                        "type": "value_error",
-                    }
-                ]
-            }
+            "validation_error": [
+                {
+                    "loc": ["testcase"],
+                    "msg": "Value error, testcase name must be non-empty",
+                    "type": "value_error",
+                    "input": ANY,
+                    "url": ANY,
+                }
+            ]
         }
 
     def test_create_result_missing_testcase(self):
@@ -483,11 +486,15 @@ class TestFuncApiV20(TestCase):
 
         assert r.status_code == 400
         assert data == {
-            "validation_error": {
-                "body_params": [
-                    {"loc": ["testcase"], "msg": "field required", "type": "value_error.missing"}
-                ]
-            }
+            "validation_error": [
+                {
+                    "loc": ["testcase"],
+                    "msg": "Field required",
+                    "type": "missing",
+                    "input": ANY,
+                    "url": ANY,
+                }
+            ]
         }
 
     def test_create_result_missing_outcome(self):
@@ -497,11 +504,15 @@ class TestFuncApiV20(TestCase):
 
         assert r.status_code == 400
         assert data == {
-            "validation_error": {
-                "body_params": [
-                    {"loc": ["outcome"], "msg": "field required", "type": "value_error.missing"}
-                ]
-            }
+            "validation_error": [
+                {
+                    "loc": ["outcome"],
+                    "msg": "Field required",
+                    "type": "missing",
+                    "input": ANY,
+                    "url": ANY,
+                }
+            ]
         }
 
     def test_create_result_multiple_groups(self):
@@ -584,15 +595,18 @@ class TestFuncApiV20(TestCase):
 
         assert r.status_code == 400
         assert data == {
-            "validation_error": {
-                "body_params": [
-                    {
-                        "loc": ["outcome"],
-                        "msg": "must be one of: PASSED, INFO, FAILED, NEEDS_INSPECTION, AMAZING",
-                        "type": "value_error",
-                    }
-                ]
-            }
+            "validation_error": [
+                {
+                    "loc": ["outcome"],
+                    "msg": (
+                        "Value error, must be one of:"
+                        " PASSED, INFO, FAILED, NEEDS_INSPECTION, AMAZING"
+                    ),
+                    "type": "value_error",
+                    "input": ANY,
+                    "url": ANY,
+                }
+            ]
         }
 
     def test_create_result_invalid_data(self):
@@ -670,18 +684,18 @@ class TestFuncApiV20(TestCase):
 
         assert r.status_code == 400, data
         assert data == {
-            "validation_error": {
-                "body_params": [
-                    {
-                        "loc": ["submit_time"],
-                        "msg": (
-                            "Expected timestamp in milliseconds or datetime"
-                            " (in format YYYY-MM-DDTHH:MM:SS.ffffff), got 'now'"
-                        ),
-                        "type": "value_error",
-                    }
-                ]
-            }
+            "validation_error": [
+                {
+                    "loc": ["submit_time"],
+                    "msg": (
+                        "Value error, Expected timestamp in milliseconds or datetime"
+                        " (in format YYYY-MM-DDTHH:MM:SS.ffffff), got 'now'"
+                    ),
+                    "type": "value_error",
+                    "input": ANY,
+                    "url": ANY,
+                }
+            ]
         }
 
     def test_get_result(self):

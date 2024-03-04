@@ -2,7 +2,7 @@
 from flask import Blueprint, jsonify, render_template
 from flask import current_app as app
 from flask_pydantic import validate
-from pydantic import BaseModel
+from pydantic import RootModel
 
 from resultsdb.models import db
 from resultsdb.authorization import match_testcase_permissions, verify_authorization
@@ -20,20 +20,6 @@ from resultsdb.parsers.api_v3 import (
 )
 
 api = Blueprint("api_v3", __name__)
-
-
-def ensure_dict_input(cls):
-    """
-    Wraps Pydantic model to ensure that the input type is dict.
-
-    This is a workaround for a bug in flask-pydantic that causes validation to
-    fail with unexpected exception.
-    """
-
-    class EnsureJsonObject(BaseModel):
-        __root__: cls
-
-    return EnsureJsonObject
 
 
 def permissions():
@@ -58,13 +44,15 @@ def create_result(body: ResultParamsBase):
         app.logger.debug(
             "Updating ref_url for testcase %s: %s", body.testcase, body.testcase_ref_url
         )
-        testcase.ref_url = body.testcase_ref_url
+        testcase.ref_url = str(body.testcase_ref_url)
     db.session.add(testcase)
+
+    ref_url = str(body.ref_url) if body.ref_url else None
 
     result = Result(
         testcase=testcase,
         outcome=body.outcome,
-        ref_url=body.ref_url,
+        ref_url=ref_url,
         note=body.note,
         groups=[],
     )
@@ -83,8 +71,10 @@ def create_endpoint(params_class, oidc, provider):
 
     @oidc.token_auth(provider)
     @validate()
-    def create(body: ensure_dict_input(params_class)):
-        return create_result(body)
+    # Using RootModel is a workaround for a bug in flask-pydantic that causes
+    # validation to fail with unexpected exception.
+    def create(body: RootModel[params_class]):
+        return create_result(body.root)
 
     def get_schema():
         return jsonify(params.construct().schema()), 200
@@ -126,8 +116,8 @@ def index():
             "method": "POST",
             "description": example.__doc__,
             "query_type": "JSON",
-            "example": example.json(exclude_unset=True, indent=2),
-            "schema": example.schema(),
+            "example": example.model_dump_json(exclude_unset=True, indent=2),
+            "schema": example.model_json_schema(),
             "schema_endpoint": f".schemas_{example.artifact_type()}s",
         }
         for example in examples
