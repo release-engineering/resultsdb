@@ -1,10 +1,18 @@
 # SPDX-License-Identifier: LGPL-2.0-or-later
 from datetime import datetime, timezone
 from numbers import Number
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
+from typing_extensions import Annotated
 
 import iso8601
-from pydantic import BaseModel, Field, validator
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    Field,
+    StringConstraints,
+    ValidationInfo,
+    field_validator,
+)
 from pydantic.types import constr
 
 from resultsdb.models.results import result_outcomes
@@ -41,49 +49,48 @@ class BaseListParams(BaseModel):
 
 
 class GroupsParams(BaseListParams):
-    uuid: Optional[str]
-    description: Optional[str]
-    description_like_: Optional[str] = Field(alias="description:like")
+    uuid: Optional[str] = None
+    description: Optional[str] = None
+    description_like_: Optional[str] = Field(alias="description:like", default=None)
 
 
 class CreateGroupParams(BaseModel):
-    uuid: Optional[str]
-    ref_url: Optional[str]
-    description: Optional[str]
+    uuid: Optional[str] = None
+    ref_url: Optional[str] = None
+    description: Optional[str] = None
 
 
-class QueryList(List[str]):
-    @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
+def validate_query_list(v: Union[str, List[str]], info: ValidationInfo):
+    if isinstance(v, str):
+        return [x for x in (x.strip() for x in v.split(",")) if x]
+    if isinstance(v, list) and len(v) == 1 and isinstance(v[0], str):
+        return [x for x in (x.strip() for x in v[0].split(",")) if x]
+    return v
 
-    @classmethod
-    def validate(cls, v):
-        if isinstance(v, str):
-            return cls([x for x in (x.strip() for x in v.split(",")) if x])
-        if isinstance(v, list) and len(v) == 1 and isinstance(v[0], str):
-            return cls([x for x in (x.strip() for x in v[0].split(",")) if x])
-        return cls(v)
+
+QueryList = Annotated[Union[str, List[str]], AfterValidator(validate_query_list)]
 
 
 class ResultsParams(BaseListParams):
     sort_: str = Field(alias="_sort", default="")
     since: dict = {"start": None, "end": None}
-    outcome: Optional[QueryList]
-    groups: Optional[QueryList]
-    testcases: Optional[QueryList]
-    testcases_like_: Optional[QueryList] = Field(alias="testcases:like")
-    distinct_on_: Optional[QueryList] = Field(alias="_distinct_on")
+    outcome: Optional[QueryList] = None
+    groups: Optional[QueryList] = None
+    testcases: Optional[QueryList] = None
+    testcases_like_: Optional[QueryList] = Field(alias="testcases:like", default=None)
+    distinct_on_: Optional[QueryList] = Field(alias="_distinct_on", default=None)
 
-    @validator("since", pre=True)
+    @field_validator("since", mode="before")
+    @classmethod
     def parse_since(cls, v):
         try:
-            s, e = parse_since(v[0])
+            s, e = parse_since(v)
         except iso8601.iso8601.ParseError:
             raise ValueError("must be in ISO8601 format")
         return {"start": s, "end": e}
 
-    @validator("outcome")
+    @field_validator("outcome", mode="after")
+    @classmethod
     def outcome_must_be_valid(cls, v):
         outcomes = [x.upper() for x in v]
         if any(x not in result_outcomes() for x in outcomes):
@@ -92,15 +99,16 @@ class ResultsParams(BaseListParams):
 
 
 class CreateResultParams(BaseModel):
-    outcome: constr(min_length=1, strip_whitespace=True, to_upper=True)
+    outcome: Annotated[str, StringConstraints(min_length=1, strip_whitespace=True, to_upper=True)]
     testcase: dict
-    groups: Optional[list]
-    note: Optional[str]
-    data: Optional[dict]
-    ref_url: Optional[str]
-    submit_time: Any
+    groups: Optional[list] = None
+    note: Optional[str] = None
+    data: Optional[dict] = None
+    ref_url: Optional[str] = None
+    submit_time: Any = None
 
-    @validator("testcase", pre=True)
+    @field_validator("testcase", mode="before")
+    @classmethod
     def parse_testcase(cls, v):
         if not v or (isinstance(v, dict) and not v.get("name")):
             raise ValueError("testcase name must be non-empty")
@@ -108,7 +116,8 @@ class CreateResultParams(BaseModel):
             return {"name": v}
         return v
 
-    @validator("submit_time", pre=True)
+    @field_validator("submit_time", mode="before")
+    @classmethod
     def parse_submit_time(cls, v):
         if isinstance(v, datetime):
             return v
@@ -133,13 +142,13 @@ class CreateResultParams(BaseModel):
             " got %r" % v
         )
 
-    @validator("testcase")
+    @field_validator("testcase", mode="after")
     def testcase_must_be_valid(cls, v):
         if isinstance(v, dict) and not v.get("name"):
             raise ValueError("testcase name must be non-empty")
         return v
 
-    @validator("outcome")
+    @field_validator("outcome", mode="after")
     def outcome_must_be_valid(cls, v):
         if v not in result_outcomes():
             raise ValueError(f'must be one of: {", ".join(result_outcomes())}')
@@ -147,10 +156,10 @@ class CreateResultParams(BaseModel):
 
 
 class TestcasesParams(BaseListParams):
-    name: Optional[str]
-    name_like_: Optional[str] = Field(alias="name:like")
+    name: Optional[str] = None
+    name_like_: Optional[str] = Field(alias="name:like", default=None)
 
 
 class CreateTestcaseParams(BaseModel):
     name: constr(min_length=1)
-    ref_url: Optional[str]
+    ref_url: Optional[str] = None

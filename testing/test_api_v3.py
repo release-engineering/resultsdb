@@ -88,6 +88,7 @@ def test_api_v3_create_brew_build_full(client):
     data = brew_build_request_data(
         outcome="ERROR",
         testcase_ref_url="https://test.example.com/docs/testcase1",
+        ref_url="https://test.example.com/runner/100",
         error_reason="Some error",
         issue_url="https://issues.example.com/1",
         system_provider="openstack",
@@ -95,6 +96,7 @@ def test_api_v3_create_brew_build_full(client):
         system_variant="Server",
         ci_url="https://test.example.com/ci",
         ci_irc="#testing",
+        ci_email="test@example.com",
         rebuild="https://test.example.com/ci/builds/1/rebuild",
         log="https://test.example.com/ci/builds/1/log",
     )
@@ -105,6 +107,7 @@ def test_api_v3_create_brew_build_full(client):
         "name": "testcase1",
         "ref_url": "https://test.example.com/docs/testcase1",
     }
+    assert r.json["ref_url"] == data["ref_url"]
     assert r.json["data"]["error_reason"] == [data["error_reason"]]
     assert r.json["data"]["issue_url"] == [data["issue_url"]]
     assert r.json["data"]["system_provider"] == [data["system_provider"]]
@@ -112,6 +115,7 @@ def test_api_v3_create_brew_build_full(client):
     assert r.json["data"]["system_variant"] == [data["system_variant"]]
     assert r.json["data"]["ci_url"] == [data["ci_url"]]
     assert r.json["data"]["ci_irc"] == [data["ci_irc"]]
+    assert r.json["data"]["ci_email"] == [data["ci_email"]]
     assert r.json["data"]["rebuild"] == [data["rebuild"]]
     assert r.json["data"]["log"] == [data["log"]]
 
@@ -421,15 +425,17 @@ def test_api_v3_bad_param_type_int(params_class, client):
     r = client.post(f"/api/v3/results/{artifact_type}s", json=0)
     assert r.status_code == 400, r.text
     assert r.json == {
-        "validation_error": {
-            "body_params": [
-                {
-                    "loc": ["__root__"],
-                    "msg": "value is not a valid dict",
-                    "type": "type_error.dict",
-                }
-            ]
-        }
+        "validation_error": [
+            {
+                "input": 0,
+                "msg": (
+                    f"Input should be a valid dictionary or instance of {params_class.__name__}"
+                ),
+                "type": "model_type",
+                "loc": [],
+                "url": ANY,
+            }
+        ]
     }
 
 
@@ -442,15 +448,17 @@ def test_api_v3_bad_param_type_str(params_class, client):
     r = client.post(f"/api/v3/results/{artifact_type}s", json="BAD")
     assert r.status_code == 400, r.text
     assert r.json == {
-        "validation_error": {
-            "body_params": [
-                {
-                    "loc": ["__root__"],
-                    "msg": "value is not a valid dict",
-                    "type": "type_error.dict",
-                }
-            ]
-        }
+        "validation_error": [
+            {
+                "input": "BAD",
+                "msg": (
+                    f"Input should be a valid dictionary or instance of {params_class.__name__}"
+                ),
+                "type": "model_type",
+                "loc": [],
+                "url": ANY,
+            }
+        ]
     }
 
 
@@ -465,15 +473,17 @@ def test_api_v3_bad_param_type_null(params_class, client):
     )
     assert r.status_code == 400, r.text
     assert r.json == {
-        "validation_error": {
-            "body_params": [
-                {
-                    "loc": ["__root__"],
-                    "msg": "none is not an allowed value",
-                    "type": "type_error.none.not_allowed",
-                }
-            ]
-        }
+        "validation_error": [
+            {
+                "input": None,
+                "msg": (
+                    f"Input should be a valid dictionary or instance of {params_class.__name__}"
+                ),
+                "type": "model_type",
+                "loc": [],
+                "url": ANY,
+            }
+        ]
     }
 
 
@@ -510,13 +520,13 @@ def test_api_v3_missing_param(params_class, client):
     r = client.post(f"/api/v3/results/{artifact_type}s", json=example)
     assert r.status_code == 400, r.text
     assert r.json == {
-        "validation_error": {
-            "body_params": [
-                {
-                    "loc": ["__root__", "outcome"],
-                    "msg": "field required",
-                    "type": "value_error.missing",
-                }
-            ]
-        }
+        "validation_error": [
+            {
+                "loc": ["outcome"],
+                "msg": "Field required",
+                "type": "missing",
+                "input": ANY,
+                "url": ANY,
+            }
+        ]
     }

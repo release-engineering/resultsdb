@@ -44,6 +44,8 @@ class Config(object):
     SQLALCHEMY_DATABASE_URI = "sqlite://"
     SHOW_DB_URI = True
 
+    FLASK_PYDANTIC_VALIDATION_ERROR_RAISE = True
+
     LOGGING = {
         "version": 1,
         "disable_existing_loggers": False,

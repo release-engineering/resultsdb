@@ -1,17 +1,18 @@
 # SPDX-License-Identifier: GPL-2.0+
 from collections.abc import Iterator
 from textwrap import dedent
-from typing import List, Optional
+from typing import Annotated, List, Optional
 
 from pydantic import (
     BaseModel,
     EmailStr,
     Field,
     HttpUrl,
-    root_validator,
-    validator,
+    PlainSerializer,
+    StringConstraints,
+    model_validator,
+    field_validator,
 )
-from pydantic.types import constr
 
 from resultsdb.models.results import result_outcomes
 
@@ -44,6 +45,12 @@ MAIN_RESULT_ATTRIBUTES = frozenset(
 MAX_STRING_SIZE = 8192
 
 
+UrlStr = Annotated[
+    HttpUrl,
+    PlainSerializer(lambda x: str(x), when_used="always"),
+]
+
+
 def result_outcomes_extended():
     outcomes = result_outcomes()
     additional_outcomes = tuple(
@@ -74,28 +81,31 @@ class ResultParamsBase(BaseModel):
         or a CI error (ERROR).
         """
     )
-    testcase: constr(min_length=1) = field(
+    testcase: Annotated[str, StringConstraints(min_length=1)] = field(
         """
         Full test case name.
         """
     )
-    testcase_ref_url: Optional[HttpUrl] = field(
+    testcase_ref_url: Optional[UrlStr] = field(
         """
         Link to documentation for testing events for distributed CI systems to
         make them sustainable. Should contain information about how to
         contribute to the specific test, how to reproduce it, ideally on
         localhost and how to retrigger the test.
-        """
+        """,
+        default=None,
     )
     note: Optional[str] = field(
         """
         Optional note related to the test result.
-        """
+        """,
+        default=None,
     )
-    ref_url: Optional[HttpUrl] = field(
+    ref_url: Optional[UrlStr] = field(
         """
         Specific runner URL. For example a Jenkins build URL.
-        """
+        """,
+        default=None,
     )
 
     error_reason: Optional[str] = field(
@@ -103,15 +113,17 @@ class ResultParamsBase(BaseModel):
         Reason of the error.
 
         <b>Required</b> with ERROR outcome.
-        """
+        """,
+        default=None,
     )
-    issue_url: Optional[HttpUrl] = field(
+    issue_url: Optional[UrlStr] = field(
         """
         If the CI system is able to automatically file an issue/ticket for the
         error, put the URL here.
 
         Only valid with ERROR outcome.
-        """
+        """,
+        default=None,
     )
 
     system_provider: Optional[str] = field(
@@ -120,21 +132,24 @@ class ResultParamsBase(BaseModel):
         This can also be hostname of the specific system instance.
 
         Examples: openstack, beaker, beaker.example.com, openshift, rhev
-        """
+        """,
+        default=None,
     )
     system_architecture: Optional[str] = field(
         """
         Architecture of the system/distro used for testing.
 
         Examples: x86_64, ppc64le, s390x, aarch64
-        """
+        """,
+        default=None,
     )
     system_variant: Optional[str] = field(
         """
         The compose or image variant, if applicable.
 
         Examples: Server, Workstation
-        """
+        """,
+        default=None,
     )
 
     scenario: Optional[str] = field(
@@ -149,7 +164,8 @@ class ResultParamsBase(BaseModel):
         free form text where the tested item identifier is encoded.
 
         Examples: KDE-live-iso x86_64 64bit, Server x86_64
-        """
+        """,
+        default=None,
     )
 
     ci_name: str = field(
@@ -168,7 +184,7 @@ class ResultParamsBase(BaseModel):
         Examples: BaseOS QE, Libvirt QE, RTT, OSCI
         """
     )
-    ci_docs: HttpUrl = field(
+    ci_docs: UrlStr = field(
         """
         Link to documentation with details about the system.
         """
@@ -178,17 +194,19 @@ class ResultParamsBase(BaseModel):
         Contact email address.
         """
     )
-    ci_url: Optional[HttpUrl] = field(
+    ci_url: Optional[UrlStr] = field(
         """
         URL link to the system or system's web interface.
-        """
+        """,
+        default=None,
     )
     ci_irc: Optional[str] = field(
         """
         IRC contact for help (prefix with '#' for channel).
 
         Examples: #osci
-        """
+        """,
+        default=None,
     )
 
     scratch: Optional[bool] = field(
@@ -199,19 +217,21 @@ class ResultParamsBase(BaseModel):
         """,
         default=False,
     )
-    rebuild: Optional[HttpUrl] = field(
+    rebuild: Optional[UrlStr] = field(
         """
         URL to rebuild the run. Usually leads to a separate page with rebuild options.
-        """
+        """,
+        default=None,
     )
-    log: Optional[HttpUrl] = field(
+    log: Optional[UrlStr] = field(
         """
         URL of build log. Can be an HTML page
-        """
+        """,
+        default=None,
     )
 
     class Config:
-        max_anystr_length = MAX_STRING_SIZE
+        str_max_length = MAX_STRING_SIZE
 
     def result_data(self) -> Iterator[int]:
         """Generator yielding property name and value pairs to store in DB."""
@@ -228,19 +248,20 @@ class ResultParamsBase(BaseModel):
             else:
                 yield (name, str(value))
 
-    @validator("outcome")
+    @field_validator("outcome", mode="before")
+    @classmethod
     def outcome_must_be_valid(cls, v):
         if v not in result_outcomes_extended():
             raise ValueError(f'must be one of: {", ".join(result_outcomes_extended())}')
         return v
 
-    @root_validator
-    def only_available_for_error_outcome(cls, values):
-        if (values["error_reason"] is not None or values["issue_url"] is not None) and values.get(
-            "outcome"
-        ) != "ERROR":
+    @model_validator(mode="after")
+    def only_available_for_error_outcome(self):
+        if (
+            self.error_reason is not None or self.issue_url is not None
+        ) and self.outcome != "ERROR":
             raise ValueError("error_reason and issue_url can be only set for ERROR outcome")
-        return values
+        return self
 
     @classmethod
     def exclude(cls):
@@ -251,7 +272,7 @@ class ResultParamsBase(BaseModel):
 class BrewResultParams(ResultParamsBase):
     """Create new test result for a brew-build."""
 
-    item: constr(min_length=1) = field(
+    item: Annotated[str, StringConstraints(min_length=1)] = field(
         """
         Name-version-release of the brew-build.
         """
@@ -279,7 +300,7 @@ class BrewResultParams(ResultParamsBase):
 class RedHatContainerImageResultParams(ResultParamsBase):
     """Create new test result for a redhat-container-image."""
 
-    item: constr(min_length=1) = field(
+    item: Annotated[str, StringConstraints(min_length=1)] = field(
         """
         Name-version-release of the container image.
         """
@@ -317,36 +338,42 @@ class RedHatContainerImageResultParams(ResultParamsBase):
     brew_task_id: Optional[int] = field(
         """
         Brew task ID of the buildContainer task.
-        """
+        """,
+        default=None,
     )
     brew_build_id: Optional[int] = field(
         """
         Brew build ID of container.
-        """
+        """,
+        default=None,
     )
     registry_url: Optional[str] = field(
         """
         Registry url from the container image full name.
-        """
+        """,
+        default=None,
     )
     tag: Optional[str] = field(
         """
         Tag from the container image full name.
-        """
+        """,
+        default=None,
     )
     name: Optional[str] = field(
         """
         Name from the container image full name.
 
         Example: python-27-rhel8
-        """
+        """,
+        default=None,
     )
     namespace: Optional[str] = field(
         """
         Namespace from the container image full name.
 
         Example: rhscl
-        """
+        """,
+        default=None,
     )
     source: Optional[str] = field(
         """
@@ -357,7 +384,8 @@ class RedHatContainerImageResultParams(ResultParamsBase):
         scratch build.
 
         Example: git+https://github.com/docker/rootfs.git#container:docker
-        """
+        """,
+        default=None,
     )
 
     @classmethod
@@ -382,7 +410,7 @@ class RedHatContainerImageResultParams(ResultParamsBase):
 class RedHatModuleResultParams(ResultParamsBase):
     "Create new test result for a module."
 
-    item: constr(min_length=1) = field(
+    item: Annotated[str, StringConstraints(min_length=1)] = field(
         """
         Name-version-release of the module
         """
@@ -403,7 +431,7 @@ class RedHatModuleResultParams(ResultParamsBase):
 class ProductmdComposeResultParams(ResultParamsBase):
     "Create new test result for a compose."
 
-    id: constr(min_length=1) = field(
+    id: Annotated[str, StringConstraints(min_length=1)] = field(
         """
         ID of the compose as recorded in the productmd metadata
         (payload.compose.id field inside the metadata/composeinfo.json file
@@ -454,7 +482,8 @@ class PermissionsParams(BaseModel):
         Filter only permissions matching test case name glob expression.
 
         Example: <code>compose.*</code>
-        """
+        """,
+        default=None,
     )
 
 
