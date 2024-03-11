@@ -67,7 +67,7 @@ def create_result(body: ResultParamsBase):
 
 
 def create_endpoint(params_class, oidc, provider):
-    params = params_class.construct()
+    params = params_class.model_construct()
 
     @oidc.token_auth(provider)
     @validate()
@@ -77,7 +77,7 @@ def create_endpoint(params_class, oidc, provider):
         return create_result(body.root)
 
     def get_schema():
-        return jsonify(params.construct().schema()), 200
+        return jsonify(params.model_construct().model_json_schema()), 200
 
     artifact_type = params.artifact_type()
     api.add_url_rule(
@@ -128,7 +128,7 @@ def index():
             "method": "GET",
             "description": PermissionsParams.__doc__,
             "query_type": "Query",
-            "schema": PermissionsParams.construct().schema(),
+            "schema": PermissionsParams.model_construct().model_json_schema(),
         }
     )
     return render_template(

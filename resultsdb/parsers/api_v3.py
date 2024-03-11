@@ -5,6 +5,7 @@ from typing import Annotated, List, Optional
 
 from pydantic import (
     BaseModel,
+    ConfigDict,
     EmailStr,
     Field,
     HttpUrl,
@@ -230,8 +231,7 @@ class ResultParamsBase(BaseModel):
         default=None,
     )
 
-    class Config:
-        str_max_length = MAX_STRING_SIZE
+    model_config = ConfigDict(str_max_length=MAX_STRING_SIZE)
 
     def result_data(self) -> Iterator[int]:
         """Generator yielding property name and value pairs to store in DB."""
@@ -240,7 +240,9 @@ class ResultParamsBase(BaseModel):
         else:
             yield ("type", self.artifact_type())
 
-        properties = self.dict(exclude_unset=True, exclude=self.exclude() | MAIN_RESULT_ATTRIBUTES)
+        properties = self.model_dump(
+            exclude_unset=True, exclude=self.exclude() | MAIN_RESULT_ATTRIBUTES
+        )
         for name, value in properties.items():
             if isinstance(value, list):
                 for subvalue in value:

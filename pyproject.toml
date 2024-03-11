@@ -52,6 +52,8 @@ opentelemetry-instrumentation-flask = "^0.44b0"
 opentelemetry-instrumentation-sqlalchemy = "^0.44b0"
 tenacity = "^8.2.3"
 
+mod-wsgi = "^5.0.0"
+
 [tool.poetry.extras]
 test = [
     "pytest",

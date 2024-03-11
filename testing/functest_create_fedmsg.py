@@ -18,7 +18,6 @@
 #   Josef Skladanka <jskladan@redhat.com>
 
 import json
-import datetime
 import copy
 
 from flask import current_app as app
@@ -43,13 +42,6 @@ class MyResult(object):
             MyResultData("type", item_type),
             MyResultData("arch", arch),
         ]
-
-
-class AboutTime(object):
-    def __eq__(self, value):
-        start = (datetime.datetime.utcnow() - datetime.timedelta(seconds=10)).isoformat()
-        stop = (datetime.datetime.utcnow() + datetime.timedelta(seconds=10)).isoformat()
-        return start <= value <= stop
 
 
 class TestFuncCreateFedmsg:

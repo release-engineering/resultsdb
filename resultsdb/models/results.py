@@ -36,6 +36,11 @@ def result_outcomes():
     return PRESET_OUTCOMES + additional_result_outcomes
 
 
+def utcnow_naive():
+    """Returns current UTC date/time without the timezone info."""
+    return datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+
+
 class GroupsToResults(db.Model):
     __tablename__ = "groups_to_results"
     id = db.Column(db.Integer, primary_key=True)
@@ -101,7 +106,7 @@ class Result(db.Model, DBSerialize):
     id = db.Column(db.Integer, primary_key=True)
     testcase_name = db.Column(db.Text, db.ForeignKey("testcase.name"))
 
-    submit_time = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    submit_time = db.Column(db.DateTime, default=utcnow_naive)
     outcome = db.Column(db.String(32))
     note = db.Column(db.Text)
     ref_url = db.Column(db.Text)
