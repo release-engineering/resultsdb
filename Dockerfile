@@ -14,6 +14,7 @@ RUN set -exo pipefail \
         openldap-devel \
         python3 \
         python3-devel \
+        httpd-devel \
     # install runtime dependencies
     && yum install -y \
         --installroot=/mnt/rootfs \
@@ -26,7 +27,7 @@ RUN set -exo pipefail \
         mod_ssl \
         openldap \
         python3 \
-        python3-mod_wsgi \
+        httpd-core \
     && yum --installroot=/mnt/rootfs clean all \
     && rm -rf /mnt/rootfs/var/cache/* /mnt/rootfs/var/log/dnf* /mnt/rootfs/var/log/yum.* \
     # https://python-poetry.org/docs/master/#installing-with-the-official-installer
@@ -102,7 +103,7 @@ WORKDIR /app
 USER 1001
 EXPOSE 5001
 ENTRYPOINT ["/app/entrypoint.sh"]
-CMD ["mod_wsgi-express-3", "start-server", "/usr/share/resultsdb/resultsdb.wsgi", \
+CMD ["mod_wsgi-express", "start-server", "/usr/share/resultsdb/resultsdb.wsgi", \
     "--user", "apache", "--group", "apache", \
     "--port", "5001", "--threads", "5", \
     "--include-file", "/etc/httpd/conf.d/resultsdb.conf", \
