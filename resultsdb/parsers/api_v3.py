@@ -240,7 +240,9 @@ class ResultParamsBase(BaseModel):
         else:
             yield ("type", self.artifact_type())
 
-        properties = self.model_dump(exclude_unset=True, exclude=self.exclude() | MAIN_RESULT_ATTRIBUTES)
+        properties = self.model_dump(
+            exclude_unset=True, exclude=self.exclude() | MAIN_RESULT_ATTRIBUTES
+        )
         for name, value in properties.items():
             if isinstance(value, list):
                 for subvalue in value:

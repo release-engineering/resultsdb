@@ -28,6 +28,7 @@ from flask import current_app as app
 
 import resultsdb.messaging
 from resultsdb.models import db
+from resultsdb.models.results import utcnow_naive
 
 try:
     basestring
@@ -37,8 +38,8 @@ except NameError:
 
 class AboutTime(object):
     def __eq__(self, value):
-        start = (datetime.datetime.utcnow() - datetime.timedelta(seconds=10)).isoformat()
-        stop = (datetime.datetime.utcnow() + datetime.timedelta(seconds=10)).isoformat()
+        start = (utcnow_naive() - datetime.timedelta(seconds=10)).isoformat()
+        stop = (utcnow_naive() + datetime.timedelta(seconds=10)).isoformat()
         return start <= value <= stop
 
 
@@ -873,30 +874,30 @@ class TestFuncApiV20(TestCase):
 
     def test_get_results_by_since(self):
         self.test_create_result()
-        before1 = (datetime.datetime.utcnow() - datetime.timedelta(seconds=100)).isoformat()
-        before2 = (datetime.datetime.utcnow() - datetime.timedelta(seconds=99)).isoformat()
-        after = (datetime.datetime.utcnow() + datetime.timedelta(seconds=100)).isoformat()
+        before1 = (utcnow_naive() - datetime.timedelta(seconds=100)).isoformat()
+        before2 = (utcnow_naive() - datetime.timedelta(seconds=99)).isoformat()
+        after = (utcnow_naive() + datetime.timedelta(seconds=100)).isoformat()
 
         r = self.app.get("/api/v2.0/results?since=%s" % before1)
         data = json.loads(r.data)
-        assert r.status_code == 200
+        assert r.status_code == 200, r.text
         assert len(data["data"]) == 1
         assert data["data"][0] == self.ref_result
 
         r = self.app.get("/api/v2.0/results?since=%s,%s" % (before1, after))
         data = json.loads(r.data)
-        assert r.status_code == 200
+        assert r.status_code == 200, r.text
         assert len(data["data"]) == 1
         assert data["data"][0] == self.ref_result
 
         r = self.app.get("/api/v2.0/results?since=%s" % (after))
         data = json.loads(r.data)
-        assert r.status_code == 200
+        assert r.status_code == 200, r.text
         assert len(data["data"]) == 0
 
         r = self.app.get("/api/v2.0/results?since=%s,%s" % (before1, before2))
         data = json.loads(r.data)
-        assert r.status_code == 200
+        assert r.status_code == 200, r.text
         assert len(data["data"]) == 0
 
     def test_get_results_by_result_data(self):
