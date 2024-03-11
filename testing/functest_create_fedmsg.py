@@ -25,6 +25,7 @@ from flask import current_app as app
 
 import resultsdb.messaging
 from resultsdb.models import db
+from . import utcnow
 
 
 class MyResultData(object):
@@ -47,8 +48,8 @@ class MyResult(object):
 
 class AboutTime(object):
     def __eq__(self, value):
-        start = (datetime.datetime.utcnow() - datetime.timedelta(seconds=10)).isoformat()
-        stop = (datetime.datetime.utcnow() + datetime.timedelta(seconds=10)).isoformat()
+        start = (utcnow() - datetime.timedelta(seconds=10)).isoformat()
+        stop = (utcnow() + datetime.timedelta(seconds=10)).isoformat()
         return start <= value <= stop
 
 

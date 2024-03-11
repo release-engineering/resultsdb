@@ -101,7 +101,7 @@ class Result(db.Model, DBSerialize):
     id = db.Column(db.Integer, primary_key=True)
     testcase_name = db.Column(db.Text, db.ForeignKey("testcase.name"))
 
-    submit_time = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    submit_time = db.Column(db.DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
     outcome = db.Column(db.String(32))
     note = db.Column(db.Text)
     ref_url = db.Column(db.Text)
