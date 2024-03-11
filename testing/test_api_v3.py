@@ -504,7 +504,7 @@ def test_api_v3_example(params_class, client):
     Passing unexpected JSON type must propagate an error to the user.
     """
     artifact_type = params_class.artifact_type()
-    example = params_class.example().dict()
+    example = params_class.example().model_dump()
     r = client.post(f"/api/v3/results/{artifact_type}s", json=example)
     assert r.status_code == 201, r.text
 
@@ -515,7 +515,7 @@ def test_api_v3_missing_param(params_class, client):
     Passing unexpected JSON type must propagate an error to the user.
     """
     artifact_type = params_class.artifact_type()
-    example = params_class.example().dict()
+    example = params_class.example().model_dump()
     del example["outcome"]
     r = client.post(f"/api/v3/results/{artifact_type}s", json=example)
     assert r.status_code == 400, r.text
