@@ -24,7 +24,7 @@ include = [
 python = ">=3.9,<3.13"
 flask = "^3.0.1"
 gunicorn = "^21.2.0"
-fedora-messaging = "^3.4.1"
+fedora-messaging = "^3.5.0"
 "stomp.py" = "^8.1.0"
 
 pytest = {version = "^8.0.2", optional = true}
