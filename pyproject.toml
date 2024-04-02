@@ -28,7 +28,7 @@ fedora-messaging = "^3.4.1"
 "stomp.py" = "^8.1.0"
 
 pytest = {version = "^8.0.2", optional = true}
-pytest-cov = {version = "^4.0.0", optional = true}
+pytest-cov = {version = "^5.0.0", optional = true}
 tox = {version = "^4.13.0", optional = true}
 tox-docker = {version = "^4.0.0", optional = true}
 
@@ -43,7 +43,7 @@ Flask-Pydantic = "^0.12.0"
 email-validator = "^2.1.1"
 python-ldap = "^3.4.3"
 Flask-pyoidc = "^3.14.3"
-Flask-Session = "^0.6.0"
+Flask-Session = "^0.8.0"
 
 # tracing support
 opentelemetry-exporter-otlp = "^1.24.0"
