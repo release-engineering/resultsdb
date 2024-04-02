@@ -46,10 +46,10 @@ Flask-pyoidc = "^3.14.3"
 Flask-Session = "^0.6.0"
 
 # tracing support
-opentelemetry-exporter-otlp = "^1.23.0"
-opentelemetry-instrumentation = "^0.44b0"
-opentelemetry-instrumentation-flask = "^0.44b0"
-opentelemetry-instrumentation-sqlalchemy = "^0.44b0"
+opentelemetry-exporter-otlp = "^1.24.0"
+opentelemetry-instrumentation = "^0.45b0"
+opentelemetry-instrumentation-flask = "^0.45b0"
+opentelemetry-instrumentation-sqlalchemy = "^0.45b0"
 tenacity = "^8.2.3"
 
 mod-wsgi = "^5.0.0"
