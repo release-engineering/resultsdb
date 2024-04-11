@@ -233,7 +233,7 @@ class ResultParamsBase(BaseModel):
 
     model_config = ConfigDict(str_max_length=MAX_STRING_SIZE)
 
-    def result_data(self) -> Iterator[int]:
+    def result_data(self) -> Iterator[str]:
         """Generator yielding property name and value pairs to store in DB."""
         if self.scratch:
             yield ("type", f"{self.artifact_type()}_scratch")
