@@ -49,7 +49,7 @@ values in `resultsdb/config.py`.
 
 You might want to use this tool together with libtaskotron. To use your own
 *ResultsDB* server in libtaskotron, edit `/etc/taskotron/taskotron.yaml` and
-set the following value::
+set the following value:
 
     resultsdb_server: http://localhost:5001/api/v2.0
 
@@ -59,14 +59,14 @@ depending on your local settings.
 ## Using real-life data from Fedora Infra dumps
 
 Sometimes, you might want to check some performance tweaks with real-life data.
-The easy solution might be using our daily dumps and a Postgres instance in Docker::
+The easy solution might be using our daily dumps and a Postgres instance in Docker:
 
     docker run --name postgres_resultsdb -e POSTGRES_USER=resultsdb -e POSTGRES_PASSWORD=resultsdb -d -p 65432:5432 postgres
     wget https://infrastructure.fedoraproject.org/infra/db-dumps/resultsdb.dump.xz
     xzcat resultsdb.dump.xz | docker exec -i postgres_resultsdb psql -Uresultsdb
 
 Then just change your config (for DEV environment, you can use `conf/settings.py` file)
-to contain this db connector::
+to contain this db connector:
 
     SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://resultsdb:resultsdb@localhost:65432/resultsdb'
 
@@ -76,22 +76,19 @@ And run as usual.
 
 After making changes run `tox -e black-format` to reformat the code.
 
-You can run the test suite with the following command::
+You can run the test suite with the following command:
 
     $ tox
 
 Note, that in order for some of the tests to work properly, tox is configured to spin-up PostgreSQL in a docker container using the
-``tox-docker`` plugin, which needs to be installed separately. The best option probably is::
+`tox-docker` plugin installed automatically by `tox` when needed.
 
-    $ pip install --user tox-docker
-    $ pip3 install --user tox-docker
+To avoid using container and use SQLite database in tests instead, run:
 
-Should you, for some reason avoid docker, you could run the following command (with virtualenv active)::
-
-    $ tox -e py311-nodocker
+    $ tox -e py3-nodocker
 
 To use tox-docker with podman without requiring root, you can use
-`tox-podman.sh` script that wraps `tox`::
+`tox-podman.sh` script that wraps `tox`:
 
     $ ./tox-podman.sh -e py311
 
