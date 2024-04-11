@@ -18,5 +18,4 @@ podman system service --time=0 "$DOCKER_HOST" &
 podman_service_pid=$!
 sleep 1
 
-poetry install --no-root --extras=test
-poetry run tox "$@"
+tox "$@"

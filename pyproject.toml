@@ -25,12 +25,10 @@ python = ">=3.9,<3.13"
 flask = "^3.0.1"
 gunicorn = "^21.2.0"
 fedora-messaging = "^3.4.1"
-"stomp.py" = "^8.1.0"
+stomp_py = "^8.1.0"
 
 pytest = {version = "^8.0.2", optional = true}
 pytest-cov = {version = "^5.0.0", optional = true}
-tox = {version = "^4.13.0", optional = true}
-tox-docker = {version = "^4.0.0", optional = true}
 
 Flask-SQLAlchemy = "^3.1.1"
 SQLAlchemy = {version = "^2.0.24"}
@@ -58,8 +56,6 @@ mod-wsgi = "^5.0.0"
 test = [
     "pytest",
     "pytest-cov",
-    "tox",
-    "tox-docker",
 ]
 
 [tool.poetry.scripts]
