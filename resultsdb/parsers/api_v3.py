@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0+
 from collections.abc import Iterator
 from textwrap import dedent
-from typing import Annotated, List, Optional
+from typing import Annotated
 
 from pydantic import (
     BaseModel,
@@ -11,8 +11,8 @@ from pydantic import (
     HttpUrl,
     PlainSerializer,
     StringConstraints,
-    model_validator,
     field_validator,
+    model_validator,
 )
 
 from resultsdb.models.results import result_outcomes
@@ -46,9 +46,13 @@ MAIN_RESULT_ATTRIBUTES = frozenset(
 MAX_STRING_SIZE = 8192
 
 
+def to_str(x):
+    return str(x)
+
+
 UrlStr = Annotated[
     HttpUrl,
-    PlainSerializer(lambda x: str(x), when_used="always"),
+    PlainSerializer(to_str, when_used="always"),
 ]
 
 
@@ -87,7 +91,7 @@ class ResultParamsBase(BaseModel):
         Full test case name.
         """
     )
-    testcase_ref_url: Optional[UrlStr] = field(
+    testcase_ref_url: UrlStr | None = field(
         """
         Link to documentation for testing events for distributed CI systems to
         make them sustainable. Should contain information about how to
@@ -96,20 +100,20 @@ class ResultParamsBase(BaseModel):
         """,
         default=None,
     )
-    note: Optional[str] = field(
+    note: str | None = field(
         """
         Optional note related to the test result.
         """,
         default=None,
     )
-    ref_url: Optional[UrlStr] = field(
+    ref_url: UrlStr | None = field(
         """
         Specific runner URL. For example a Jenkins build URL.
         """,
         default=None,
     )
 
-    error_reason: Optional[str] = field(
+    error_reason: str | None = field(
         """
         Reason of the error.
 
@@ -117,7 +121,7 @@ class ResultParamsBase(BaseModel):
         """,
         default=None,
     )
-    issue_url: Optional[UrlStr] = field(
+    issue_url: UrlStr | None = field(
         """
         If the CI system is able to automatically file an issue/ticket for the
         error, put the URL here.
@@ -127,7 +131,7 @@ class ResultParamsBase(BaseModel):
         default=None,
     )
 
-    system_provider: Optional[str] = field(
+    system_provider: str | None = field(
         """
         System used for provisioning.
         This can also be hostname of the specific system instance.
@@ -136,7 +140,7 @@ class ResultParamsBase(BaseModel):
         """,
         default=None,
     )
-    system_architecture: Optional[str] = field(
+    system_architecture: str | None = field(
         """
         Architecture of the system/distro used for testing.
 
@@ -144,7 +148,7 @@ class ResultParamsBase(BaseModel):
         """,
         default=None,
     )
-    system_variant: Optional[str] = field(
+    system_variant: str | None = field(
         """
         The compose or image variant, if applicable.
 
@@ -153,7 +157,7 @@ class ResultParamsBase(BaseModel):
         default=None,
     )
 
-    scenario: Optional[str] = field(
+    scenario: str | None = field(
         """
         Test scenario. Identifies scenario under which the test(s) are
         executed. This is useful in case of artifacts consisting of
@@ -195,13 +199,13 @@ class ResultParamsBase(BaseModel):
         Contact email address.
         """
     )
-    ci_url: Optional[UrlStr] = field(
+    ci_url: UrlStr | None = field(
         """
         URL link to the system or system's web interface.
         """,
         default=None,
     )
-    ci_irc: Optional[str] = field(
+    ci_irc: str | None = field(
         """
         IRC contact for help (prefix with '#' for channel).
 
@@ -210,7 +214,7 @@ class ResultParamsBase(BaseModel):
         default=None,
     )
 
-    scratch: Optional[bool] = field(
+    scratch: bool | None = field(
         """
         Indication if the build is a scratch build.
 
@@ -218,13 +222,13 @@ class ResultParamsBase(BaseModel):
         """,
         default=False,
     )
-    rebuild: Optional[UrlStr] = field(
+    rebuild: UrlStr | None = field(
         """
         URL to rebuild the run. Usually leads to a separate page with rebuild options.
         """,
         default=None,
     )
-    log: Optional[UrlStr] = field(
+    log: UrlStr | None = field(
         """
         URL of build log. Can be an HTML page
         """,
@@ -233,7 +237,7 @@ class ResultParamsBase(BaseModel):
 
     model_config = ConfigDict(str_max_length=MAX_STRING_SIZE)
 
-    def result_data(self) -> Iterator[str]:
+    def result_data(self) -> Iterator[tuple[(str, str)]]:
         """Generator yielding property name and value pairs to store in DB."""
         if self.scratch:
             yield ("type", f"{self.artifact_type()}_scratch")
@@ -262,7 +266,9 @@ class ResultParamsBase(BaseModel):
         if (
             self.error_reason is not None or self.issue_url is not None
         ) and self.outcome != "ERROR":
-            raise ValueError("error_reason and issue_url can be only set for ERROR outcome")
+            raise ValueError(
+                "error_reason and issue_url can be only set for ERROR outcome"
+            )
         return self
 
     @classmethod
@@ -331,37 +337,37 @@ class RedHatContainerImageResultParams(ResultParamsBase):
         """
     )
 
-    full_names: List[str] = field(
+    full_names: list[str] = field(
         """
         Array of full names of the container image.
         One full name is in the form of "registry:port/namespace/name:tag".
         """
     )
-    brew_task_id: Optional[int] = field(
+    brew_task_id: int | None = field(
         """
         Brew task ID of the buildContainer task.
         """,
         default=None,
     )
-    brew_build_id: Optional[int] = field(
+    brew_build_id: int | None = field(
         """
         Brew build ID of container.
         """,
         default=None,
     )
-    registry_url: Optional[str] = field(
+    registry_url: str | None = field(
         """
         Registry url from the container image full name.
         """,
         default=None,
     )
-    tag: Optional[str] = field(
+    tag: str | None = field(
         """
         Tag from the container image full name.
         """,
         default=None,
     )
-    name: Optional[str] = field(
+    name: str | None = field(
         """
         Name from the container image full name.
 
@@ -369,7 +375,7 @@ class RedHatContainerImageResultParams(ResultParamsBase):
         """,
         default=None,
     )
-    namespace: Optional[str] = field(
+    namespace: str | None = field(
         """
         Namespace from the container image full name.
 
@@ -377,7 +383,7 @@ class RedHatContainerImageResultParams(ResultParamsBase):
         """,
         default=None,
     )
-    source: Optional[str] = field(
+    source: str | None = field(
         """
         The first item in the request field from task details. This is
         usually a link to git repository with a reference, delimited with
@@ -479,7 +485,7 @@ class ProductmdComposeResultParams(ResultParamsBase):
 class PermissionsParams(BaseModel):
     """List permissions for posting results for matching test cases."""
 
-    testcase: Optional[str] = field(
+    testcase: str | None = field(
         """
         Filter only permissions matching test case name glob expression.
 

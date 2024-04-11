@@ -20,8 +20,8 @@
 
 import json
 import logging
-import logging.handlers
 import logging.config as logging_config
+import logging.handlers
 import os
 
 from flask import Flask, current_app, jsonify, send_from_directory, session
@@ -35,30 +35,26 @@ from flask_pyoidc.provider_configuration import (
 from flask_pyoidc.user_session import UserSession
 from flask_session import Session
 
-from resultsdb.proxy import ReverseProxied
-from resultsdb.controllers.main import main
 from resultsdb.controllers.api_v2 import api as api_v2
-from resultsdb.controllers.api_v3 import api as api_v3, create_endpoints
+from resultsdb.controllers.api_v3 import api as api_v3
+from resultsdb.controllers.api_v3 import create_endpoints
+from resultsdb.controllers.main import main
 from resultsdb.messaging import load_messaging_plugin
 from resultsdb.models import db
+from resultsdb.proxy import ReverseProxied
 from resultsdb.tracing import setup_tracing
-from . import config
 
+from . import config
 
 # the version as used in setup.py
 __version__ = "2.2.0"
-
-try:
-    basestring
-except NameError:
-    basestring = (str, bytes)
 
 VALIDATION_KEYS = frozenset({"input", "loc", "msg", "type", "url"})
 
 
 def create_app(config_obj=None):
     app = Flask(__name__)
-    app.secret_key = "replace-me-with-something-random"
+    app.secret_key = "replace-me-with-something-random"  # nosec
 
     # make sure app behaves when behind a proxy
     app.wsgi_app = ReverseProxied(app.wsgi_app)
@@ -88,13 +84,13 @@ def create_app(config_obj=None):
     if openshift:
         config.openshift_config(app.config, openshift)
 
-    default_config_file = app.config.get("DEFAULT_CONFIG_FILE")
+    default_config_file = app.config["DEFAULT_CONFIG_FILE"]
     config_file = os.environ.get("RESULTSDB_CONFIG", default_config_file)
     if config_file and os.path.exists(config_file):
         app.config.from_pyfile(config_file)
 
     if app.config["PRODUCTION"]:
-        if app.secret_key == "replace-me-with-something-random":
+        if app.secret_key == "replace-me-with-something-random":  # nosec
             raise Warning("You need to change the app.secret_key value for production")
 
     setup_logging(app)
@@ -173,7 +169,7 @@ def setup_logging(app):
         app.logger.addHandler(syslog_handler)
 
     if app.config["FILE_LOGGING"] and app.config["LOGFILE"]:
-        print("doing file logging to %s" % app.config["LOGFILE"])
+        print(f"doing file logging to {app.config['LOGFILE']}")
         file_handler = logging.handlers.RotatingFileHandler(
             app.config["LOGFILE"], maxBytes=500000, backupCount=5
         )
@@ -232,7 +228,12 @@ def register_handlers(app):
 
 
 def handle_validation_error(error: ValidationError):
-    errors = error.body_params or error.form_params or error.path_params or error.query_params
+    errors = (
+        error.body_params
+        or error.form_params
+        or error.path_params
+        or error.query_params
+    )
     # Keep only interesting stuff and remove objects potentially
     # unserializable in JSON.
     err = [{k: v for k, v in e.items() if k in VALIDATION_KEYS} for e in errors]
@@ -273,13 +274,17 @@ def enable_oidc(app):
         token_endpoint=metadata["token_uri"],
         userinfo_endpoint=metadata["userinfo_uri"],
         introspection_endpoint=metadata["token_introspection_uri"],
-        jwks_uri=metadata.get("jwks_uri", metadata["token_uri"].replace("/token", "/certs")),
+        jwks_uri=metadata.get(
+            "jwks_uri", metadata["token_uri"].replace("/token", "/certs")
+        ),
     )
     config = ProviderConfiguration(
         issuer=metadata["issuer"],
         client_metadata=client_metadata,
         provider_metadata=provider_metadata,
-        session_refresh_interval_seconds=app.config["OIDC_SESSION_REFRESH_INTERVAL_SECONDS"],
+        session_refresh_interval_seconds=app.config[
+            "OIDC_SESSION_REFRESH_INTERVAL_SECONDS"
+        ],
     )
     oidc = OIDCAuthentication({provider: config}, app)
 

@@ -19,28 +19,27 @@
 
 import abc
 import json
+import logging
 from threading import Lock
 
 import pkg_resources
 import stomp
+from fedora_messaging.api import Message, publish
+from fedora_messaging.exceptions import (
+    ConnectionException,
+    PublishForbidden,
+    PublishReturned,
+    PublishTimeout,
+)
 from opentelemetry import trace
+from opentelemetry.trace.propagation.tracecontext import (
+    TraceContextTextMapPropagator,
+)
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from resultsdb.models import db
 from resultsdb.models.results import Result, ResultData
 from resultsdb.serializers.api_v2 import Serializer
-
-import logging
-
-from fedora_messaging.api import Message, publish
-from fedora_messaging.exceptions import (
-    PublishReturned,
-    PublishTimeout,
-    PublishForbidden,
-    ConnectionException,
-)
-
-from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
 log = logging.getLogger(__name__)
 tracer = trace.get_tracer(__name__)
@@ -91,18 +90,21 @@ def publish_taskotron_message(result):
         # dist.depcheck task, which tends to produce a very large number of
         # identical results for any given build, because of the way that it is
         # designed.
-        log.debug("Skipping Taskotron message for result %d, outcome has not changed", result.id)
+        log.debug(
+            "Skipping Taskotron message for result %d, outcome has not changed",
+            result.id,
+        )
         return
 
-    task = dict(
-        (datum.key, datum.value)
+    task = {
+        datum.key: datum.value
         for datum in result.data
         if datum.key
         in (
             "item",
             "type",
         )
-    )
+    }
     task["name"] = result.testcase.name
     body = {
         "task": task,
@@ -120,13 +122,13 @@ def publish_taskotron_message(result):
         publish(msg)
         log.debug("Message published")
     except PublishReturned as e:
-        log.error("Fedora Messaging broker rejected message {}: {}".format(msg.id, e))
+        log.error(f"Fedora Messaging broker rejected message {msg.id}: {e}")
     except PublishTimeout:
-        log.error("Timeout publishing message {}".format(msg.id))
+        log.error(f"Timeout publishing message {msg.id}")
     except PublishForbidden as e:
-        log.error("Permission error publishing message {}: {}".format(msg.id, e))
+        log.error(f"Permission error publishing message {msg.id}: {e}")
     except ConnectionException as e:
-        log.error("Error sending message {}: {}".format(msg.id, e.reason))
+        log.error(f"Error sending message {msg.id}: {e.reason}")
 
 
 def create_message(result):
@@ -134,7 +136,7 @@ def create_message(result):
     return SERIALIZE(result)
 
 
-class MessagingPlugin(object):
+class MessagingPlugin:
     """Abstract base class that messaging plugins must extend.
 
     One abstract method is declared which must be implemented:
@@ -158,14 +160,14 @@ class DummyPlugin(MessagingPlugin):
 
     # A class attribute where we store all messages published.
     # Used by the test suite.  This would cause a memory leak if used in prod.
-    history = []
+    history: list[dict[str, object]] = []
 
     def publish(self, message):
         # Add telemetry information. This includes an extra key
         # traceparent.
         TraceContextTextMapPropagator().inject(message)
         self.history.append(message)
-        log.info("%r->%r" % (self, message))
+        log.info(f"{self!r}->{message!r}")
 
 
 class FedmsgPlugin(MessagingPlugin):
@@ -173,17 +175,17 @@ class FedmsgPlugin(MessagingPlugin):
 
     def publish(self, message):
         try:
-            msg = Message(topic="{}.result.new".format(self.modname), body=message)
+            msg = Message(topic=f"{self.modname}.result.new", body=message)
             publish(msg)
             log.debug("Message published")
         except PublishReturned as e:
-            log.error("Fedora Messaging broker rejected message {}: {}".format(msg.id, e))
+            log.error(f"Fedora Messaging broker rejected message {msg.id}: {e}")
         except PublishTimeout:
-            log.error("Timeout publishing message {}".format(msg.id))
+            log.error(f"Timeout publishing message {msg.id}")
         except PublishForbidden as e:
-            log.error("Permission error publishing message {}: {}".format(msg.id, e))
+            log.error(f"Permission error publishing message {msg.id}: {e}")
         except ConnectionException as e:
-            log.error("Error sending message {}: {}".format(msg.id, e.reason))
+            log.error(f"Error sending message {msg.id}: {e.reason}")
 
 
 class StompPlugin(MessagingPlugin):
@@ -211,7 +213,7 @@ class StompPlugin(MessagingPlugin):
         args["use_ssl"] = use_ssl
         args["ssl_args"] = ssl_args
 
-        super(StompPlugin, self).__init__(**args)
+        super().__init__(**args)
 
         # Validate that some required config is present
         required = ["connection", "destination"]
@@ -253,17 +255,17 @@ def load_messaging_plugin(name, plugin_args):
     """Instantiate and return the appropriate messaging plugin."""
     points = pkg_resources.iter_entry_points("resultsdb.messaging.plugins")
     classes = {"dummy": DummyPlugin}
-    classes.update(dict([(point.name, point.load()) for point in points]))
+    classes.update({point.name: point.load() for point in points})
 
     log.debug("Found the following installed messaging plugin %r" % classes)
     if name not in classes:
-        raise KeyError("%r not found in %r" % (name, classes.keys()))
+        raise KeyError(f"{name!r} not found in {classes.keys()!r}")
 
     cls = classes[name]
 
     # Sanity check
     if not issubclass(cls, MessagingPlugin):
-        raise TypeError("%s %r does not extend MessagingPlugin." % (name, cls))
+        raise TypeError(f"{name} {cls!r} does not extend MessagingPlugin.")
 
-    log.debug("Instantiating plugin %r named %s" % (cls, name))
+    log.debug(f"Instantiating plugin {cls!r} named {name}")
     return cls(**plugin_args)

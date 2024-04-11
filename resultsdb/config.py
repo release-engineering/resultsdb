@@ -19,7 +19,6 @@
 #   Ralph Bean <rbean@redhat.com>
 
 # For Python 2.7 compatibility
-from __future__ import print_function
 
 import os
 import sys
@@ -33,12 +32,14 @@ def db_uri_for_testing():
     return "sqlite:///.test_db.sqlite"
 
 
-class Config(object):
+class Config:
+    DEFAULT_CONFIG_FILE: str | None = None
+
     DEBUG = True
     PRODUCTION = False
-    SECRET_KEY = "replace-me-with-something-random"
+    SECRET_KEY = "replace-me-with-something-random"  # nosec
 
-    HOST = "0.0.0.0"
+    HOST = "127.0.0.1"
     PORT = 5001
 
     SQLALCHEMY_DATABASE_URI = "sqlite://"
@@ -78,12 +79,12 @@ class Config(object):
     }
 
     # Extend the list of allowed outcomes.
-    ADDITIONAL_RESULT_OUTCOMES = ()
+    ADDITIONAL_RESULT_OUTCOMES: tuple[str] | tuple[()] = ()
 
-    PERMISSIONS = []
+    PERMISSIONS: list[dict[str, object]] = []
 
     # Supported values: "oidc"
-    AUTH_MODULE = None
+    AUTH_MODULE: str | None = None
 
     OIDC_CLIENT_SECRETS = "/etc/resultsdb/oauth2_client_secrets.json"
     OIDC_USERNAME_FIELD = "uid"
@@ -113,7 +114,7 @@ class Config(object):
     # configure the topic, like this:
     #   <topic_prefix>.<environment>.<modname>.<topic>
     # e.g. org.fedoraproject.prod.resultsdb.result.new
-    MESSAGE_BUS_KWARGS = {}
+    MESSAGE_BUS_KWARGS: dict[str, object] = {}
 
     # Publish Taskotron-compatible fedmsgs on the 'taskotron' topic
     MESSAGE_BUS_PUBLISH_TASKOTRON = False
@@ -137,8 +138,7 @@ class DevelopmentConfig(Config):
     OIDC_CLIENT_SECRETS = os.getcwd() + "/conf/oauth2_client_secrets.json.example"
 
 
-class TestingConfig(DevelopmentConfig):
-    DEFAULT_CONFIG_FILE = None
+class TestingConfig(Config):
     TRAP_BAD_REQUEST_ERRORS = True
 
     SQLALCHEMY_DATABASE_URI = db_uri_for_testing()
@@ -169,12 +169,14 @@ class TestingConfig(DevelopmentConfig):
 def openshift_config(config_object, openshift_production):
     # First, get db details from env
     try:
-        config_object["SQLALCHEMY_DATABASE_URI"] = "postgresql+psycopg2://%s:%s@%s:%s/%s" % (
-            os.environ["POSTGRESQL_USER"],
-            os.environ["POSTGRESQL_PASSWORD"],
-            os.environ["POSTGRESQL_SERVICE_HOST"],
-            os.environ["POSTGRESQL_SERVICE_PORT"],
-            os.environ["POSTGRESQL_DATABASE"],
+        config_object["SQLALCHEMY_DATABASE_URI"] = (
+            "postgresql+psycopg2://{}:{}@{}:{}/{}".format(
+                os.environ["POSTGRESQL_USER"],
+                os.environ["POSTGRESQL_PASSWORD"],
+                os.environ["POSTGRESQL_SERVICE_HOST"],
+                os.environ["POSTGRESQL_SERVICE_PORT"],
+                os.environ["POSTGRESQL_DATABASE"],
+            )
         )
         config_object["SECRET_KEY"] = os.environ["SECRET_KEY"]
     except KeyError:

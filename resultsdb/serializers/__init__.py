@@ -19,22 +19,19 @@
 
 from datetime import date, datetime
 
-try:
-    basestring
-except NameError:
-    basestring = (str, bytes)
 
-
-class DBSerialize(object):
+class DBSerialize:
     pass
 
 
-class BaseSerializer(object):
+class BaseSerializer:
     def serialize(self, value, **kwargs):
         # serialize the database objects
         #   the specific serializer needs to implement serialize_CLASSNAME methods
         if DBSerialize in value.__class__.__bases__:
-            return getattr(self, "_serialize_%s" % value.__class__.__name__)(value, **kwargs)
+            return getattr(self, f"_serialize_{value.__class__.__name__}")(
+                value, **kwargs
+            )
 
         # convert datetimes to the right format
         if type(value) in (datetime, date):
@@ -47,7 +44,7 @@ class BaseSerializer(object):
             return ret
 
         # in py3 string-like types have __iter__ causing endless loops
-        if isinstance(value, basestring):
+        if isinstance(value, (str, bytes)):
             return value
 
         # convert iterables to list of serialized stuff

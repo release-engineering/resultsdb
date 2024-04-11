@@ -1,12 +1,9 @@
 # SPDX-License-Identifier: GPL-2.0+
-from flask import jsonify
 from flask import current_app as app
+from flask import jsonify
 
+from resultsdb.messaging import create_message, publish_taskotron_message
 from resultsdb.models import db
-from resultsdb.messaging import (
-    create_message,
-    publish_taskotron_message,
-)
 from resultsdb.serializers.api_v2 import Serializer
 
 SERIALIZE = Serializer().serialize
@@ -33,7 +30,9 @@ def commit_result(result):
         app.messaging_plugin.publish(message)
 
     if app.config["MESSAGE_BUS_PUBLISH_TASKOTRON"]:
-        app.logger.debug("Preparing to publish Taskotron message for result id %d", result.id)
+        app.logger.debug(
+            "Preparing to publish Taskotron message for result id %d", result.id
+        )
         publish_taskotron_message(result)
 
     return jsonify(SERIALIZE(result)), 201

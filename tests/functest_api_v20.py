@@ -17,10 +17,10 @@
 # Authors:
 #   Josef Skladanka <jskladan@redhat.com>
 
-import json
-import datetime
-import os
 import copy
+import datetime
+import json
+import os
 from unittest import TestCase
 from unittest.mock import ANY, patch
 
@@ -30,13 +30,8 @@ import resultsdb.messaging
 from resultsdb.models import db
 from resultsdb.models.results import utcnow_naive
 
-try:
-    basestring
-except NameError:
-    basestring = (str, bytes)
 
-
-class AboutTime(object):
+class AboutTime:
     def __eq__(self, value):
         start = (utcnow_naive() - datetime.timedelta(seconds=10)).isoformat()
         stop = (utcnow_naive() + datetime.timedelta(seconds=10)).isoformat()
@@ -46,7 +41,9 @@ class AboutTime(object):
 class TestFuncApiV20(TestCase):
     def require_postgres(self):
         if os.getenv("NO_CAN_HAS_POSTGRES", None):
-            self.skipTest("PostgreSQL server not available (disabled with NO_CAN_HAS_POSTGRES)")
+            self.skipTest(
+                "PostgreSQL server not available (disabled with NO_CAN_HAS_POSTGRES)"
+            )
 
         if app.config["SQLALCHEMY_DATABASE_URI"].startswith("sqlite"):
             raise RuntimeError(
@@ -116,12 +113,10 @@ class TestFuncApiV20(TestCase):
             "outcome": self.ref_result_outcome,
             "note": self.ref_result_note,
             "ref_url": self.ref_result_ref_url,
-            "data": dict(
-                (
-                    (key, [value] if isinstance(value, basestring) else value)
-                    for key, value in self.ref_result_data.items()
-                )
-            ),
+            "data": {
+                key: [value] if isinstance(value, (str, bytes)) else value
+                for key, value in self.ref_result_data.items()
+            },
             "href": self.ref_url_prefix + "/results/1",
         }
 
@@ -137,7 +132,9 @@ class TestFuncApiV20(TestCase):
         if ref_url is None:
             ref_url = self.ref_testcase_ref_url
         ref_data = json.dumps({"name": name, "ref_url": ref_url})
-        r = self.app.post("/api/v2.0/testcases", data=ref_data, content_type="application/json")
+        r = self.app.post(
+            "/api/v2.0/testcases", data=ref_data, content_type="application/json"
+        )
         data = json.loads(r.data)
         return r, data
 
@@ -149,7 +146,9 @@ class TestFuncApiV20(TestCase):
     def test_create_testcase_missing_data(self):
         ref_data = json.dumps({"ref_url": self.ref_testcase_ref_url})
 
-        r = self.app.post("/api/v2.0/testcases", data=ref_data, content_type="application/json")
+        r = self.app.post(
+            "/api/v2.0/testcases", data=ref_data, content_type="application/json"
+        )
         assert r.status_code == 400
         assert r.json == {
             "validation_error": [
@@ -166,7 +165,9 @@ class TestFuncApiV20(TestCase):
     def test_create_testcase_empty_name(self):
         ref_data = json.dumps({"name": ""})
 
-        r = self.app.post("/api/v2.0/testcases", data=ref_data, content_type="application/json")
+        r = self.app.post(
+            "/api/v2.0/testcases", data=ref_data, content_type="application/json"
+        )
         assert r.status_code == 400
         assert r.json == {
             "validation_error": [
@@ -186,9 +187,13 @@ class TestFuncApiV20(TestCase):
         testcase = copy.copy(self.ref_testcase)
         testcase["ref_url"] = "Updated"
 
-        ref_data = json.dumps({"name": self.ref_testcase_name, "ref_url": testcase["ref_url"]})
+        ref_data = json.dumps(
+            {"name": self.ref_testcase_name, "ref_url": testcase["ref_url"]}
+        )
 
-        r = self.app.post("/api/v2.0/testcases", data=ref_data, content_type="application/json")
+        r = self.app.post(
+            "/api/v2.0/testcases", data=ref_data, content_type="application/json"
+        )
         data = json.loads(r.data)
 
         assert r.status_code == 201
@@ -197,7 +202,7 @@ class TestFuncApiV20(TestCase):
     def test_get_testcase(self):
         self.test_create_testcase()
 
-        r = self.app.get("/api/v2.0/testcases/%s" % self.ref_testcase_name)
+        r = self.app.get(f"/api/v2.0/testcases/{self.ref_testcase_name}")
 
         data = json.loads(r.data)
 
@@ -205,7 +210,7 @@ class TestFuncApiV20(TestCase):
         assert data == self.ref_testcase
 
     def test_get_missing_testcase(self):
-        r = self.app.get("/api/v2.0/testcases/%s" % self.ref_testcase_name)
+        r = self.app.get(f"/api/v2.0/testcases/{self.ref_testcase_name}")
 
         data = json.loads(r.data)
 
@@ -231,14 +236,16 @@ class TestFuncApiV20(TestCase):
     def test_get_testcases_by_name(self):
         self.test_create_testcase()
 
-        r = self.app.get("/api/v2.0/testcases?name=%s" % self.ref_testcase_name)
+        r = self.app.get(f"/api/v2.0/testcases?name={self.ref_testcase_name}")
         data = json.loads(r.data)
 
         assert r.status_code == 200
         assert len(data["data"]) == 1
         assert data["data"][0] == self.ref_testcase
 
-        r = self.app.get("/api/v2.0/testcases?name:like=*%s*" % self.ref_testcase_name[1:-1])
+        r = self.app.get(
+            f"/api/v2.0/testcases?name:like=*{self.ref_testcase_name[1:-1]}*"
+        )
         data = json.loads(r.data)
 
         assert r.status_code == 200
@@ -254,9 +261,13 @@ class TestFuncApiV20(TestCase):
             description = self.ref_group_description
         if ref_url is None:
             ref_url = self.ref_group_ref_url
-        ref_data = json.dumps({"uuid": uuid, "description": description, "ref_url": ref_url})
+        ref_data = json.dumps(
+            {"uuid": uuid, "description": description, "ref_url": ref_url}
+        )
 
-        r = self.app.post("/api/v2.0/groups", data=ref_data, content_type="application/json")
+        r = self.app.post(
+            "/api/v2.0/groups", data=ref_data, content_type="application/json"
+        )
         data = json.loads(r.data)
         return r, data
 
@@ -268,7 +279,9 @@ class TestFuncApiV20(TestCase):
     def test_create_group_no_data(self):
         ref_data = json.dumps({})
 
-        r = self.app.post("/api/v2.0/groups", data=ref_data, content_type="application/json")
+        r = self.app.post(
+            "/api/v2.0/groups", data=ref_data, content_type="application/json"
+        )
         data = json.loads(r.data)
 
         assert r.status_code == 201
@@ -277,16 +290,24 @@ class TestFuncApiV20(TestCase):
         assert data["ref_url"] is None
         assert data["href"] == self.ref_url_prefix + "/groups/" + data["uuid"]
         assert data["results_count"] == 0
-        assert data["results"] == self.ref_url_prefix + "/results?groups=" + data["uuid"]
+        assert (
+            data["results"] == self.ref_url_prefix + "/results?groups=" + data["uuid"]
+        )
 
     def test_update_group(self):
         self.test_create_group()
 
         ref_data = json.dumps(
-            {"uuid": self.ref_group_uuid, "description": "Changed", "ref_url": "Changed"}
+            {
+                "uuid": self.ref_group_uuid,
+                "description": "Changed",
+                "ref_url": "Changed",
+            }
         )
 
-        r = self.app.post("/api/v2.0/groups", data=ref_data, content_type="application/json")
+        r = self.app.post(
+            "/api/v2.0/groups", data=ref_data, content_type="application/json"
+        )
         data = json.loads(r.data)
 
         group = copy.copy(self.ref_group)
@@ -298,7 +319,7 @@ class TestFuncApiV20(TestCase):
     def test_get_group(self):
         self.test_create_group()
 
-        r = self.app.get("/api/v2.0/groups/%s" % self.ref_group_uuid)
+        r = self.app.get(f"/api/v2.0/groups/{self.ref_group_uuid}")
         data = json.loads(r.data)
 
         assert r.status_code == 200
@@ -329,7 +350,7 @@ class TestFuncApiV20(TestCase):
     def test_get_groups_by_description(self):
         self.test_create_group()
 
-        r = self.app.get("/api/v2.0/groups?description=%s" % self.ref_group_description)
+        r = self.app.get(f"/api/v2.0/groups?description={self.ref_group_description}")
         data = json.loads(r.data)
 
         assert r.status_code == 200
@@ -394,7 +415,9 @@ class TestFuncApiV20(TestCase):
             )
         )
 
-        r = self.app.post("/api/v2.0/results", data=ref_data, content_type="application/json")
+        r = self.app.post(
+            "/api/v2.0/results", data=ref_data, content_type="application/json"
+        )
         data = json.loads(r.data)
 
         return r, data
@@ -429,7 +452,9 @@ class TestFuncApiV20(TestCase):
         assert data["testcase"]["name"] == testcase_name
 
     def test_create_result_empty_testcase(self):
-        r = self.app.post("/api/v2.0/results", json={"outcome": "passed", "testcase": ""})
+        r = self.app.post(
+            "/api/v2.0/results", json={"outcome": "passed", "testcase": ""}
+        )
         data = json.loads(r.data)
 
         assert r.status_code == 400
@@ -465,7 +490,9 @@ class TestFuncApiV20(TestCase):
         }
 
     def test_create_result_empty_testcase_dict(self):
-        r = self.app.post("/api/v2.0/results", json={"outcome": "passed", "testcase": {}})
+        r = self.app.post(
+            "/api/v2.0/results", json={"outcome": "passed", "testcase": {}}
+        )
         data = json.loads(r.data)
 
         assert r.status_code == 400
@@ -500,7 +527,9 @@ class TestFuncApiV20(TestCase):
 
     def test_create_result_missing_outcome(self):
         ref_data = json.dumps({"testcase": self.ref_testcase})
-        r = self.app.post("/api/v2.0/results", data=ref_data, content_type="application/json")
+        r = self.app.post(
+            "/api/v2.0/results", data=ref_data, content_type="application/json"
+        )
         data = json.loads(r.data)
 
         assert r.status_code == 400
@@ -543,7 +572,9 @@ class TestFuncApiV20(TestCase):
             )
         )
 
-        r = self.app.post("/api/v2.0/results", data=ref_data, content_type="application/json")
+        r = self.app.post(
+            "/api/v2.0/results", data=ref_data, content_type="application/json"
+        )
         data = json.loads(r.data)
 
         assert r.status_code == 201
@@ -552,7 +583,7 @@ class TestFuncApiV20(TestCase):
     def test_create_result_group_did_not_exist(self):
         self.helper_create_result(groups=[self.ref_group])
 
-        r = self.app.get("/api/v2.0/groups/%s" % self.ref_group_uuid)
+        r = self.app.get(f"/api/v2.0/groups/{self.ref_group_uuid}")
         data = json.loads(r.data)
 
         ref_group = copy.deepcopy(self.ref_group)
@@ -563,7 +594,7 @@ class TestFuncApiV20(TestCase):
 
         uuid2 = "1c26effb-7c07-4d90-9428-86aac053288c"
         self.helper_create_result(groups=[uuid2])
-        r = self.app.get("/api/v2.0/groups/%s" % uuid2)
+        r = self.app.get(f"/api/v2.0/groups/{uuid2}")
         data = json.loads(r.data)
 
         assert r.status_code == 200
@@ -574,7 +605,7 @@ class TestFuncApiV20(TestCase):
     def test_create_result_testcase_did_not_exist(self):
         self.helper_create_result(testcase=self.ref_testcase)
 
-        r = self.app.get("/api/v2.0/testcases/%s" % self.ref_testcase_name)
+        r = self.app.get(f"/api/v2.0/testcases/{self.ref_testcase_name}")
         data = json.loads(r.data)
 
         assert r.status_code == 200
@@ -582,7 +613,7 @@ class TestFuncApiV20(TestCase):
 
         name2 = self.ref_testcase_name + ".fake"
         self.helper_create_result(testcase=name2)
-        r = self.app.get("/api/v2.0/testcases/%s" % name2)
+        r = self.app.get(f"/api/v2.0/testcases/{name2}")
         data = json.loads(r.data)
 
         assert r.status_code == 200
@@ -591,7 +622,9 @@ class TestFuncApiV20(TestCase):
     def test_create_result_invalid_outcome(self):
         ref_data = json.dumps({"outcome": "FAKEOUTCOME", "testcase": self.ref_testcase})
 
-        r = self.app.post("/api/v2.0/results", data=ref_data, content_type="application/json")
+        r = self.app.post(
+            "/api/v2.0/results", data=ref_data, content_type="application/json"
+        )
         data = json.loads(r.data)
 
         assert r.status_code == 400
@@ -619,7 +652,9 @@ class TestFuncApiV20(TestCase):
             }
         )
 
-        r = self.app.post("/api/v2.0/results", data=ref_data, content_type="application/json")
+        r = self.app.post(
+            "/api/v2.0/results", data=ref_data, content_type="application/json"
+        )
         data = json.loads(r.data)
 
         assert r.status_code == 400
@@ -634,7 +669,9 @@ class TestFuncApiV20(TestCase):
             )
         )
 
-        r = self.app.post("/api/v2.0/results", data=ref_data, content_type="application/json")
+        r = self.app.post(
+            "/api/v2.0/results", data=ref_data, content_type="application/json"
+        )
         data = json.loads(r.data)
 
         assert r.status_code == 201, data
@@ -649,7 +686,9 @@ class TestFuncApiV20(TestCase):
             )
         )
 
-        r = self.app.post("/api/v2.0/results", data=ref_data, content_type="application/json")
+        r = self.app.post(
+            "/api/v2.0/results", data=ref_data, content_type="application/json"
+        )
         data = json.loads(r.data)
 
         assert r.status_code == 201, data
@@ -665,7 +704,9 @@ class TestFuncApiV20(TestCase):
                 )
             )
 
-            r = self.app.post("/api/v2.0/results", data=ref_data, content_type="application/json")
+            r = self.app.post(
+                "/api/v2.0/results", data=ref_data, content_type="application/json"
+            )
             data = json.loads(r.data)
 
             assert r.status_code == 201, data
@@ -680,7 +721,9 @@ class TestFuncApiV20(TestCase):
             )
         )
 
-        r = self.app.post("/api/v2.0/results", data=ref_data, content_type="application/json")
+        r = self.app.post(
+            "/api/v2.0/results", data=ref_data, content_type="application/json"
+        )
         data = json.loads(r.data)
 
         assert r.status_code == 400, data
@@ -751,8 +794,8 @@ class TestFuncApiV20(TestCase):
         self.test_create_result()
         self.helper_create_result(groups=[uuid2])
 
-        r1 = self.app.get("/api/v2.0/groups/%s/results" % self.ref_group_uuid)
-        r2 = self.app.get("/api/v2.0/results?groups=%s" % self.ref_group_uuid)
+        r1 = self.app.get(f"/api/v2.0/groups/{self.ref_group_uuid}/results")
+        r2 = self.app.get(f"/api/v2.0/results?groups={self.ref_group_uuid}")
 
         data1 = json.loads(r1.data)
         data2 = json.loads(r2.data)
@@ -763,7 +806,7 @@ class TestFuncApiV20(TestCase):
         assert data1 == data2
         assert data1["data"][0] == self.ref_result
 
-        r = self.app.get("/api/v2.0/results?groups=%s,%s" % (self.ref_group_uuid, uuid2))
+        r = self.app.get(f"/api/v2.0/results?groups={self.ref_group_uuid},{uuid2}")
         data = json.loads(r.data)
 
         assert r.status_code == 200
@@ -776,8 +819,8 @@ class TestFuncApiV20(TestCase):
         self.test_create_result()
         self.helper_create_result(testcase=name2)
 
-        r1 = self.app.get("/api/v2.0/testcases/%s/results" % self.ref_testcase_name)
-        r2 = self.app.get("/api/v2.0/results?testcases=%s" % self.ref_testcase_name)
+        r1 = self.app.get(f"/api/v2.0/testcases/{self.ref_testcase_name}/results")
+        r2 = self.app.get(f"/api/v2.0/results?testcases={self.ref_testcase_name}")
 
         data1 = json.loads(r1.data)
         data2 = json.loads(r2.data)
@@ -787,7 +830,9 @@ class TestFuncApiV20(TestCase):
         assert data1["data"][0] == self.ref_result
         assert data2["data"][0] == self.ref_result
 
-        r = self.app.get("/api/v2.0/results?testcases=%s,%s" % (self.ref_testcase_name, name2))
+        r = self.app.get(
+            f"/api/v2.0/results?testcases={self.ref_testcase_name},{name2}"
+        )
         data = json.loads(r.data)
 
         assert r.status_code == 200
@@ -800,8 +845,8 @@ class TestFuncApiV20(TestCase):
         self.test_create_result()
         self.helper_create_result(testcase=name2)
 
-        r1 = self.app.get("/api/v2.0/testcases/%s/results" % self.ref_testcase_name)
-        r2 = self.app.get("/api/v2.0/results?testcases:like=%s" % self.ref_testcase_name)
+        r1 = self.app.get(f"/api/v2.0/testcases/{self.ref_testcase_name}/results")
+        r2 = self.app.get(f"/api/v2.0/results?testcases:like={self.ref_testcase_name}")
 
         data1 = json.loads(r1.data)
         data2 = json.loads(r2.data)
@@ -811,10 +856,9 @@ class TestFuncApiV20(TestCase):
         assert data1["data"][0] == self.ref_result
         assert data2["data"][0] == self.ref_result
 
-        r1 = self.app.get("/api/v2.0/results?testcases:like=%s*" % (self.ref_testcase_name,))
+        r1 = self.app.get(f"/api/v2.0/results?testcases:like={self.ref_testcase_name}*")
         r2 = self.app.get(
-            "/api/v2.0/results?testcases:like=%s,%s*"
-            % (self.ref_testcase_name, self.ref_testcase_name)
+            f"/api/v2.0/results?testcases:like={self.ref_testcase_name},{self.ref_testcase_name}*"
         )
 
         data1 = json.loads(r1.data)
@@ -878,24 +922,24 @@ class TestFuncApiV20(TestCase):
         before2 = (utcnow_naive() - datetime.timedelta(seconds=99)).isoformat()
         after = (utcnow_naive() + datetime.timedelta(seconds=100)).isoformat()
 
-        r = self.app.get("/api/v2.0/results?since=%s" % before1)
+        r = self.app.get(f"/api/v2.0/results?since={before1}")
         data = json.loads(r.data)
         assert r.status_code == 200, r.text
         assert len(data["data"]) == 1
         assert data["data"][0] == self.ref_result
 
-        r = self.app.get("/api/v2.0/results?since=%s,%s" % (before1, after))
+        r = self.app.get(f"/api/v2.0/results?since={before1},{after}")
         data = json.loads(r.data)
         assert r.status_code == 200, r.text
         assert len(data["data"]) == 1
         assert data["data"][0] == self.ref_result
 
-        r = self.app.get("/api/v2.0/results?since=%s" % (after))
+        r = self.app.get(f"/api/v2.0/results?since={(after)}")
         data = json.loads(r.data)
         assert r.status_code == 200, r.text
         assert len(data["data"]) == 0
 
-        r = self.app.get("/api/v2.0/results?since=%s,%s" % (before1, before2))
+        r = self.app.get(f"/api/v2.0/results?since={before1},{before2}")
         data = json.loads(r.data)
         assert r.status_code == 200, r.text
         assert len(data["data"]) == 0
@@ -967,12 +1011,16 @@ class TestFuncApiV20(TestCase):
 
         self.helper_create_result(outcome="PASSED")
         self.helper_create_result(outcome="FAILED")
-        self.helper_create_result(testcase=self.ref_testcase_name + ".1", outcome="PASSED")
         self.helper_create_result(
-            testcase=self.ref_testcase_name + ".1", groups=["foobargroup"], outcome="FAILED"
+            testcase=self.ref_testcase_name + ".1", outcome="PASSED"
+        )
+        self.helper_create_result(
+            testcase=self.ref_testcase_name + ".1",
+            groups=["foobargroup"],
+            outcome="FAILED",
         )
 
-        r = self.app.get("/api/v2.0/results/latest?testcases=%s" % self.ref_testcase_name)
+        r = self.app.get(f"/api/v2.0/results/latest?testcases={self.ref_testcase_name}")
         data = json.loads(r.data)
 
         assert len(data["data"]) == 1
@@ -980,8 +1028,7 @@ class TestFuncApiV20(TestCase):
         assert data["data"][0]["outcome"] == "FAILED"
 
         r = self.app.get(
-            "/api/v2.0/results/latest?testcases=%s,%s"
-            % (self.ref_testcase_name, self.ref_testcase_name + ".1")
+            f"/api/v2.0/results/latest?testcases={self.ref_testcase_name},{self.ref_testcase_name + '.1'}"
         )
         data = json.loads(r.data)
 
@@ -1000,7 +1047,7 @@ class TestFuncApiV20(TestCase):
         assert data["data"][1]["testcase"]["name"] == self.ref_testcase_name
         assert data["data"][1]["outcome"] == "FAILED"
 
-        r = self.app.get("/api/v2.0/results/latest?groups=%s" % self.ref_group_uuid)
+        r = self.app.get(f"/api/v2.0/results/latest?groups={self.ref_group_uuid}")
         data = json.loads(r.data)
 
         assert len(data["data"]) == 2
@@ -1016,10 +1063,14 @@ class TestFuncApiV20(TestCase):
         self.helper_create_testcase()
 
         self.helper_create_result(
-            outcome="PASSED", data={"scenario": "scenario1"}, testcase=self.ref_testcase_name
+            outcome="PASSED",
+            data={"scenario": "scenario1"},
+            testcase=self.ref_testcase_name,
         )
         self.helper_create_result(
-            outcome="FAILED", data={"scenario": "scenario2"}, testcase=self.ref_testcase_name
+            outcome="FAILED",
+            data={"scenario": "scenario2"},
+            testcase=self.ref_testcase_name,
         )
 
         r = self.app.get(
@@ -1058,7 +1109,9 @@ class TestFuncApiV20(TestCase):
         self.helper_create_result(
             outcome="PASSED", testcase="tc_2", data={"item": "grub", "scenario": "s_2"}
         )
-        self.helper_create_result(outcome="PASSED", testcase="tc_3", data={"item": "grub"})
+        self.helper_create_result(
+            outcome="PASSED", testcase="tc_3", data={"item": "grub"}
+        )
 
         r = self.app.get("/api/v2.0/results/latest?item=grub&_distinct_on=scenario")
         data = json.loads(r.data)
@@ -1087,8 +1140,12 @@ class TestFuncApiV20(TestCase):
         self.helper_create_result(
             outcome="PASSED", testcase="tc_2", data={"item": "grub", "scenario": "s_2"}
         )
-        self.helper_create_result(outcome="PASSED", testcase="tc_3", data={"item": "grub"})
-        self.helper_create_result(outcome="FAILED", testcase="tc_1", data={"item": "grub"})
+        self.helper_create_result(
+            outcome="PASSED", testcase="tc_3", data={"item": "grub"}
+        )
+        self.helper_create_result(
+            outcome="FAILED", testcase="tc_1", data={"item": "grub"}
+        )
 
         r = self.app.get("/api/v2.0/results/latest?item=grub&_distinct_on=scenario")
         data = json.loads(r.data)
@@ -1118,8 +1175,12 @@ class TestFuncApiV20(TestCase):
         self.helper_create_result(
             outcome="PASSED", testcase="tc_2", data={"item": "grub", "scenario": "s_2"}
         )
-        self.helper_create_result(outcome="PASSED", testcase="tc_3", data={"item": "grub"})
-        self.helper_create_result(outcome="FAILED", testcase="tc_1", data={"item": "grub"})
+        self.helper_create_result(
+            outcome="PASSED", testcase="tc_3", data={"item": "grub"}
+        )
+        self.helper_create_result(
+            outcome="FAILED", testcase="tc_1", data={"item": "grub"}
+        )
         self.helper_create_result(
             outcome="INFO", testcase="tc_1", data={"item": "grub", "scenario": "s_1"}
         )
@@ -1165,7 +1226,10 @@ class TestFuncApiV20(TestCase):
         r = self.app.get("/api/v2.0/results/latest?_distinct_on=scenario")
         data = json.loads(r.data)
         assert r.status_code == 400
-        assert data["message"] == "Please, provide at least one filter beside '_distinct_on'"
+        assert (
+            data["message"]
+            == "Please, provide at least one filter beside '_distinct_on'"
+        )
 
     def test_message_publication(self):
         self.helper_create_result()
@@ -1184,7 +1248,13 @@ class TestFuncApiV20(TestCase):
         r = self.app.get("/api/v2.0/")
         data = json.loads(r.data)
         assert r.status_code == 300
-        assert data["outcomes"] == ["PASSED", "INFO", "FAILED", "NEEDS_INSPECTION", "AMAZING"]
+        assert data["outcomes"] == [
+            "PASSED",
+            "INFO",
+            "FAILED",
+            "NEEDS_INSPECTION",
+            "AMAZING",
+        ]
 
     def test_healthcheck_success(self):
         r = self.app.get("/api/v2.0/healthcheck")

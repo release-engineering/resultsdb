@@ -33,7 +33,11 @@ def pytest_addoption(parser):
     """
 
     parser.addoption(
-        "-F", "--functional", action="store_true", default=False, help="Add functional tests"
+        "-F",
+        "--functional",
+        action="store_true",
+        default=False,
+        help="Add functional tests",
     )
 
 

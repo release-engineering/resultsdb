@@ -2,11 +2,7 @@
 import logging
 from fnmatch import fnmatch
 
-from werkzeug.exceptions import (
-    BadGateway,
-    InternalServerError,
-    Forbidden,
-)
+from werkzeug.exceptions import BadGateway, Forbidden, InternalServerError
 
 log = logging.getLogger(__name__)
 
@@ -35,7 +31,8 @@ def match_testcase_permissions(testcase, permissions):
     for permission in permissions:
         if "testcases" in permission:
             testcase_match = any(
-                fnmatch(testcase, testcase_pattern) for testcase_pattern in permission["testcases"]
+                fnmatch(testcase, testcase_pattern)
+                for testcase_pattern in permission["testcases"]
             )
             if testcase_match:
                 yield permission
@@ -56,7 +53,9 @@ def verify_authorization(user, testcase, permissions, ldap_host, ldap_searches):
     try:
         import ldap
     except ImportError:
-        raise InternalServerError("If PERMISSIONS is defined, python-ldap needs to be installed")
+        raise InternalServerError(
+            "If PERMISSIONS is defined, python-ldap needs to be installed"
+        )
 
     try:
         con = ldap.initialize(ldap_host)

@@ -18,8 +18,9 @@
 #   Josef Skladanka <jskladan@redhat.com>
 
 from flask import url_for
-from resultsdb.serializers import BaseSerializer
+
 from resultsdb.models.results import GroupsToResults
+from resultsdb.serializers import BaseSerializer
 
 
 class Serializer(BaseSerializer):

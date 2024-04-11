@@ -1,11 +1,11 @@
+# add '.' to the pythonpath to support migration inside development env
+import sys
+
 from alembic import context
 from flask import current_app as app
 from sqlalchemy import engine_from_config, pool
 
 from resultsdb.models import db
-
-# add '.' to the pythonpath to support migration inside development env
-import sys
 
 sys.path.append(".")
 
@@ -60,7 +60,9 @@ def run_migrations_online():
 
     alembic_config["sqlalchemy.url"] = app.config["SQLALCHEMY_DATABASE_URI"]
 
-    engine = engine_from_config(alembic_config, prefix="sqlalchemy.", poolclass=pool.NullPool)
+    engine = engine_from_config(
+        alembic_config, prefix="sqlalchemy.", poolclass=pool.NullPool
+    )
 
     connection = engine.connect()
     context.configure(connection=connection, target_metadata=target_metadata)

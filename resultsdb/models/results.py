@@ -26,19 +26,28 @@ from sqlalchemy.orm import relationship
 from resultsdb.models import db
 from resultsdb.serializers import DBSerialize
 
-__all__ = ["Testcase", "Group", "Result", "ResultData", "GroupsToResults", "result_outcomes"]
+__all__ = [
+    "Testcase",
+    "Group",
+    "Result",
+    "ResultData",
+    "GroupsToResults",
+    "result_outcomes",
+]
 
 PRESET_OUTCOMES = ("PASSED", "INFO", "FAILED", "NEEDS_INSPECTION")
 
 
 def result_outcomes():
-    additional_result_outcomes = tuple(current_app.config.get("ADDITIONAL_RESULT_OUTCOMES", []))
+    additional_result_outcomes = tuple(
+        current_app.config.get("ADDITIONAL_RESULT_OUTCOMES", [])
+    )
     return PRESET_OUTCOMES + additional_result_outcomes
 
 
 def utcnow_naive():
     """Returns current UTC date/time without the timezone info."""
-    return datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+    return datetime.datetime.now(datetime.UTC).replace(tzinfo=None)
 
 
 class GroupsToResults(db.Model):
@@ -48,7 +57,11 @@ class GroupsToResults(db.Model):
     result_id = db.Column(db.Integer, db.ForeignKey("result.id"))
 
     __table_args__ = (
-        db.Index("gtr_fk_group_uuid", "group_uuid", postgresql_ops={"uuid": "text_pattern_ops"}),
+        db.Index(
+            "gtr_fk_group_uuid",
+            "group_uuid",
+            postgresql_ops={"uuid": "text_pattern_ops"},
+        ),
         db.Index("gtr_fk_result_id", "result_id"),
     )
 
@@ -128,7 +141,9 @@ class Result(db.Model, DBSerialize):
         ),
     )
 
-    def __init__(self, testcase, outcome, groups=None, ref_url=None, note=None, submit_time=None):
+    def __init__(
+        self, testcase, outcome, groups=None, ref_url=None, note=None, submit_time=None
+    ):
         self.testcase = testcase
         self.outcome = outcome
         self.ref_url = ref_url

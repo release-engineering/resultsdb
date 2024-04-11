@@ -1,20 +1,20 @@
 # SPDX-License-Identifier: GPL-2.0+
-from flask import Blueprint, jsonify, render_template
+from flask import Blueprint
 from flask import current_app as app
+from flask import jsonify, render_template
 from flask_pydantic import validate
 from pydantic import RootModel
 
-from resultsdb.models import db
-from resultsdb.authorization import match_testcase_permissions, verify_authorization
-from resultsdb.controllers.common import commit_result
-from resultsdb.models.results import (
-    Result,
-    Testcase,
-    ResultData,
+from resultsdb.authorization import (
+    match_testcase_permissions,
+    verify_authorization,
 )
+from resultsdb.controllers.common import commit_result
+from resultsdb.models import db
+from resultsdb.models.results import Result, ResultData, Testcase
 from resultsdb.parsers.api_v3 import (
-    PermissionsParams,
     RESULTS_PARAMS_CLASSES,
+    PermissionsParams,
     ResultParamsBase,
     result_outcomes_extended,
 )

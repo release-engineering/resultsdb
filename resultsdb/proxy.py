@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright 2009-2014, Red Hat, Inc.
 # License: GPL-2.0+ <http://spdx.org/licenses/GPL-2.0+>
 
@@ -11,7 +10,7 @@ Source: https://github.com/fedora-infra/fedocal/blob/master/fedocal/proxy.py
 """
 
 
-class ReverseProxied(object):
+class ReverseProxied:
     """Wrap the application in this middleware and configure the
     front-end server to add these headers, to let you quietly bind
     this to a URL other than / and to an HTTP scheme that is

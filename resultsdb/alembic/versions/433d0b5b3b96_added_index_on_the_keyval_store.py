@@ -6,13 +6,13 @@ Create Date: 2015-02-24 19:57:57.643189
 
 """
 
+from alembic import op
+
 # revision identifiers, used by Alembic.
 revision = "433d0b5b3b96"
 down_revision = "15f5eeb9f635"
 branch_labels = None
 depends_on = None
-
-from alembic import op
 
 
 def upgrade():

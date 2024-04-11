@@ -1,8 +1,7 @@
 # SPDX-License-Identifier: LGPL-2.0-or-later
 from datetime import datetime, timezone
 from numbers import Number
-from typing import Any, List, Optional, Union
-from typing_extensions import Annotated
+from typing import Annotated, Any, Union
 
 import iso8601
 from pydantic import (
@@ -13,7 +12,6 @@ from pydantic import (
     ValidationInfo,
     field_validator,
 )
-from pydantic.types import constr
 
 from resultsdb.models.results import result_outcomes
 
@@ -49,18 +47,18 @@ class BaseListParams(BaseModel):
 
 
 class GroupsParams(BaseListParams):
-    uuid: Optional[str] = None
-    description: Optional[str] = None
-    description_like_: Optional[str] = Field(alias="description:like", default=None)
+    uuid: str | None = None
+    description: str | None = None
+    description_like_: str | None = Field(alias="description:like", default=None)
 
 
 class CreateGroupParams(BaseModel):
-    uuid: Optional[str] = None
-    ref_url: Optional[str] = None
-    description: Optional[str] = None
+    uuid: str | None = None
+    ref_url: str | None = None
+    description: str | None = None
 
 
-def validate_query_list(v: Union[str, List[str]], info: ValidationInfo):
+def validate_query_list(v: str | list[str], info: ValidationInfo):
     if isinstance(v, str):
         return [x for x in (x.strip() for x in v.split(",")) if x]
     if isinstance(v, list) and len(v) == 1 and isinstance(v[0], str):
@@ -68,17 +66,17 @@ def validate_query_list(v: Union[str, List[str]], info: ValidationInfo):
     return v
 
 
-QueryList = Annotated[Union[str, List[str]], AfterValidator(validate_query_list)]
+QueryList = Annotated[Union[str, list[str]], AfterValidator(validate_query_list)]
 
 
 class ResultsParams(BaseListParams):
     sort_: str = Field(alias="_sort", default="")
     since: dict = {"start": None, "end": None}
-    outcome: Optional[QueryList] = None
-    groups: Optional[QueryList] = None
-    testcases: Optional[QueryList] = None
-    testcases_like_: Optional[QueryList] = Field(alias="testcases:like", default=None)
-    distinct_on_: Optional[QueryList] = Field(alias="_distinct_on", default=None)
+    outcome: QueryList | None = None
+    groups: QueryList | None = None
+    testcases: QueryList | None = None
+    testcases_like_: QueryList | None = Field(alias="testcases:like", default=None)
+    distinct_on_: QueryList | None = Field(alias="_distinct_on", default=None)
 
     @field_validator("since", mode="before")
     @classmethod
@@ -99,12 +97,14 @@ class ResultsParams(BaseListParams):
 
 
 class CreateResultParams(BaseModel):
-    outcome: Annotated[str, StringConstraints(min_length=1, strip_whitespace=True, to_upper=True)]
+    outcome: Annotated[
+        str, StringConstraints(min_length=1, strip_whitespace=True, to_upper=True)
+    ]
     testcase: dict
-    groups: Optional[list] = None
-    note: Optional[str] = None
-    data: Optional[dict] = None
-    ref_url: Optional[str] = None
+    groups: list | None = None
+    note: str | None = None
+    data: dict | None = None
+    ref_url: str | None = None
     submit_time: Any = None
 
     @field_validator("testcase", mode="before")
@@ -156,10 +156,10 @@ class CreateResultParams(BaseModel):
 
 
 class TestcasesParams(BaseListParams):
-    name: Optional[str] = None
-    name_like_: Optional[str] = Field(alias="name:like", default=None)
+    name: str | None = None
+    name_like_: str | None = Field(alias="name:like", default=None)
 
 
 class CreateTestcaseParams(BaseModel):
-    name: constr(min_length=1)
-    ref_url: Optional[str] = None
+    name: Annotated[str, StringConstraints(min_length=1)]
+    ref_url: str | None = None

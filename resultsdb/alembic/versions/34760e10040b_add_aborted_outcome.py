@@ -6,18 +6,26 @@ Create Date: 2015-04-21 14:01:41.374105
 
 """
 
+import sqlalchemy as sa
+from alembic import op
+from sqlalchemy import text
+
 # revision identifiers, used by Alembic.
 revision = "34760e10040b"
 down_revision = "4ace44a44bf"
 branch_labels = None
 depends_on = None
 
-from alembic import op
-from sqlalchemy import text
-import sqlalchemy as sa
-
 old_values = ("PASSED", "INFO", "FAILED", "ERROR", "WAIVED", "NEEDS_INSPECTION")
-new_values = ("PASSED", "INFO", "FAILED", "ERROR", "WAIVED", "NEEDS_INSPECTION", "ABORTED")
+new_values = (
+    "PASSED",
+    "INFO",
+    "FAILED",
+    "ERROR",
+    "WAIVED",
+    "NEEDS_INSPECTION",
+    "ABORTED",
+)
 
 old_enum = sa.Enum(*old_values, name="resultoutcome")
 tmp_enum = sa.Enum(*new_values, name="resultoutcome_tmp")

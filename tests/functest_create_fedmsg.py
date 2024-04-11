@@ -17,8 +17,8 @@
 # Authors:
 #   Josef Skladanka <jskladan@redhat.com>
 
-import json
 import copy
+import json
 
 from flask import current_app as app
 
@@ -26,13 +26,13 @@ import resultsdb.messaging
 from resultsdb.models import db
 
 
-class MyResultData(object):
+class MyResultData:
     def __init__(self, key, value):
         self.key = key
         self.value = value
 
 
-class MyResult(object):
+class MyResult:
     def __init__(self, id, testcase_name, outcome, item, item_type, arch):
         self.id = id
         self.testcase_name = testcase_name
@@ -105,7 +105,9 @@ class TestFuncCreateFedmsg:
             )
         )
 
-        r = self.app.post("/api/v2.0/results", data=ref_data, content_type="application/json")
+        r = self.app.post(
+            "/api/v2.0/results", data=ref_data, content_type="application/json"
+        )
         data = json.loads(r.data)
 
         return r, data

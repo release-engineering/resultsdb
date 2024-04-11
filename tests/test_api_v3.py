@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0+
-from unittest.mock import ANY, patch, Mock
+from unittest.mock import ANY, Mock, patch
 
 import ldap
 import pytest
@@ -19,7 +19,9 @@ def db_session():
 def mock_ldap():
     with patch("ldap.initialize") as ldap_init:
         con = Mock()
-        con.search_s.return_value = [("ou=Groups,dc=example,dc=com", {"cn": [b"testgroup1"]})]
+        con.search_s.return_value = [
+            ("ou=Groups,dc=example,dc=com", {"cn": [b"testgroup1"]})
+        ]
         ldap_init.return_value = con
         yield con
 
@@ -318,7 +320,9 @@ def test_api_v3_permission_ldap_error(client, permissions, mock_ldap, caplog):
     ) in caplog.text
 
 
-def test_api_v3_permission_ldap_misconfigured(client, permissions, mock_ldap, caplog, app):
+def test_api_v3_permission_ldap_misconfigured(
+    client, permissions, mock_ldap, caplog, app
+):
     permissions.append(
         {
             "groups": ["testgroup1"],
@@ -337,7 +341,9 @@ def test_api_v3_permission_ldap_misconfigured(client, permissions, mock_ldap, ca
         ) in caplog.text
 
 
-def test_api_v3_permission_ldap_not_configured(client, permissions, mock_ldap, caplog, app):
+def test_api_v3_permission_ldap_not_configured(
+    client, permissions, mock_ldap, caplog, app
+):
     permissions.append(
         {
             "groups": ["testgroup1"],
@@ -469,7 +475,9 @@ def test_api_v3_bad_param_type_null(params_class, client):
     """
     artifact_type = params_class.artifact_type()
     r = client.post(
-        f"/api/v3/results/{artifact_type}s", content_type="application/json", data="null"
+        f"/api/v3/results/{artifact_type}s",
+        content_type="application/json",
+        data="null",
     )
     assert r.status_code == 400, r.text
     assert r.json == {
@@ -493,7 +501,9 @@ def test_api_v3_bad_param_invalid_json(params_class, client):
     Passing unexpected JSON type must propagate an error to the user.
     """
     artifact_type = params_class.artifact_type()
-    r = client.post(f"/api/v3/results/{artifact_type}s", content_type="application/json", data="{")
+    r = client.post(
+        f"/api/v3/results/{artifact_type}s", content_type="application/json", data="{"
+    )
     assert r.status_code == 400, r.text
     assert r.json == {"message": "Bad request"}
 

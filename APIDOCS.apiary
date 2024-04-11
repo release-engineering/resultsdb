@@ -12,7 +12,7 @@ Source code: https://bitbucket.org/account/user/fedoraqa/projects/RES
 
 ## Changes since 1.0
 
-* Removed `Jobs` and replaced with `Groups` to remove the "execution status" (originaly represented by `Job`) from ResultsDB, 
+* Removed `Jobs` and replaced with `Groups` to remove the "execution status" (originaly represented by `Job`) from ResultsDB,
   but keeping the ability to group `Results`, as it might make semantical sense
     * `Result` can be a part of 0-n `Groups`
     * UUID as a default `Group` identifier instead of `id`
@@ -30,7 +30,7 @@ Source code: https://bitbucket.org/account/user/fedoraqa/projects/RES
     * `summary` replaced with `note`
     * only `PASSED, FAILED, INFO, NEEDS_INSPECTION` are now valid `outcome` values
     * `groups` is a list of `Group` uuids which the `Result` is part of
-    * When submitting new `Result`, `Testcase` and `Group` \[`resource`\] can be represented either by the unique identifier \[`uid`\] 
+    * When submitting new `Result`, `Testcase` and `Group` \[`resource`\] can be represented either by the unique identifier \[`uid`\]
       (`Testcase.name`, `Group.uuid`), or by `object` containing the `uid`, and any other applicable `resource`'s attributes
         * `resource` is identified by `uid` and:
             * exists -> `resource` is linked to the `Result`
@@ -49,8 +49,8 @@ Source code: https://bitbucket.org/account/user/fedoraqa/projects/RES
     * Group
         * `like` filter for `description`
 * `_auth` placeholder for the Authorization/Authenticaion data in the Request queries; Ignored at the moment
- 
- 
+
+
 # Results [/results]
 
 `Result` is the most common entry in the database. We try to keep ResultsDB pretty "stupid" and only enforce the minimal common subset of attributes on
@@ -60,10 +60,10 @@ assigned to any of the (other) parameters.
 The other common attributes are `note`, to provide a short digest of the testrun's details, and `ref_url` which usually points to log or artifacts.
 
 Should you need to store additional data use the `data` keyval store. The stored data can then be used to filter `Results` searches.
-For example in Taskotron, `item` and `type` are used to represent "what was tested", where `type` could be `koji_build`, `bodhi_update`, `compose`, `docker_image` ... 
+For example in Taskotron, `item` and `type` are used to represent "what was tested", where `type` could be `koji_build`, `bodhi_update`, `compose`, `docker_image` ...
 and `item` is then the (reasonable) identifier of said "item under test".
 
-We advise agaings using `_expand`, `_auth`, `_fields`, `_sort` and `_distinct_on` as key names - although ResultsDB will store and return the data, these keys might not be 
+We advise agaings using `_expand`, `_auth`, `_fields`, `_sort` and `_distinct_on` as key names - although ResultsDB will store and return the data, these keys might not be
 query-able for searching the `Results` collection, as these are reserved for the future API functionalities.
 
 Through all the `Result` instances, there is a `href` attribute, that represents a link to self.
@@ -106,8 +106,8 @@ Retrieve a single `Result` based on the `id`.
         {
             "message":"Result not found"
         }
-        
-        
+
+
 ## Browse the Results collection [GET /results{?page,limit,outcome,testcases,groups,since,keyval}]
 
 Collection of all the Results. Results are returned in paginated format, and references to the next and previous page (if applicable) are
@@ -307,17 +307,17 @@ When a new `Result` is created, it is assigned an unique `id` and `submit_time` 
 + Response 400 (application/json)
 
     When any of the required attributes is missing.
-    
+
     + Body
-    
+
             {
                 "message": "Missing data"
             }
-        
+
 
 # Result Groups [/groups]
 
-As not all `Results` are necessarily standalone, the `Group` resource can be used to organize them into any number of groups. 
+As not all `Results` are necessarily standalone, the `Group` resource can be used to organize them into any number of groups.
 
 Each group is identified by `uuid`, and when you create a new group, you can either provide your own UUID ([RFC4122](https://tools.ietf.org/html/rfc4122),
 [Wiki](https://en.wikipedia.org/wiki/Universally_unique_identifier)), or let ResultsDB create one for you.
@@ -329,7 +329,7 @@ but still want to group several `Results` into a group, we suggest using UUID
 and building your own namespaces in order to identify the groups with a predictable UUID.
 
 On top of `uuid`, the `Group` can also contain `description` to explain the `Group`'s purpose, and `ref_url` to point to outside resource
-like execution state, or a related documentation. 
+like execution state, or a related documentation.
 
 
 + Attributes (Group GET)
@@ -353,7 +353,7 @@ Retrieve a single `Group` based on the `uuid`.
             "results_count": 1,
             "href": "http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/groups/27f94e36-62ec-11e6-83fd-525400d7d6a4"
         }
-    
+
 
 + Response 404 (application/json)
 
@@ -440,7 +440,7 @@ In ResultsDB, `Testcases` can be organized into namespaces using a separator in 
 as a sepparator, we suggest `.` (dot) as it does not have to be URL-encoded, and is a fairly common separator for the usecase.
 
 ResultsDB is not (supposed to be) smart enough to assing any actual meaning to the `Testcase.name`, and thus can not decide on its own,
-what is a namespace, and what is a subcheck e.g. `dist.` is a namespace in Taskotron, but `dist.rpmgrill` is a checkname, which can then 
+what is a namespace, and what is a subcheck e.g. `dist.` is a namespace in Taskotron, but `dist.rpmgrill` is a checkname, which can then
 contain subchecks, that get represented as `dist.rpmgrill.subcheck_foobar`. It is always the consumer's responsibility to make use of
 the (possible) namespacing in the way correct for the specific problem.
 
@@ -490,7 +490,7 @@ Collection of all the `Testcases`.
     + name: `dist.rpmlint` (string, optional)
         - Multiple values can be provided, separate by coma to get `or` filter based on all the values provided: `...&name=dist.rpmlint,dist.rpmgrill`
         - `like` filter with `*` as wildcards: `...&name:like=dist.rpmgrill.*`
-        
+
 + Request .../testcases?name:like=dist.rpmlint.*
     + Parameters
         + `name:like`: dist.rpmlint.*

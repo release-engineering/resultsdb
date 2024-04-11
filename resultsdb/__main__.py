@@ -18,16 +18,15 @@
 #   Josef Skladanka <jskladan@redhat.com>
 
 import click
-from alembic.config import Config
 from alembic import command as al_command
+from alembic.config import Config
 from alembic.migration import MigrationContext
 from flask.cli import FlaskGroup
+from sqlalchemy.engine import reflection
 
 from resultsdb import create_app
 from resultsdb.models import db
-from resultsdb.models.results import Group, Testcase, Result, ResultData
-
-from sqlalchemy.engine import reflection
+from resultsdb.models.results import Group, Result, ResultData, Testcase
 
 
 def get_alembic_config():
@@ -89,7 +88,7 @@ def initialize_db(ctx):
     context = MigrationContext.configure(db.engine.connect())
     current_rev = context.get_current_revision()
     if current_rev:
-        print(" - Database is currently at rev %s" % current_rev)
+        print(f" - Database is currently at rev {current_rev}")
         ctx.invoke(upgrade_db)
     else:
         print("WARN: You need to have your db stamped with an alembic revision")
@@ -105,15 +104,28 @@ def mock_data():
         tc1 = Testcase(ref_url="http://example.com/depcheck", name="depcheck")
         tc2 = Testcase(ref_url="http://example.com/rpmlint", name="rpmlint")
 
-        j1 = Group(uuid="5b3f47b4-2ba2-11e5-a343-5254007dccf9", ref_url="http://example.com/job1")
-
-        j2 = Group(uuid="4e575b2c-2ba2-11e5-a343-5254007dccf9", ref_url="http://example.com/job2")
-
-        r1 = Result(groups=[j1], testcase=tc1, outcome="PASSED", ref_url="http://example.com/r1")
-        r2 = Result(
-            groups=[j1, j2], testcase=tc1, outcome="FAILED", ref_url="http://example.com/r2"
+        j1 = Group(
+            uuid="5b3f47b4-2ba2-11e5-a343-5254007dccf9",
+            ref_url="http://example.com/job1",
         )
-        r3 = Result(groups=[j2], testcase=tc2, outcome="FAILED", ref_url="http://example.com/r2")
+
+        j2 = Group(
+            uuid="4e575b2c-2ba2-11e5-a343-5254007dccf9",
+            ref_url="http://example.com/job2",
+        )
+
+        r1 = Result(
+            groups=[j1], testcase=tc1, outcome="PASSED", ref_url="http://example.com/r1"
+        )
+        r2 = Result(
+            groups=[j1, j2],
+            testcase=tc1,
+            outcome="FAILED",
+            ref_url="http://example.com/r2",
+        )
+        r3 = Result(
+            groups=[j2], testcase=tc2, outcome="FAILED", ref_url="http://example.com/r2"
+        )
 
         ResultData(r1, "item", "cabal-rpm-0.8.3-1.fc18")
         ResultData(r1, "arch", "x86_64")

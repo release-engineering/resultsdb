@@ -21,37 +21,32 @@
 import re
 import uuid
 
-from flask import Blueprint, jsonify, request, url_for
+from flask import Blueprint
 from flask import current_app as app
+from flask import jsonify, request, url_for
 from flask_pydantic import validate
-
 from sqlalchemy.orm import exc as orm_exc
 
+from resultsdb.controllers.common import SERIALIZE, commit_result
 from resultsdb.models import db
-from resultsdb.controllers.common import commit_result, SERIALIZE
+from resultsdb.models.results import (
+    Group,
+    Result,
+    ResultData,
+    Testcase,
+    result_outcomes,
+)
 from resultsdb.parsers.api_v2 import (
+    QUERY_LIMIT,
     CreateGroupParams,
     CreateResultParams,
     CreateTestcaseParams,
     GroupsParams,
     ResultsParams,
     TestcasesParams,
-    QUERY_LIMIT,
 )
-from resultsdb.models.results import Group, Result, Testcase, ResultData
-from resultsdb.models.results import result_outcomes
 
 api = Blueprint("api_v2", __name__)
-
-try:
-    basestring
-except NameError:
-    basestring = (str, bytes)
-
-try:
-    unicode
-except NameError:
-    unicode = str
 
 
 # =============================================================================
@@ -101,12 +96,12 @@ def prev_next_urls(data, limit=QUERY_LIMIT):
 
     if page is None:
         if "?" in request.url:
-            baseurl = "%s&page=%s" % (request.url, placeholder)
+            baseurl = f"{request.url}&page={placeholder}"
         else:
-            baseurl = "%s?page=%s" % (request.url, placeholder)
+            baseurl = f"{request.url}?page={placeholder}"
         page = 0
     else:
-        baseurl = RE_PAGE.sub("%spage=%s" % (flag, placeholder), request.url)
+        baseurl = RE_PAGE.sub(f"{flag}page={placeholder}", request.url)
 
     baseurl = RE_CALLBACK.sub(r"\1", baseurl)
     baseurl = RE_CLEAN_AMPERSANDS.sub("&", baseurl)
@@ -266,11 +261,15 @@ def select_results(
                     q = q.join(alias).filter(db.and_(alias.key == key, db.or_(*likes)))
                 else:
                     value = values[0].replace("*", "%")
-                    q = q.join(alias).filter(db.and_(alias.key == key, alias.value.like(value)))
+                    q = q.join(alias).filter(
+                        db.and_(alias.key == key, alias.value.like(value))
+                    )
 
             else:
                 alias = db.aliased(ResultData)
-                q = q.join(alias).filter(db.and_(alias.key == key, alias.value.in_(values)))
+                q = q.join(alias).filter(
+                    db.and_(alias.key == key, alias.value.in_(values))
+                )
     return q
 
 
@@ -293,12 +292,16 @@ def __get_results_parse_args(query: ResultsParams):
     #  stored in one key (so one can do stuff like .../results?item=foo&item=bar in URL).
     # Here we transform the `request.args` MultiDict to `results_data` dict of lists, and
     #  while also filtering out the reserved-keyword-args
-    results_data = {k: request.args.getlist(k) for k in request.args.keys() if k not in args}
+    results_data = {
+        k: request.args.getlist(k) for k in request.args.keys() if k not in args
+    }
     for param, values in results_data.items():
         for i, value in enumerate(values):
             results_data[param][i] = value.split(",")
         # flatten the list
-        results_data[param] = [item for sublist in results_data[param] for item in sublist]
+        results_data[param] = [
+            item for sublist in results_data[param] for item in sublist
+        ]
 
     return {
         "result_data": results_data if results_data else None,
@@ -397,9 +400,17 @@ def get_results_latest(query: ResultsParams):
             )
         )
 
-    if not any([testcases, testcases_like, since_start, since_end, groups, p["result_data"]]):
+    if not any(
+        [testcases, testcases_like, since_start, since_end, groups, p["result_data"]]
+    ):
         return (
-            jsonify({"message": ("Please, provide at least one " "filter beside '_distinct_on'")}),
+            jsonify(
+                {
+                    "message": (
+                        "Please, provide at least one " "filter beside '_distinct_on'"
+                    )
+                }
+            ),
             400,
         )
 
@@ -416,12 +427,13 @@ def get_results_latest(query: ResultsParams):
 
     values_distinct_on = [Result.testcase_name]
     for i, key in enumerate(distinct_on):
-        name = "result_data_%s_%s" % (i, key)
+        name = f"result_data_{i}_{key}"
         alias = db.aliased(
-            db.session.query(ResultData).filter(ResultData.key == key).subquery(), name=name
+            db.session.query(ResultData).filter(ResultData.key == key).subquery(),
+            name=name,
         )
         q = q.outerjoin(alias)
-        values_distinct_on.append(db.text("{}.value".format(name)))
+        values_distinct_on.append(db.text(f"{name}.value"))
 
     q = q.distinct(*values_distinct_on)
     q = q.order_by(*values_distinct_on).order_by(db.desc(Result.submit_time))
@@ -430,7 +442,9 @@ def get_results_latest(query: ResultsParams):
     results = dict(
         data=[SERIALIZE(o) for o in results],
     )
-    results["data"] = sorted(results["data"], key=lambda x: x["submit_time"], reverse=True)
+    results["data"] = sorted(
+        results["data"], key=lambda x: x["submit_time"], reverse=True
+    )
     return jsonify(results)
 
 
@@ -439,7 +453,7 @@ def get_results_latest(query: ResultsParams):
 def get_results_by_group(group_id: str, query: ResultsParams):
     group = Group.query.filter_by(uuid=group_id).first()
     if not group:
-        return jsonify({"message": "Group not found: %s" % (group_id,)}), 404
+        return jsonify({"message": f"Group not found: {group_id}"}), 404
     return __get_results(query, group_ids=[group.uuid])
 
 
@@ -469,7 +483,9 @@ def create_result(body: CreateResultParams):
         invalid_keys = [key for key in body.data.keys() if ":" in key]
         if invalid_keys:
             app.logger.warning("Colon not allowed in key name: %s", invalid_keys)
-            return jsonify({"message": "Colon not allowed in key name: %r" % invalid_keys}), 400
+            return jsonify(
+                {"message": "Colon not allowed in key name: %r" % invalid_keys}
+            ), 400
 
     tc = body.testcase
 
@@ -487,7 +503,7 @@ def create_result(body: CreateResultParams):
     groups = []
     if body.groups:
         for grp in body.groups:
-            if isinstance(grp, basestring):
+            if isinstance(grp, (str, bytes)):
                 grp = dict(uuid=grp)
             elif isinstance(grp, dict):
                 grp["uuid"] = grp.get("uuid", str(uuid.uuid1()))
@@ -502,7 +518,9 @@ def create_result(body: CreateResultParams):
             db.session.add(group)
             groups.append(group)
 
-    result = Result(testcase, body.outcome, groups, body.ref_url, body.note, body.submit_time)
+    result = Result(
+        testcase, body.outcome, groups, body.ref_url, body.note, body.submit_time
+    )
     # Convert result_data
     #  for each key-value pair in body.data
     #    convert keys to unicode
@@ -514,19 +532,19 @@ def create_result(body: CreateResultParams):
     if isinstance(body.data, dict):
         to_store = []
         for key, value in body.data.items():
-            if not (isinstance(key, str) or isinstance(key, unicode)):
-                key = unicode(key)
+            if not isinstance(key, str):
+                key = str(key)
 
-            if isinstance(value, str) or isinstance(value, unicode):
+            if isinstance(value, str):
                 to_store.append((key, value))
 
-            elif isinstance(value, list) or isinstance(value, tuple):
+            elif isinstance(value, (list, tuple)):
                 for v in value:
-                    if not (isinstance(v, str) or isinstance(v, unicode)):
-                        v = unicode(v)
+                    if not isinstance(v, str):
+                        v = str(v)
                     to_store.append((key, v))
             else:
-                value = unicode(value)
+                value = str(value)
                 to_store.append((key, value))
 
         for key, value in to_store:
@@ -548,7 +566,9 @@ def select_testcases(args_name=None, args_name_like=None):
         for name in [name.strip() for name in args_name.split(",") if name.strip()]:
             name_filters.append(Testcase.name == name)
     elif args_name_like:
-        for name in [name.strip() for name in args_name_like.split(",") if name.strip()]:
+        for name in [
+            name.strip() for name in args_name_like.split(",") if name.strip()
+        ]:
             name_filters.append(Testcase.name.like(name.replace("*", "%")))
     if name_filters:
         q = q.filter(db.or_(*name_filters))

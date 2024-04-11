@@ -1,7 +1,9 @@
 # SPDX-License-Identifier: GPL-2.0+
 
 from opentelemetry import trace
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
+    OTLPSpanExporter,
+)
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
@@ -19,7 +21,9 @@ def setup_tracing(app, engine):  # pragma: no cover
     instrumentor = FlaskInstrumentor()
     instrumentor.instrument_app(app)
     SQLAlchemyInstrumentor().instrument(engine=engine)
-    otlp_exporter = OTLPSpanExporter(endpoint=app.config["OTEL_EXPORTER_OTLP_METRICS_ENDPOINT"])
+    otlp_exporter = OTLPSpanExporter(
+        endpoint=app.config["OTEL_EXPORTER_OTLP_METRICS_ENDPOINT"]
+    )
     processor = BatchSpanProcessor(otlp_exporter)
     # processor = BatchSpanProcessor(ConsoleSpanExporter())
     provider.add_span_processor(processor)

@@ -6,21 +6,23 @@ Create Date: 2016-08-23 20:10:05.734728
 
 """
 
+import logging
+
+import sqlalchemy as sa
+from alembic import op
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.orm.decl_api import DeclarativeMeta
+from sqlalchemy.sql import text
+
 # revision identifiers, used by Alembic.
 revision = "540dbe71fa91"
 down_revision = "978007ecd2b"
 branch_labels = None
 depends_on = None
 
-from alembic import op
-import sqlalchemy as sa
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
-from sqlalchemy.sql import text
-import logging
-
 Session = sessionmaker()
-Base = declarative_base()
+Base: DeclarativeMeta = declarative_base()
 
 
 class Job(Base):
@@ -147,7 +149,9 @@ def upgrade():
         unique=False,
         postgresql_ops={"uuid": "text_pattern_ops"},
     )
-    op.create_index("gtr_fk_result_id", "groups_to_results", ["result_id"], unique=False)
+    op.create_index(
+        "gtr_fk_result_id", "groups_to_results", ["result_id"], unique=False
+    )
 
 
 def downgrade():

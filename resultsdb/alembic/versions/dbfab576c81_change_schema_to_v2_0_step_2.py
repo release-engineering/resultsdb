@@ -6,21 +6,23 @@ Create Date: 2016-08-23 23:02:56.928292
 
 """
 
+import logging
+import uuid
+
+import sqlalchemy as db
+from alembic import op
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.orm.decl_api import DeclarativeMeta
+
 # revision identifiers, used by Alembic.
 revision = "dbfab576c81"
 down_revision = "540dbe71fa91"
 branch_labels = None
 depends_on = None
 
-from alembic import op
-import sqlalchemy as db
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
-import uuid
-import logging
-
 Session = sessionmaker()
-Base = declarative_base()
+Base: DeclarativeMeta = declarative_base()
 
 
 db.relationship = relationship
@@ -59,7 +61,9 @@ def upgrade():
         testcase_id = db.Column(db.Integer, db.ForeignKey("testcase.id"))
         testcase_name = db.Column(db.Text)
 
-        groups = db.relationship("Group", secondary="groups_to_results", backref="results")
+        groups = db.relationship(
+            "Group", secondary="groups_to_results", backref="results"
+        )
         job = db.relationship("Group")  # , lazy = False)
         testcase = db.relationship("Testcase", backref="results")  # , lazy = False)
 
@@ -103,13 +107,18 @@ def downgrade():
         testcase_id = db.Column(db.Integer)
         testcase_name = db.Column(db.Text, db.ForeignKey("testcase.name"))
 
-        groups = db.relationship("Group", secondary="groups_to_results", backref="results")
+        groups = db.relationship(
+            "Group", secondary="groups_to_results", backref="results"
+        )
         job = db.relationship("Group")  # , lazy = False)
         testcase = db.relationship("Testcase", backref="results")  # , lazy = False)
 
-    op.add_column("result", db.Column("job_id", db.INTEGER(), autoincrement=False, nullable=True))
     op.add_column(
-        "result", db.Column("testcase_id", db.INTEGER(), autoincrement=False, nullable=True)
+        "result", db.Column("job_id", db.INTEGER(), autoincrement=False, nullable=True)
+    )
+    op.add_column(
+        "result",
+        db.Column("testcase_id", db.INTEGER(), autoincrement=False, nullable=True),
     )
 
     connection = op.get_bind()

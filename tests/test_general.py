@@ -30,7 +30,7 @@ def mock_stomp():
             yield mock
 
 
-class MyRequest(object):
+class MyRequest:
     def __init__(self, url):
         self.url = url
 
@@ -111,7 +111,9 @@ class TestPrevNextURL:
 class TestParseSince:
     def setup_method(self, method):
         self.date_str = "2016-01-01T01:02:03.04"
-        self.date_obj = datetime.datetime.strptime(self.date_str, "%Y-%m-%dT%H:%M:%S.%f")
+        self.date_obj = datetime.datetime.strptime(
+            self.date_str, "%Y-%m-%dT%H:%M:%S.%f"
+        )
 
     def test_parse_start(self):
         start, end = parse_since(self.date_str)
