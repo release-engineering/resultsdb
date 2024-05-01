@@ -2127,13 +2127,13 @@ sqlcipher = ["sqlcipher3_binary"]
 
 [[package]]
 name = "stomp-py"
-version = "8.1.1"
+version = "8.1.2"
 description = "Python STOMP client, supporting versions 1.0, 1.1 and 1.2 of the protocol"
 optional = false
 python-versions = "<4.0,>=3.7"
 files = [
-    {file = "stomp_py-8.1.1-py3-none-any.whl", hash = "sha256:cb94ce69019434191306f7bf16fa4fbd9063009dfaf034bd05506ece1d741a0a"},
-    {file = "stomp_py-8.1.1.tar.gz", hash = "sha256:0c19286b408050d325789f7c99d39ef15caf40179dc083e5d5bb3b224fd5364b"},
+    {file = "stomp_py-8.1.2-py3-none-any.whl", hash = "sha256:61200b85442a0f374155820f122518371c9c3dc77bb320ae9052d5a840fc5875"},
+    {file = "stomp_py-8.1.2.tar.gz", hash = "sha256:b56e62da090863cc65e5fbf832230318cd53e99dc777de19ecb04e83914f1371"},
 ]
 
 [package.dependencies]
@@ -2443,4 +2443,4 @@ test = ["pytest", "pytest-cov"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.13"
-content-hash = "a3b9625464ea8600661a5a3f643a20036fc14cbdae2f33aa255cfd94cf639c33"
+content-hash = "0d4d6ce669dba6b7dac936dc7486556cb96109d614fea3878584b95fe3bfa1b9"
