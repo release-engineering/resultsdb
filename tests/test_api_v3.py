@@ -7,6 +7,11 @@ import pytest
 from resultsdb.models import db
 from resultsdb.parsers.api_v3 import RESULTS_PARAMS_CLASSES
 
+GENERIC_DATA = {
+    "testcase": {"name": "test1"},
+    "outcome": "PASSED",
+}
+
 
 @pytest.fixture(scope="function", autouse=True)
 def db_session():
@@ -498,7 +503,7 @@ def test_api_v3_bad_param_type_null(params_class, client):
 @pytest.mark.parametrize("params_class", RESULTS_PARAMS_CLASSES)
 def test_api_v3_bad_param_invalid_json(params_class, client):
     """
-    Passing unexpected JSON type must propagate an error to the user.
+    Passing invalid JSON must propagate an error to the user.
     """
     artifact_type = params_class.artifact_type()
     r = client.post(
@@ -511,7 +516,7 @@ def test_api_v3_bad_param_invalid_json(params_class, client):
 @pytest.mark.parametrize("params_class", RESULTS_PARAMS_CLASSES)
 def test_api_v3_example(params_class, client):
     """
-    Passing unexpected JSON type must propagate an error to the user.
+    All examples in schemas must be valid.
     """
     artifact_type = params_class.artifact_type()
     example = params_class.example().model_dump()
@@ -522,7 +527,7 @@ def test_api_v3_example(params_class, client):
 @pytest.mark.parametrize("params_class", RESULTS_PARAMS_CLASSES)
 def test_api_v3_missing_param(params_class, client):
     """
-    Passing unexpected JSON type must propagate an error to the user.
+    Missing a parameter must propagate an error to the user.
     """
     artifact_type = params_class.artifact_type()
     example = params_class.example().model_dump()
@@ -540,3 +545,26 @@ def test_api_v3_missing_param(params_class, client):
             }
         ]
     }
+
+
+@pytest.mark.parametrize(
+    "testcase_pattern, status_code",
+    (
+        ("ANY-DATA:*", 201),
+        ("ANY-DATA:test1", 201),
+        ("ANY-DATA:test2", 403),
+        ("ANY-DATA:", 403),
+        ("ANY-DATA", 403),
+    ),
+)
+def test_api_v3_any_data(client, permissions, testcase_pattern, status_code):
+    """
+    POST to generic endpoint with permissions to "ANY-DATA:*" testcases.
+    """
+    permission = {
+        "users": ["testuser1"],
+        "testcases": [testcase_pattern],
+    }
+    permissions.append(permission)
+    r = client.post("/api/v3/results", json=GENERIC_DATA)
+    assert r.status_code == status_code, r.text

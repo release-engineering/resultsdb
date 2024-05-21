@@ -479,6 +479,14 @@ def get_result(result_id):
 @api.route("/results", methods=["POST"])
 @validate()
 def create_result(body: CreateResultParams):
+    return create_result_any_data(body)
+
+
+def create_result_any_data(body: CreateResultParams):
+    """
+    Allows creating test results with data not checked by any schema (in
+    contrast to v3 API).
+    """
     if body.data:
         invalid_keys = [key for key in body.data.keys() if ":" in key]
         if invalid_keys:

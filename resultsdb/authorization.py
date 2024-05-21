@@ -39,6 +39,10 @@ def match_testcase_permissions(testcase, permissions):
 
 
 def verify_authorization(user, testcase, permissions, ldap_host, ldap_searches):
+    """
+    Raises an exception if the user is not permitted to publish a result for
+    the testcase.
+    """
     if not (ldap_host and ldap_searches):
         raise InternalServerError(
             "LDAP_HOST and LDAP_SEARCHES also need to be defined if PERMISSIONS is defined"
@@ -47,7 +51,7 @@ def verify_authorization(user, testcase, permissions, ldap_host, ldap_searches):
     allowed_groups = []
     for permission in match_testcase_permissions(testcase, permissions):
         if user in permission.get("users", []):
-            return True
+            return
         allowed_groups += permission.get("groups", [])
 
     try:
@@ -67,7 +71,7 @@ def verify_authorization(user, testcase, permissions, ldap_host, ldap_searches):
     for cur_ldap_search in ldap_searches:
         groups = get_group_membership(ldap, user, con, cur_ldap_search)
         if any(g in groups for g in allowed_groups):
-            return True
+            return
         any_groups_found = any_groups_found or len(groups) > 0
 
     raise Forbidden(

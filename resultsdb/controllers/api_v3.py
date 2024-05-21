@@ -9,9 +9,11 @@ from resultsdb.authorization import (
     match_testcase_permissions,
     verify_authorization,
 )
+from resultsdb.controllers.api_v2 import create_result_any_data
 from resultsdb.controllers.common import commit_result
 from resultsdb.models import db
 from resultsdb.models.results import Result, ResultData, Testcase
+from resultsdb.parsers.api_v2 import CreateResultParams
 from resultsdb.parsers.api_v3 import (
     RESULTS_PARAMS_CLASSES,
     PermissionsParams,
@@ -26,15 +28,20 @@ def permissions():
     return app.config.get("PERMISSIONS", [])
 
 
-def _verify_authorization(user, testcase):
+def get_authorized_user(testcase) -> str:
+    """
+    Raises an exception if the current user cannot publish a result for the
+    testcase, otherwise returns the name of the current user.
+    """
+    user = app.oidc.current_token_identity[app.config["OIDC_USERNAME_FIELD"]]
     ldap_host = app.config.get("LDAP_HOST")
     ldap_searches = app.config.get("LDAP_SEARCHES")
-    return verify_authorization(user, testcase, permissions(), ldap_host, ldap_searches)
+    verify_authorization(user, testcase, permissions(), ldap_host, ldap_searches)
+    return user
 
 
 def create_result(body: ResultParamsBase):
-    user = app.oidc.current_token_identity[app.config["OIDC_USERNAME_FIELD"]]
-    _verify_authorization(user, body.testcase)
+    user = get_authorized_user(body.testcase)
 
     testcase = Testcase.query.filter_by(name=body.testcase).first()
     if not testcase:
@@ -93,9 +100,39 @@ def create_endpoint(params_class, oidc, provider):
     )
 
 
+def create_any_data_endpoint(oidc, provider):
+    """
+    Creates an endpoint that accepts the same data as POST /api/v2.0/results
+    but supports OIDC authentication and permission control.
+
+    Other users/groups won't be able to POST results to this endpoint unless
+    they have a permission mapping with testcase pattern matching
+    "ANY-DATA:<testcase_name>" (instead of just "<testcase_name>" as in the
+    other v3 endpoints).
+    """
+
+    @oidc.token_auth(provider)
+    @validate()
+    # Using RootModel is a workaround for a bug in flask-pydantic that causes
+    # validation to fail with unexpected exception.
+    def create(body: RootModel[CreateResultParams]):
+        testcase = body.root.testcase["name"]
+        get_authorized_user(f"ANY-DATA:{testcase}")
+        return create_result_any_data(body.root)
+
+    api.add_url_rule(
+        "/results",
+        endpoint="results",
+        methods=["POST"],
+        view_func=create,
+    )
+
+
 def create_endpoints(oidc, provider):
     for params_class in RESULTS_PARAMS_CLASSES:
         create_endpoint(params_class, oidc, provider)
+
+    create_any_data_endpoint(oidc, provider)
 
 
 @api.route("/permissions")
