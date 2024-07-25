@@ -54,7 +54,7 @@ VALIDATION_KEYS = frozenset({"input", "loc", "msg", "type", "url"})
 
 def create_app(config_obj=None):
     app = Flask(__name__)
-    app.secret_key = "replace-me-with-something-random"  # nosec
+    app.secret_key = "replace-me-with-something-random"  # nosec # NOSONAR
 
     # make sure app behaves when behind a proxy
     app.wsgi_app = ReverseProxied(app.wsgi_app)
@@ -90,7 +90,7 @@ def create_app(config_obj=None):
         app.config.from_pyfile(config_file)
 
     if app.config["PRODUCTION"]:
-        if app.secret_key == "replace-me-with-something-random":  # nosec
+        if app.secret_key == "replace-me-with-something-random":  # nosec # NOSONAR
             raise Warning("You need to change the app.secret_key value for production")
 
     setup_logging(app)
