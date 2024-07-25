@@ -31,7 +31,7 @@ RUN set -exo pipefail \
     && yum --installroot=/mnt/rootfs clean all \
     && rm -rf /mnt/rootfs/var/cache/* /mnt/rootfs/var/log/dnf* /mnt/rootfs/var/log/yum.* \
     # https://python-poetry.org/docs/master/#installing-with-the-official-installer
-    && curl -sSL https://install.python-poetry.org | python3 - \
+    && curl -sSL --proto "=https" https://install.python-poetry.org | python3 - \
     && python3 -m venv --system-site-packages /venv
 
 ENV \
