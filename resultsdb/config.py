@@ -27,7 +27,7 @@ import sys
 def db_uri_for_testing():
     postgres_port = os.getenv("RESULTSDB_POSTGRES_PORT")
     if postgres_port:
-        return f"postgresql+psycopg2://resultsdb:resultsdb@localhost:{postgres_port}/resultsdb"  # NOSONAR
+        return f"postgresql+psycopg2://resultsdb:resultsdb@localhost:{postgres_port}/resultsdb"  # nosec # NOSONAR
 
     return "sqlite:///.test_db.sqlite"
 
