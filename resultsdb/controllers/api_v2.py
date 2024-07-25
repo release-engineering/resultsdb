@@ -356,6 +356,28 @@ def __get_results(query: ResultsParams, group_ids=None, testcase_names=None):
     )
 
 
+def add_data_to_result(data, result):
+    to_store = []
+    for key, value in data.items():
+        if not isinstance(key, str):
+            key = str(key)
+
+        if isinstance(value, str):
+            to_store.append((key, value))
+
+        elif isinstance(value, (list, tuple)):
+            for v in value:
+                if not isinstance(v, str):
+                    v = str(v)
+                to_store.append((key, v))
+        else:
+            value = str(value)
+            to_store.append((key, value))
+
+    for key, value in to_store:
+        ResultData(result, key, value)
+
+
 @api.route("/results", methods=["GET"])
 @validate()
 def get_results(query: ResultsParams):
@@ -530,34 +552,9 @@ def create_result_any_data(body: CreateResultParams):
     result = Result(
         testcase, body.outcome, groups, body.ref_url, body.note, body.submit_time
     )
-    # Convert result_data
-    #  for each key-value pair in body.data
-    #    convert keys to unicode
-    #    if value is string: NOP
-    #    if value is list or tuple:
-    #      convert values to unicode, create key-value pair for each value from the list
-    #    if value is something else: convert to unicode
-    #  Store all the key-value pairs
+
     if isinstance(body.data, dict):
-        to_store = []
-        for key, value in body.data.items():
-            if not isinstance(key, str):
-                key = str(key)
-
-            if isinstance(value, str):
-                to_store.append((key, value))
-
-            elif isinstance(value, (list, tuple)):
-                for v in value:
-                    if not isinstance(v, str):
-                        v = str(v)
-                    to_store.append((key, v))
-            else:
-                value = str(value)
-                to_store.append((key, value))
-
-        for key, value in to_store:
-            ResultData(result, key, value)
+        add_data_to_result(body.data, result)
 
     return commit_result(result)
 
