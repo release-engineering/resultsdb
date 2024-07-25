@@ -18,3 +18,5 @@ test_env
 .pytest_cache
 .tox
 *.sqlite
+report.xml
+coverage.xml
