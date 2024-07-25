@@ -25,6 +25,5 @@ def setup_tracing(app, engine):  # pragma: no cover
         endpoint=app.config["OTEL_EXPORTER_OTLP_METRICS_ENDPOINT"]
     )
     processor = BatchSpanProcessor(otlp_exporter)
-    # processor = BatchSpanProcessor(ConsoleSpanExporter())
     provider.add_span_processor(processor)
     trace.set_tracer_provider(provider)

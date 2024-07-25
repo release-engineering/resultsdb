@@ -19,7 +19,6 @@
 
 import copy
 import datetime
-import json
 import os
 from unittest import TestCase
 from unittest.mock import ANY, patch
@@ -29,6 +28,36 @@ from flask import current_app as app
 import resultsdb.messaging
 from resultsdb.models import db
 from resultsdb.models.results import utcnow_naive
+
+GROUPS_API = "/api/v2.0/groups"
+RESULTS_API = "/api/v2.0/results"
+TESTCASES_API = "/api/v2.0/testcases"
+
+EMPTY_TESTCASE_ERROR = {
+    "validation_error": [
+        {
+            "loc": ["testcase"],
+            "msg": "Value error, testcase name must be non-empty",
+            "type": "value_error",
+            "input": ANY,
+            "url": ANY,
+        }
+    ]
+}
+
+
+def field_required_error(field):
+    return {
+        "validation_error": [
+            {
+                "loc": [field],
+                "msg": "Field required",
+                "type": "missing",
+                "input": ANY,
+                "url": ANY,
+            }
+        ]
+    }
 
 
 class AboutTime:
@@ -131,43 +160,20 @@ class TestFuncApiV20(TestCase):
             name = self.ref_testcase_name
         if ref_url is None:
             ref_url = self.ref_testcase_ref_url
-        ref_data = json.dumps({"name": name, "ref_url": ref_url})
-        r = self.app.post(
-            "/api/v2.0/testcases", data=ref_data, content_type="application/json"
-        )
-        data = json.loads(r.data)
-        return r, data
+        return self.app.post(TESTCASES_API, json={"name": name, "ref_url": ref_url})
 
     def test_create_testcase(self):
-        r, data = self.helper_create_testcase()
+        r = self.helper_create_testcase()
         assert r.status_code == 201
-        assert data == self.ref_testcase
+        assert r.json == self.ref_testcase
 
     def test_create_testcase_missing_data(self):
-        ref_data = json.dumps({"ref_url": self.ref_testcase_ref_url})
-
-        r = self.app.post(
-            "/api/v2.0/testcases", data=ref_data, content_type="application/json"
-        )
+        r = self.app.post(TESTCASES_API, json={"ref_url": self.ref_testcase_ref_url})
         assert r.status_code == 400
-        assert r.json == {
-            "validation_error": [
-                {
-                    "loc": ["name"],
-                    "msg": "Field required",
-                    "type": "missing",
-                    "input": ANY,
-                    "url": ANY,
-                }
-            ]
-        }
+        assert r.json == field_required_error("name")
 
     def test_create_testcase_empty_name(self):
-        ref_data = json.dumps({"name": ""})
-
-        r = self.app.post(
-            "/api/v2.0/testcases", data=ref_data, content_type="application/json"
-        )
+        r = self.app.post(TESTCASES_API, json={"name": ""})
         assert r.status_code == 400
         assert r.json == {
             "validation_error": [
@@ -187,70 +193,58 @@ class TestFuncApiV20(TestCase):
         testcase = copy.copy(self.ref_testcase)
         testcase["ref_url"] = "Updated"
 
-        ref_data = json.dumps(
-            {"name": self.ref_testcase_name, "ref_url": testcase["ref_url"]}
-        )
+        data = {"name": self.ref_testcase_name, "ref_url": testcase["ref_url"]}
 
-        r = self.app.post(
-            "/api/v2.0/testcases", data=ref_data, content_type="application/json"
-        )
-        data = json.loads(r.data)
-
+        r = self.app.post(TESTCASES_API, json=data)
         assert r.status_code == 201
-        assert data == testcase
+        assert r.json == testcase
 
     def test_get_testcase(self):
         self.test_create_testcase()
 
-        r = self.app.get(f"/api/v2.0/testcases/{self.ref_testcase_name}")
-
-        data = json.loads(r.data)
-
+        r = self.app.get(f"{TESTCASES_API}/{self.ref_testcase_name}")
         assert r.status_code == 200
-        assert data == self.ref_testcase
+        assert r.json == self.ref_testcase
 
     def test_get_missing_testcase(self):
-        r = self.app.get(f"/api/v2.0/testcases/{self.ref_testcase_name}")
-
-        data = json.loads(r.data)
+        r = self.app.get(f"{TESTCASES_API}/{self.ref_testcase_name}")
 
         assert r.status_code == 404
-        assert data["message"] == "Testcase not found"
+        assert r.json is not None
+        assert r.json["message"] == "Testcase not found"
 
     def test_get_testcases(self):
-        r = self.app.get("/api/v2.0/testcases")
-        data = json.loads(r.data)
+        r = self.app.get(TESTCASES_API)
 
         assert r.status_code == 200
-        assert data["data"] == []
+        assert r.json is not None
+        assert r.json["data"] == []
 
         self.test_create_testcase()
 
-        r = self.app.get("/api/v2.0/testcases")
-        data = json.loads(r.data)
+        r = self.app.get(TESTCASES_API)
 
         assert r.status_code == 200
-        assert len(data["data"]) == 1
-        assert data["data"][0] == self.ref_testcase
+        assert r.json is not None
+        assert len(r.json["data"]) == 1
+        assert r.json["data"][0] == self.ref_testcase
 
     def test_get_testcases_by_name(self):
         self.test_create_testcase()
 
-        r = self.app.get(f"/api/v2.0/testcases?name={self.ref_testcase_name}")
-        data = json.loads(r.data)
+        r = self.app.get(f"{TESTCASES_API}?name={self.ref_testcase_name}")
 
         assert r.status_code == 200
-        assert len(data["data"]) == 1
-        assert data["data"][0] == self.ref_testcase
+        assert r.json is not None
+        assert len(r.json["data"]) == 1
+        assert r.json["data"][0] == self.ref_testcase
 
-        r = self.app.get(
-            f"/api/v2.0/testcases?name:like=*{self.ref_testcase_name[1:-1]}*"
-        )
-        data = json.loads(r.data)
+        r = self.app.get(f"{TESTCASES_API}?name:like=*{self.ref_testcase_name[1:-1]}*")
 
         assert r.status_code == 200
-        assert len(data["data"]) == 1
-        assert data["data"][0] == self.ref_testcase
+        assert r.json is not None
+        assert len(r.json["data"]) == 1
+        assert r.json["data"][0] == self.ref_testcase
 
     # =============== GROUPS ==================
 
@@ -261,136 +255,122 @@ class TestFuncApiV20(TestCase):
             description = self.ref_group_description
         if ref_url is None:
             ref_url = self.ref_group_ref_url
-        ref_data = json.dumps(
-            {"uuid": uuid, "description": description, "ref_url": ref_url}
-        )
 
-        r = self.app.post(
-            "/api/v2.0/groups", data=ref_data, content_type="application/json"
-        )
-        data = json.loads(r.data)
-        return r, data
+        data = {"uuid": uuid, "description": description, "ref_url": ref_url}
+
+        return self.app.post(GROUPS_API, json=data)
 
     def test_create_group(self):
-        r, data = self.helper_create_group()
+        r = self.helper_create_group()
         assert r.status_code == 201
-        assert data == self.ref_group
+        assert r.json == self.ref_group
 
     def test_create_group_no_data(self):
-        ref_data = json.dumps({})
-
-        r = self.app.post(
-            "/api/v2.0/groups", data=ref_data, content_type="application/json"
-        )
-        data = json.loads(r.data)
+        r = self.app.post(GROUPS_API, json={})
 
         assert r.status_code == 201
-        assert len(data["uuid"]) == len(self.ref_group_uuid)
-        assert data["description"] is None
-        assert data["ref_url"] is None
-        assert data["href"] == self.ref_url_prefix + "/groups/" + data["uuid"]
-        assert data["results_count"] == 0
+        assert r.json is not None
+        assert len(r.json["uuid"]) == len(self.ref_group_uuid)
+        assert r.json["description"] is None
+        assert r.json["ref_url"] is None
+        assert r.json["href"] == self.ref_url_prefix + "/groups/" + r.json["uuid"]
+        assert r.json["results_count"] == 0
         assert (
-            data["results"] == self.ref_url_prefix + "/results?groups=" + data["uuid"]
+            r.json["results"]
+            == self.ref_url_prefix + "/results?groups=" + r.json["uuid"]
         )
 
     def test_update_group(self):
         self.test_create_group()
 
-        ref_data = json.dumps(
-            {
-                "uuid": self.ref_group_uuid,
-                "description": "Changed",
-                "ref_url": "Changed",
-            }
-        )
+        data = {
+            "uuid": self.ref_group_uuid,
+            "description": "Changed",
+            "ref_url": "Changed",
+        }
 
-        r = self.app.post(
-            "/api/v2.0/groups", data=ref_data, content_type="application/json"
-        )
-        data = json.loads(r.data)
+        r = self.app.post(GROUPS_API, json=data)
 
         group = copy.copy(self.ref_group)
         group["description"] = group["ref_url"] = "Changed"
 
         assert r.status_code == 201
-        assert data == group
+        assert r.json == group
 
     def test_get_group(self):
         self.test_create_group()
 
-        r = self.app.get(f"/api/v2.0/groups/{self.ref_group_uuid}")
-        data = json.loads(r.data)
+        r = self.app.get(f"{GROUPS_API}/{self.ref_group_uuid}")
 
         assert r.status_code == 200
-        assert data == self.ref_group
+        assert r.json == self.ref_group
 
     def test_get_missing_group(self):
         r = self.app.get("/api/v2.0/groups/missing")
-        data = json.loads(r.data)
 
         assert r.status_code == 404
-        assert data["message"] == "Group not found"
+        assert r.json is not None
+        assert r.json["message"] == "Group not found"
 
     def test_get_groups(self):
-        r = self.app.get("/api/v2.0/groups")
-        data = json.loads(r.data)
+        r = self.app.get(GROUPS_API)
 
         assert r.status_code == 200
-        assert len(data["data"]) == 0
+        assert r.json is not None
+        assert len(r.json["data"]) == 0
 
         self.test_create_group()
-        r = self.app.get("/api/v2.0/groups")
-        data = json.loads(r.data)
+        r = self.app.get(GROUPS_API)
 
         assert r.status_code == 200
-        assert len(data["data"]) == 1
-        assert data["data"][0] == self.ref_group
+        assert r.json is not None
+        assert len(r.json["data"]) == 1
+        assert r.json["data"][0] == self.ref_group
 
     def test_get_groups_by_description(self):
         self.test_create_group()
 
-        r = self.app.get(f"/api/v2.0/groups?description={self.ref_group_description}")
-        data = json.loads(r.data)
+        r = self.app.get(f"{GROUPS_API}?description={self.ref_group_description}")
 
         assert r.status_code == 200
-        assert len(data["data"]) == 1
-        assert data["data"][0] == self.ref_group
+        assert r.json is not None
+        assert len(r.json["data"]) == 1
+        assert r.json["data"][0] == self.ref_group
 
         r = self.app.get(
             "/api/v2.0/groups?description:like=*%s*" % self.ref_group_description[1:-1]
         )
-        data = json.loads(r.data)
 
         assert r.status_code == 200
-        assert len(data["data"]) == 1
-        assert data["data"][0] == self.ref_group
+        assert r.json is not None
+        assert len(r.json["data"]) == 1
+        assert r.json["data"][0] == self.ref_group
 
     def test_get_groups_by_more_descriptions(self):
-        r, data = self.helper_create_group(uuid="1", description="FooBar")
-        r, data = self.helper_create_group(uuid="2", description="BarFoo")
+        self.helper_create_group(uuid="1", description="FooBar")
+        self.helper_create_group(uuid="2", description="BarFoo")
 
         r = self.app.get("/api/v2.0/groups?description=FooBar,BarFoo")
-        data = json.loads(r.data)
 
         assert r.status_code == 200
-        assert len(data["data"]) == 2
+        assert r.json is not None
+        assert len(r.json["data"]) == 2
 
         r = self.app.get("/api/v2.0/groups?description:like=*oo*,*ar*")
-        data = json.loads(r.data)
 
         assert r.status_code == 200
-        assert len(data["data"]) == 2
+        assert r.json is not None
+        assert len(r.json["data"]) == 2
 
     def test_get_groups_by_more_uuids(self):
-        r, data = self.helper_create_group(uuid="FooBar")
-        r, data = self.helper_create_group(uuid="BarFoo")
+        self.helper_create_group(uuid="FooBar")
+        self.helper_create_group(uuid="BarFoo")
 
         r = self.app.get("/api/v2.0/groups?uuid=FooBar,BarFoo")
-        data = json.loads(r.data)
 
         assert r.status_code == 200
-        assert len(data["data"]) == 2
+        assert r.json is not None
+        assert len(r.json["data"]) == 2
 
     # =============== RESULTS ==================
 
@@ -404,31 +384,24 @@ class TestFuncApiV20(TestCase):
         if data is None:
             data = self.ref_result_data
 
-        ref_data = json.dumps(
-            dict(
-                outcome=outcome,
-                testcase=testcase,
-                groups=groups,
-                note=self.ref_result_note,
-                data=data,
-                ref_url=self.ref_result_ref_url,
-            )
+        data = dict(
+            outcome=outcome,
+            testcase=testcase,
+            groups=groups,
+            note=self.ref_result_note,
+            data=data,
+            ref_url=self.ref_result_ref_url,
         )
 
-        r = self.app.post(
-            "/api/v2.0/results", data=ref_data, content_type="application/json"
-        )
-        data = json.loads(r.data)
-
-        return r, data
+        return self.app.post(RESULTS_API, json=data)
 
     def test_create_result(self):
         self.test_create_group()
         self.test_create_testcase()
 
-        r, data = self.helper_create_result()
+        r = self.helper_create_result()
         assert r.status_code == 201
-        assert data == self.ref_result
+        assert r.json == self.ref_result
 
     def test_create_result_custom_outcome(self):
         self.test_create_group()
@@ -436,114 +409,52 @@ class TestFuncApiV20(TestCase):
         ref_result = copy.deepcopy(self.ref_result)
         ref_result["outcome"] = "AMAZING"
 
-        r, data = self.helper_create_result(outcome="AMAZING")
+        r = self.helper_create_result(outcome="AMAZING")
 
         assert r.status_code == 201
-        assert data == ref_result
+        assert r.json == ref_result
 
     def test_create_result_with_testcase_name(self):
         self.test_create_group()
         self.test_create_testcase()
         testcase_name = self.ref_result["testcase"]["name"]
 
-        r, data = self.helper_create_result(outcome="AMAZING", testcase=testcase_name)
+        r = self.helper_create_result(outcome="AMAZING", testcase=testcase_name)
 
         assert r.status_code == 201
-        assert data["testcase"]["name"] == testcase_name
+        assert r.json is not None
+        assert r.json["testcase"]["name"] == testcase_name
 
     def test_create_result_empty_testcase(self):
-        r = self.app.post(
-            "/api/v2.0/results", json={"outcome": "passed", "testcase": ""}
-        )
-        data = json.loads(r.data)
-
+        r = self.app.post(RESULTS_API, json={"outcome": "passed", "testcase": ""})
         assert r.status_code == 400
-        assert data == {
-            "validation_error": [
-                {
-                    "loc": ["testcase"],
-                    "msg": "Value error, testcase name must be non-empty",
-                    "type": "value_error",
-                    "input": ANY,
-                    "url": ANY,
-                }
-            ]
-        }
+        assert r.json == EMPTY_TESTCASE_ERROR
 
     def test_create_result_empty_testcase_name(self):
         r = self.app.post(
-            "/api/v2.0/results", json={"outcome": "passed", "testcase": {"name": ""}}
+            RESULTS_API, json={"outcome": "passed", "testcase": {"name": ""}}
         )
-        data = json.loads(r.data)
 
         assert r.status_code == 400
-        assert data == {
-            "validation_error": [
-                {
-                    "loc": ["testcase"],
-                    "msg": "Value error, testcase name must be non-empty",
-                    "type": "value_error",
-                    "input": ANY,
-                    "url": ANY,
-                }
-            ]
-        }
+        assert r.json == EMPTY_TESTCASE_ERROR
 
     def test_create_result_empty_testcase_dict(self):
-        r = self.app.post(
-            "/api/v2.0/results", json={"outcome": "passed", "testcase": {}}
-        )
-        data = json.loads(r.data)
+        r = self.app.post(RESULTS_API, json={"outcome": "passed", "testcase": {}})
 
         assert r.status_code == 400
-        assert data == {
-            "validation_error": [
-                {
-                    "loc": ["testcase"],
-                    "msg": "Value error, testcase name must be non-empty",
-                    "type": "value_error",
-                    "input": ANY,
-                    "url": ANY,
-                }
-            ]
-        }
+        assert r.json == EMPTY_TESTCASE_ERROR
 
     def test_create_result_missing_testcase(self):
-        r = self.app.post("/api/v2.0/results", json={"outcome": "passed"})
-        data = json.loads(r.data)
+        r = self.app.post(RESULTS_API, json={"outcome": "passed"})
 
         assert r.status_code == 400
-        assert data == {
-            "validation_error": [
-                {
-                    "loc": ["testcase"],
-                    "msg": "Field required",
-                    "type": "missing",
-                    "input": ANY,
-                    "url": ANY,
-                }
-            ]
-        }
+        assert r.json == field_required_error("testcase")
 
     def test_create_result_missing_outcome(self):
-        ref_data = json.dumps({"testcase": self.ref_testcase})
-        r = self.app.post(
-            "/api/v2.0/results", data=ref_data, content_type="application/json"
-        )
-        data = json.loads(r.data)
+        r = self.app.post(RESULTS_API, json={"testcase": self.ref_testcase})
 
         assert r.status_code == 400
-        assert data == {
-            "validation_error": [
-                {
-                    "loc": ["outcome"],
-                    "msg": "Field required",
-                    "type": "missing",
-                    "input": ANY,
-                    "url": ANY,
-                }
-            ]
-        }
+        assert r.json == field_required_error("outcome")
 
     def test_create_result_multiple_groups(self):
         uuid2 = "1c26effb-7c07-4d90-9428-86aac053288c"
@@ -551,84 +462,77 @@ class TestFuncApiV20(TestCase):
         self.helper_create_group(uuid=uuid2)
         self.test_create_testcase()
 
-        r, data = self.helper_create_result(groups=[self.ref_group, uuid2])
+        r = self.helper_create_result(groups=[self.ref_group, uuid2])
 
         assert r.status_code == 201
-        assert len(data["groups"]) == 2
-        assert self.ref_group_uuid in " ".join(data["groups"])
-        assert uuid2 in ";".join(data["groups"])
+        assert r.json is not None
+        assert len(r.json["groups"]) == 2
+        assert self.ref_group_uuid in " ".join(r.json["groups"])
+        assert uuid2 in ";".join(r.json["groups"])
 
         ref_result = copy.deepcopy(self.ref_result)
         ref_result["groups"] = None
+        data = copy.deepcopy(r.json)
         data["groups"] = None
         assert data == ref_result
 
     def test_create_result_group_is_none(self):
-        ref_data = json.dumps(
-            dict(
-                outcome=self.ref_result_outcome,
-                testcase=self.ref_testcase,
-                groups=None,
-            )
+        ref_data = dict(
+            outcome=self.ref_result_outcome,
+            testcase=self.ref_testcase,
+            groups=None,
         )
 
-        r = self.app.post(
-            "/api/v2.0/results", data=ref_data, content_type="application/json"
-        )
-        data = json.loads(r.data)
+        r = self.app.post(RESULTS_API, json=ref_data)
 
         assert r.status_code == 201
-        assert data["groups"] == []
+        assert r.json is not None
+        assert r.json["groups"] == []
 
     def test_create_result_group_did_not_exist(self):
         self.helper_create_result(groups=[self.ref_group])
 
-        r = self.app.get(f"/api/v2.0/groups/{self.ref_group_uuid}")
-        data = json.loads(r.data)
+        r = self.app.get(f"{GROUPS_API}/{self.ref_group_uuid}")
 
         ref_group = copy.deepcopy(self.ref_group)
         ref_group["results_count"] = 1
 
         assert r.status_code == 200
-        assert data == ref_group
+        assert r.json == ref_group
 
         uuid2 = "1c26effb-7c07-4d90-9428-86aac053288c"
         self.helper_create_result(groups=[uuid2])
-        r = self.app.get(f"/api/v2.0/groups/{uuid2}")
-        data = json.loads(r.data)
+        r = self.app.get(f"{GROUPS_API}/{uuid2}")
 
         assert r.status_code == 200
-        assert data["uuid"] == uuid2
-        assert data["description"] is None
-        assert data["ref_url"] is None
+        assert r.json is not None
+        assert r.json["uuid"] == uuid2
+        assert r.json["description"] is None
+        assert r.json["ref_url"] is None
 
     def test_create_result_testcase_did_not_exist(self):
         self.helper_create_result(testcase=self.ref_testcase)
 
-        r = self.app.get(f"/api/v2.0/testcases/{self.ref_testcase_name}")
-        data = json.loads(r.data)
+        r = self.app.get(f"{TESTCASES_API}/{self.ref_testcase_name}")
 
         assert r.status_code == 200
-        assert data == self.ref_testcase
+        assert r.json == self.ref_testcase
 
         name2 = self.ref_testcase_name + ".fake"
         self.helper_create_result(testcase=name2)
-        r = self.app.get(f"/api/v2.0/testcases/{name2}")
-        data = json.loads(r.data)
+        r = self.app.get(f"{TESTCASES_API}/{name2}")
 
         assert r.status_code == 200
-        assert data["name"] == name2
+        assert r.json is not None
+        assert r.json["name"] == name2
 
     def test_create_result_invalid_outcome(self):
-        ref_data = json.dumps({"outcome": "FAKEOUTCOME", "testcase": self.ref_testcase})
+        ref_data = {"outcome": "FAKEOUTCOME", "testcase": self.ref_testcase}
 
-        r = self.app.post(
-            "/api/v2.0/results", data=ref_data, content_type="application/json"
-        )
-        data = json.loads(r.data)
+        r = self.app.post(RESULTS_API, json=ref_data)
 
         assert r.status_code == 400
-        assert data == {
+        assert r.json == {
             "validation_error": [
                 {
                     "loc": ["outcome"],
@@ -644,90 +548,70 @@ class TestFuncApiV20(TestCase):
         }
 
     def test_create_result_invalid_data(self):
-        ref_data = json.dumps(
-            {
-                "outcome": self.ref_result_outcome,
-                "testcase": self.ref_testcase,
-                "data": {"validkey": 1, "invalid:key": 2, "another:invalid:key": 3},
-            }
-        )
+        ref_data = {
+            "outcome": self.ref_result_outcome,
+            "testcase": self.ref_testcase,
+            "data": {"validkey": 1, "invalid:key": 2, "another:invalid:key": 3},
+        }
 
-        r = self.app.post(
-            "/api/v2.0/results", data=ref_data, content_type="application/json"
-        )
-        data = json.loads(r.data)
+        r = self.app.post(RESULTS_API, json=ref_data)
 
         assert r.status_code == 400
-        assert data["message"].startswith("Colon not allowed in key name:")
+        assert r.json is not None
+        assert r.json["message"].startswith("Colon not allowed in key name:")
 
     def test_create_result_submit_time_as_number(self):
-        ref_data = json.dumps(
-            dict(
-                outcome=self.ref_result_outcome,
-                testcase=self.ref_testcase,
-                submit_time=1661324097123,
-            )
+        ref_data = dict(
+            outcome=self.ref_result_outcome,
+            testcase=self.ref_testcase,
+            submit_time=1661324097123,
         )
 
-        r = self.app.post(
-            "/api/v2.0/results", data=ref_data, content_type="application/json"
-        )
-        data = json.loads(r.data)
+        r = self.app.post(RESULTS_API, json=ref_data)
 
-        assert r.status_code == 201, data
-        assert data["submit_time"] == "2022-08-24T06:54:57.123000"
+        assert r.status_code == 201, r.json
+        assert r.json is not None
+        assert r.json["submit_time"] == "2022-08-24T06:54:57.123000"
 
     def test_create_result_submit_time_as_number_string(self):
-        ref_data = json.dumps(
-            dict(
-                outcome=self.ref_result_outcome,
-                testcase=self.ref_testcase,
-                submit_time="1661324097123",
-            )
+        ref_data = dict(
+            outcome=self.ref_result_outcome,
+            testcase=self.ref_testcase,
+            submit_time="1661324097123",
         )
 
-        r = self.app.post(
-            "/api/v2.0/results", data=ref_data, content_type="application/json"
-        )
-        data = json.loads(r.data)
+        r = self.app.post(RESULTS_API, json=ref_data)
 
-        assert r.status_code == 201, data
-        assert data["submit_time"] == "2022-08-24T06:54:57.123000"
+        assert r.status_code == 201, r.json
+        assert r.json is not None
+        assert r.json["submit_time"] == "2022-08-24T06:54:57.123000"
 
     def test_create_result_submit_time_as_datetime(self):
         for suffix in ("", "Z", "+00:00", "+0000", "+00"):
-            ref_data = json.dumps(
-                dict(
-                    outcome=self.ref_result_outcome,
-                    testcase=self.ref_testcase,
-                    submit_time=f"2022-08-24T06:54:57.123456{suffix}",
-                )
-            )
-
-            r = self.app.post(
-                "/api/v2.0/results", data=ref_data, content_type="application/json"
-            )
-            data = json.loads(r.data)
-
-            assert r.status_code == 201, data
-            assert data["submit_time"] == "2022-08-24T06:54:57.123456"
-
-    def test_create_result_submit_time_as_invalid(self):
-        ref_data = json.dumps(
-            dict(
+            ref_data = dict(
                 outcome=self.ref_result_outcome,
                 testcase=self.ref_testcase,
-                submit_time="now",
+                submit_time=f"2022-08-24T06:54:57.123456{suffix}",
             )
+
+            r = self.app.post(RESULTS_API, json=ref_data)
+
+            assert r.status_code == 201, r.json
+            assert r.json is not None
+            assert r.json["submit_time"] == "2022-08-24T06:54:57.123456"
+
+    def test_create_result_submit_time_as_invalid(self):
+        ref_data = dict(
+            outcome=self.ref_result_outcome,
+            testcase=self.ref_testcase,
+            submit_time="now",
         )
 
-        r = self.app.post(
-            "/api/v2.0/results", data=ref_data, content_type="application/json"
-        )
-        data = json.loads(r.data)
+        r = self.app.post(RESULTS_API, json=ref_data)
 
-        assert r.status_code == 400, data
-        assert data == {
+        assert r.status_code == 400, r.json
+        assert r.json is not None
+        assert r.json == {
             "validation_error": [
                 {
                     "loc": ["submit_time"],
@@ -746,46 +630,47 @@ class TestFuncApiV20(TestCase):
         self.test_create_result()
 
         r = self.app.get("/api/v2.0/results/%d" % self.ref_result_id)
-        data = json.loads(r.data)
 
         assert r.status_code == 200
-        assert data == self.ref_result
+        assert r.json == self.ref_result
 
     def test_get_missing_result(self):
         r = self.app.get("/api/v2.0/results/%d" % self.ref_result_id)
-        data = json.loads(r.data)
 
         assert r.status_code == 404
-        assert data["message"] == "Result not found"
+        assert r.json is not None
+        assert r.json["message"] == "Result not found"
 
     def test_get_results(self):
-        r = self.app.get("/api/v2.0/results")
-        data = json.loads(r.data)
+        r = self.app.get(RESULTS_API)
 
         assert r.status_code == 200
-        assert data["data"] == []
+        assert r.json is not None
+        assert r.json["data"] == []
 
         self.test_create_result()
 
-        r = self.app.get("/api/v2.0/results")
-        data = json.loads(r.data)
+        r = self.app.get(RESULTS_API)
 
         assert r.status_code == 200
-        assert len(data["data"]) == 1
-        assert data["data"][0] == self.ref_result
+        assert r.json is not None
+        assert len(r.json["data"]) == 1
+        assert r.json["data"][0] == self.ref_result
 
     def test_get_results_sorted_by_submit_time_desc_by_default(self):
         r1 = self.helper_create_result()
+        assert r1.json is not None
         r2 = self.helper_create_result()
+        assert r2.json is not None
 
-        r = self.app.get("/api/v2.0/results")
-        data = json.loads(r.data)
+        r = self.app.get(RESULTS_API)
 
         assert r.status_code == 200
-        assert len(data["data"]) == 2
+        assert r.json is not None
+        assert len(r.json["data"]) == 2
 
-        assert data["data"][0]["id"] == r2[1]["id"]
-        assert data["data"][1]["id"] == r1[1]["id"]
+        assert r.json["data"][0]["id"] == r2.json["id"]
+        assert r.json["data"][1]["id"] == r1.json["id"]
 
     def test_get_results_by_group(self):
         uuid2 = "1c26effb-7c07-4d90-9428-86aac053288c"
@@ -794,23 +679,22 @@ class TestFuncApiV20(TestCase):
         self.test_create_result()
         self.helper_create_result(groups=[uuid2])
 
-        r1 = self.app.get(f"/api/v2.0/groups/{self.ref_group_uuid}/results")
-        r2 = self.app.get(f"/api/v2.0/results?groups={self.ref_group_uuid}")
-
-        data1 = json.loads(r1.data)
-        data2 = json.loads(r2.data)
+        r1 = self.app.get(f"{GROUPS_API}/{self.ref_group_uuid}/results")
+        r2 = self.app.get(f"{RESULTS_API}?groups={self.ref_group_uuid}")
 
         assert r1.status_code == 200, r1.text
         assert r2.status_code == 200, r2.text
-        assert len(data1["data"]) == len(data2["data"]) == 1
-        assert data1 == data2
-        assert data1["data"][0] == self.ref_result
+        assert r1.json is not None
+        assert r2.json is not None
+        assert len(r1.json["data"]) == len(r1.json["data"]) == 1
+        assert r1.json == r2.json
+        assert r1.json["data"][0] == self.ref_result
 
-        r = self.app.get(f"/api/v2.0/results?groups={self.ref_group_uuid},{uuid2}")
-        data = json.loads(r.data)
+        r = self.app.get(f"{RESULTS_API}?groups={self.ref_group_uuid},{uuid2}")
 
         assert r.status_code == 200
-        assert len(data["data"]) == 2
+        assert r.json is not None
+        assert len(r.json["data"]) == 2
 
     def test_get_results_by_testcase(self):
         name2 = self.ref_testcase_name + ".fake"
@@ -819,24 +703,21 @@ class TestFuncApiV20(TestCase):
         self.test_create_result()
         self.helper_create_result(testcase=name2)
 
-        r1 = self.app.get(f"/api/v2.0/testcases/{self.ref_testcase_name}/results")
-        r2 = self.app.get(f"/api/v2.0/results?testcases={self.ref_testcase_name}")
-
-        data1 = json.loads(r1.data)
-        data2 = json.loads(r2.data)
+        r1 = self.app.get(f"{TESTCASES_API}/{self.ref_testcase_name}/results")
+        r2 = self.app.get(f"{RESULTS_API}?testcases={self.ref_testcase_name}")
 
         assert r1.status_code == 200, r1.text
         assert r2.status_code == 200, r2.text
-        assert data1["data"][0] == self.ref_result
-        assert data2["data"][0] == self.ref_result
+        assert r1.json is not None
+        assert r2.json is not None
+        assert r1.json["data"][0] == self.ref_result
+        assert r2.json["data"][0] == self.ref_result
 
-        r = self.app.get(
-            f"/api/v2.0/results?testcases={self.ref_testcase_name},{name2}"
-        )
-        data = json.loads(r.data)
+        r = self.app.get(f"{RESULTS_API}?testcases={self.ref_testcase_name},{name2}")
 
         assert r.status_code == 200
-        assert len(data["data"]) == 2
+        assert r.json is not None
+        assert len(r.json["data"]) == 2
 
     def test_get_results_by_testcase_like(self):
         name2 = self.ref_testcase_name + ".fake"
@@ -845,44 +726,40 @@ class TestFuncApiV20(TestCase):
         self.test_create_result()
         self.helper_create_result(testcase=name2)
 
-        r1 = self.app.get(f"/api/v2.0/testcases/{self.ref_testcase_name}/results")
-        r2 = self.app.get(f"/api/v2.0/results?testcases:like={self.ref_testcase_name}")
-
-        data1 = json.loads(r1.data)
-        data2 = json.loads(r2.data)
+        r1 = self.app.get(f"{TESTCASES_API}/{self.ref_testcase_name}/results")
+        r2 = self.app.get(f"{RESULTS_API}?testcases:like={self.ref_testcase_name}")
 
         assert r1.status_code == 200, r1.text
         assert r2.status_code == 200, r2.text
-        assert data1["data"][0] == self.ref_result
-        assert data2["data"][0] == self.ref_result
+        assert r1.json is not None
+        assert r2.json is not None
+        assert r1.json["data"][0] == self.ref_result
+        assert r2.json["data"][0] == self.ref_result
 
-        r1 = self.app.get(f"/api/v2.0/results?testcases:like={self.ref_testcase_name}*")
+        r1 = self.app.get(f"{RESULTS_API}?testcases:like={self.ref_testcase_name}*")
         r2 = self.app.get(
-            f"/api/v2.0/results?testcases:like={self.ref_testcase_name},{self.ref_testcase_name}*"
+            f"{RESULTS_API}?testcases:like={self.ref_testcase_name},{self.ref_testcase_name}*"
         )
 
-        data1 = json.loads(r1.data)
-        data2 = json.loads(r2.data)
-
         assert r1.status_code == r2.status_code == 200
-        assert data1 == data2
+        assert r1.json == r2.json
 
     def test_get_results_by_outcome(self):
         self.test_create_result()
         self.helper_create_result(outcome="FAILED")
 
         r = self.app.get("/api/v2.0/results?outcome=PASSED")
-        data = json.loads(r.data)
 
         assert r.status_code == 200
-        assert len(data["data"]) == 1
-        assert data["data"][0] == self.ref_result
+        assert r.json is not None
+        assert len(r.json["data"]) == 1
+        assert r.json["data"][0] == self.ref_result
 
         r = self.app.get("/api/v2.0/results?outcome=PASSED,FAILED")
-        data = json.loads(r.data)
 
         assert r.status_code == 200
-        assert len(data["data"]) == 2
+        assert r.json is not None
+        assert len(r.json["data"]) == 2
 
     def test_get_results_sorting_by_submit_time(self):
         name1 = "aa_fake." + self.ref_testcase_name
@@ -892,13 +769,15 @@ class TestFuncApiV20(TestCase):
         self.helper_create_result(testcase=name1)
 
         r1 = self.app.get("/api/v2.0/results?_sort=desc:submit_time")
-        data1 = json.loads(r1.data)
+        data1 = r1.json
+        assert data1 is not None
 
         assert r1.status_code == 200
         assert len(data1["data"]) == 2
 
         r2 = self.app.get("/api/v2.0/results?_sort=asc:submit_time")
-        data2 = json.loads(r2.data)
+        data2 = r2.json
+        assert data2 is not None
 
         assert r2.status_code == 200
         assert len(data2["data"]) == 2
@@ -922,60 +801,60 @@ class TestFuncApiV20(TestCase):
         before2 = (utcnow_naive() - datetime.timedelta(seconds=99)).isoformat()
         after = (utcnow_naive() + datetime.timedelta(seconds=100)).isoformat()
 
-        r = self.app.get(f"/api/v2.0/results?since={before1}")
-        data = json.loads(r.data)
+        r = self.app.get(f"{RESULTS_API}?since={before1}")
         assert r.status_code == 200, r.text
-        assert len(data["data"]) == 1
-        assert data["data"][0] == self.ref_result
+        assert r.json is not None
+        assert len(r.json["data"]) == 1
+        assert r.json["data"][0] == self.ref_result
 
-        r = self.app.get(f"/api/v2.0/results?since={before1},{after}")
-        data = json.loads(r.data)
+        r = self.app.get(f"{RESULTS_API}?since={before1},{after}")
         assert r.status_code == 200, r.text
-        assert len(data["data"]) == 1
-        assert data["data"][0] == self.ref_result
+        assert r.json is not None
+        assert len(r.json["data"]) == 1
+        assert r.json["data"][0] == self.ref_result
 
-        r = self.app.get(f"/api/v2.0/results?since={(after)}")
-        data = json.loads(r.data)
+        r = self.app.get(f"{RESULTS_API}?since={(after)}")
         assert r.status_code == 200, r.text
-        assert len(data["data"]) == 0
+        assert r.json is not None
+        assert len(r.json["data"]) == 0
 
-        r = self.app.get(f"/api/v2.0/results?since={before1},{before2}")
-        data = json.loads(r.data)
+        r = self.app.get(f"{RESULTS_API}?since={before1},{before2}")
         assert r.status_code == 200, r.text
-        assert len(data["data"]) == 0
+        assert r.json is not None
+        assert len(r.json["data"]) == 0
 
     def test_get_results_by_result_data(self):
         self.test_create_result()
 
         r = self.app.get("/api/v2.0/results?item=perl-Specio-0.25-1.fc26")
-        data = json.loads(r.data)
         assert r.status_code == 200
-        assert len(data["data"]) == 1
-        assert data["data"][0] == self.ref_result
+        assert r.json is not None
+        assert len(r.json["data"]) == 1
+        assert r.json["data"][0] == self.ref_result
 
         r = self.app.get("/api/v2.0/results?item=perl-Specio-0.25-1.fc26&moo=boo,woof")
-        data = json.loads(r.data)
         assert r.status_code == 200
-        assert len(data["data"]) == 1
-        assert data["data"][0] == self.ref_result
+        assert r.json is not None
+        assert len(r.json["data"]) == 1
+        assert r.json["data"][0] == self.ref_result
 
         r = self.app.get("/api/v2.0/results?item=perl-Specio-0.25-1.fc26&moo=boo,fake")
-        data = json.loads(r.data)
         assert r.status_code == 200
-        assert len(data["data"]) == 1
-        assert data["data"][0] == self.ref_result
+        assert r.json is not None
+        assert len(r.json["data"]) == 1
+        assert r.json["data"][0] == self.ref_result
 
         r = self.app.get("/api/v2.0/results?moo:like=*oo*")
-        data = json.loads(r.data)
         assert r.status_code == 200
-        assert len(data["data"]) == 1
-        assert data["data"][0] == self.ref_result
+        assert r.json is not None
+        assert len(r.json["data"]) == 1
+        assert r.json["data"][0] == self.ref_result
 
         r = self.app.get("/api/v2.0/results?moo:like=*fake*,*oo*")
-        data = json.loads(r.data)
         assert r.status_code == 200
-        assert len(data["data"]) == 1
-        assert data["data"][0] == self.ref_result
+        assert r.json is not None
+        assert len(r.json["data"]) == 1
+        assert r.json["data"][0] == self.ref_result
 
     def test_get_results_latest(self):
         self.helper_create_testcase()
@@ -984,25 +863,25 @@ class TestFuncApiV20(TestCase):
 
         self.helper_create_result(outcome="PASSED")
         r = self.app.get("/api/v2.0/results/latest")
-        data = json.loads(r.data)
 
-        assert len(data["data"]) == 1
+        assert r.json is not None
+        assert len(r.json["data"]) == 1
 
         self.helper_create_result(outcome="FAILED")
         r = self.app.get("/api/v2.0/results/latest")
-        data = json.loads(r.data)
 
-        assert len(data["data"]) == 1
-        assert data["data"][0]["outcome"] == "FAILED"
+        assert r.json is not None
+        assert len(r.json["data"]) == 1
+        assert r.json["data"][0]["outcome"] == "FAILED"
 
         self.helper_create_result(testcase=self.ref_testcase_name + ".1")
         r = self.app.get("/api/v2.0/results/latest")
-        data = json.loads(r.data)
 
-        assert len(data["data"]) == 2
-        assert data["data"][0]["testcase"]["name"] == self.ref_testcase_name + ".1"
-        assert data["data"][1]["testcase"]["name"] == self.ref_testcase_name
-        assert data["data"][1]["outcome"] == "FAILED"
+        assert r.json is not None
+        assert len(r.json["data"]) == 2
+        assert r.json["data"][0]["testcase"]["name"] == self.ref_testcase_name + ".1"
+        assert r.json["data"][1]["testcase"]["name"] == self.ref_testcase_name
+        assert r.json["data"][1]["outcome"] == "FAILED"
 
     def test_get_results_latest_modifiers(self):
         self.helper_create_testcase()
@@ -1020,41 +899,41 @@ class TestFuncApiV20(TestCase):
             outcome="FAILED",
         )
 
-        r = self.app.get(f"/api/v2.0/results/latest?testcases={self.ref_testcase_name}")
-        data = json.loads(r.data)
+        r = self.app.get(f"{RESULTS_API}/latest?testcases={self.ref_testcase_name}")
 
-        assert len(data["data"]) == 1
-        assert data["data"][0]["testcase"]["name"] == self.ref_testcase_name
-        assert data["data"][0]["outcome"] == "FAILED"
+        assert r.json is not None
+        assert len(r.json["data"]) == 1
+        assert r.json["data"][0]["testcase"]["name"] == self.ref_testcase_name
+        assert r.json["data"][0]["outcome"] == "FAILED"
 
         r = self.app.get(
-            f"/api/v2.0/results/latest?testcases={self.ref_testcase_name},{self.ref_testcase_name + '.1'}"
+            f"{RESULTS_API}/latest?testcases={self.ref_testcase_name},{self.ref_testcase_name + '.1'}"
         )
-        data = json.loads(r.data)
 
-        assert len(data["data"]) == 2
-        assert data["data"][0]["testcase"]["name"] == self.ref_testcase_name + ".1"
-        assert data["data"][0]["outcome"] == "FAILED"
-        assert data["data"][1]["testcase"]["name"] == self.ref_testcase_name
-        assert data["data"][1]["outcome"] == "FAILED"
+        assert r.json is not None
+        assert len(r.json["data"]) == 2
+        assert r.json["data"][0]["testcase"]["name"] == self.ref_testcase_name + ".1"
+        assert r.json["data"][0]["outcome"] == "FAILED"
+        assert r.json["data"][1]["testcase"]["name"] == self.ref_testcase_name
+        assert r.json["data"][1]["outcome"] == "FAILED"
 
         r = self.app.get("/api/v2.0/results/latest?testcases:like=*")
-        data = json.loads(r.data)
 
-        assert len(data["data"]) == 2
-        assert data["data"][0]["testcase"]["name"] == self.ref_testcase_name + ".1"
-        assert data["data"][0]["outcome"] == "FAILED"
-        assert data["data"][1]["testcase"]["name"] == self.ref_testcase_name
-        assert data["data"][1]["outcome"] == "FAILED"
+        assert r.json is not None
+        assert len(r.json["data"]) == 2
+        assert r.json["data"][0]["testcase"]["name"] == self.ref_testcase_name + ".1"
+        assert r.json["data"][0]["outcome"] == "FAILED"
+        assert r.json["data"][1]["testcase"]["name"] == self.ref_testcase_name
+        assert r.json["data"][1]["outcome"] == "FAILED"
 
-        r = self.app.get(f"/api/v2.0/results/latest?groups={self.ref_group_uuid}")
-        data = json.loads(r.data)
+        r = self.app.get(f"{RESULTS_API}/latest?groups={self.ref_group_uuid}")
 
-        assert len(data["data"]) == 2
-        assert data["data"][0]["testcase"]["name"] == self.ref_testcase_name + ".1"
-        assert data["data"][0]["outcome"] == "PASSED"
-        assert data["data"][1]["testcase"]["name"] == self.ref_testcase_name
-        assert data["data"][1]["outcome"] == "FAILED"
+        assert r.json is not None
+        assert len(r.json["data"]) == 2
+        assert r.json["data"][0]["testcase"]["name"] == self.ref_testcase_name + ".1"
+        assert r.json["data"][0]["outcome"] == "PASSED"
+        assert r.json["data"][1]["testcase"]["name"] == self.ref_testcase_name
+        assert r.json["data"][1]["outcome"] == "FAILED"
 
     def test_get_results_latest_distinct_on(self):
         """This test requires PostgreSQL, because DISTINCT ON does work differently in SQLite"""
@@ -1078,15 +957,15 @@ class TestFuncApiV20(TestCase):
             + self.ref_testcase_name
             + "&_distinct_on=scenario"
         )
-        data = json.loads(r.data)
-        assert len(data["data"]) == 2
-        assert data["data"][0]["data"]["scenario"][0] == "scenario2"
-        assert data["data"][1]["data"]["scenario"][0] == "scenario1"
+        assert r.json is not None
+        assert len(r.json["data"]) == 2
+        assert r.json["data"][0]["data"]["scenario"][0] == "scenario2"
+        assert r.json["data"][1]["data"]["scenario"][0] == "scenario1"
 
         r = self.app.get("/api/v2.0/results/latest?testcases=" + self.ref_testcase_name)
-        data = json.loads(r.data)
-        assert len(data["data"]) == 1
-        assert data["data"][0]["data"]["scenario"][0] == "scenario2"
+        assert r.json is not None
+        assert len(r.json["data"]) == 1
+        assert r.json["data"][0]["data"]["scenario"][0] == "scenario2"
 
     def test_get_results_latest_distinct_on_more_specific_cases_1(self):
         """This test requires PostgreSQL, because DISTINCT ON does work differently in SQLite"""
@@ -1114,9 +993,9 @@ class TestFuncApiV20(TestCase):
         )
 
         r = self.app.get("/api/v2.0/results/latest?item=grub&_distinct_on=scenario")
-        data = json.loads(r.data)
 
-        assert len(data["data"]) == 4
+        assert r.json is not None
+        assert len(r.json["data"]) == 4
 
     def test_get_results_latest_distinct_on_more_specific_cases_2(self):
         """This test requires PostgreSQL, because DISTINCT ON does work differently in SQLite"""
@@ -1148,9 +1027,9 @@ class TestFuncApiV20(TestCase):
         )
 
         r = self.app.get("/api/v2.0/results/latest?item=grub&_distinct_on=scenario")
-        data = json.loads(r.data)
 
-        assert len(data["data"]) == 5
+        assert r.json is not None
+        assert len(r.json["data"]) == 5
 
     def test_get_results_latest_distinct_on_more_specific_cases_3(self):
         """This test requires PostgreSQL, because DISTINCT ON does work differently in SQLite"""
@@ -1186,15 +1065,15 @@ class TestFuncApiV20(TestCase):
         )
 
         r = self.app.get("/api/v2.0/results/latest?item=grub&_distinct_on=scenario")
-        data = json.loads(r.data)
 
+        assert r.json is not None
         items = [
             (
                 x["data"].get("scenario", [None])[0],
                 x["testcase"]["name"],
                 x["outcome"],
             )
-            for x in data["data"]
+            for x in r.json["data"]
         ]
         assert items == [
             ("s_1", "tc_1", "INFO"),
@@ -1217,17 +1096,17 @@ class TestFuncApiV20(TestCase):
             + self.ref_testcase_name
             + "&_distinct_on=scenario"
         )
-        data = json.loads(r.data)
 
-        assert len(data["data"]) == 1
-        assert data["data"][0]["outcome"] == "FAILED"
+        assert r.json is not None
+        assert len(r.json["data"]) == 1
+        assert r.json["data"][0]["outcome"] == "FAILED"
 
     def test_get_results_latest_distinct_on_wrong_params(self):
         r = self.app.get("/api/v2.0/results/latest?_distinct_on=scenario")
-        data = json.loads(r.data)
         assert r.status_code == 400
+        assert r.json is not None
         assert (
-            data["message"]
+            r.json["message"]
             == "Please, provide at least one filter beside '_distinct_on'"
         )
 
@@ -1246,9 +1125,9 @@ class TestFuncApiV20(TestCase):
 
     def test_get_outcomes_on_landing_page(self):
         r = self.app.get("/api/v2.0/")
-        data = json.loads(r.data)
         assert r.status_code == 300
-        assert data["outcomes"] == [
+        assert r.json is not None
+        assert r.json["outcomes"] == [
             "PASSED",
             "INFO",
             "FAILED",
@@ -1260,8 +1139,8 @@ class TestFuncApiV20(TestCase):
         r = self.app.get("/api/v2.0/healthcheck")
         assert r.status_code == 200
 
-        data = json.loads(r.data)
-        assert data.get("message") == "Health check OK"
+        assert r.json is not None
+        assert r.json.get("message") == "Health check OK"
 
     def test_healthcheck_fail(self):
         with patch("resultsdb.controllers.api_v2.db") as db:
@@ -1269,5 +1148,5 @@ class TestFuncApiV20(TestCase):
             r = self.app.get("/api/v2.0/healthcheck")
         assert r.status_code == 503
 
-        data = json.loads(r.data)
-        assert data.get("message") == "Unable to communicate with database"
+        assert r.json is not None
+        assert r.json.get("message") == "Unable to communicate with database"

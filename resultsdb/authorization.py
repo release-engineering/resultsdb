@@ -6,6 +6,8 @@ from werkzeug.exceptions import BadGateway, Forbidden, InternalServerError
 
 log = logging.getLogger(__name__)
 
+LDAP_ERROR = "Some error occurred initializing the LDAP connection"
+
 
 def get_group_membership(ldap, user, con, ldap_search):
     try:
@@ -23,8 +25,8 @@ def get_group_membership(ldap, user, con, ldap_search):
         log.exception("The LDAP server is not reachable")
         raise BadGateway("The LDAP server is not reachable")
     except ldap.LDAPError:
-        log.exception("Some error occurred initializing the LDAP connection")
-        raise BadGateway("Some error occurred initializing the LDAP connection")
+        log.exception(LDAP_ERROR)
+        raise BadGateway(LDAP_ERROR)
 
 
 def match_testcase_permissions(testcase, permissions):
@@ -64,8 +66,8 @@ def verify_authorization(user, testcase, permissions, ldap_host, ldap_searches):
     try:
         con = ldap.initialize(ldap_host)
     except ldap.LDAPError:
-        log.exception("Some error occurred initializing the LDAP connection")
-        raise BadGateway("Some error occurred initializing the LDAP connection")
+        log.exception(LDAP_ERROR)
+        raise BadGateway(LDAP_ERROR)
 
     any_groups_found = False
     for cur_ldap_search in ldap_searches:
