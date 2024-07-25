@@ -70,7 +70,7 @@ class TestFuncCreateFedmsg:
             "arch": self.ref_result_arch,
             "moo": ["boo", "woof"],
         }
-        self.ref_result_ref_url = "http://example.com/testing.result"
+        self.ref_result_ref_url = "https://example.com/testing.result"
         self.ref_result_obj = MyResult(
             0,
             self.ref_testcase_name,

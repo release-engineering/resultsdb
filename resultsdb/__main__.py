@@ -101,30 +101,36 @@ def mock_data():
 
     if not db.session.query(Testcase).count():
         print(" - Testcase, Job, Result, ResultData")
-        tc1 = Testcase(ref_url="http://example.com/depcheck", name="depcheck")
-        tc2 = Testcase(ref_url="http://example.com/rpmlint", name="rpmlint")
+        tc1 = Testcase(ref_url="https://example.com/depcheck", name="depcheck")
+        tc2 = Testcase(ref_url="https://example.com/rpmlint", name="rpmlint")
 
         j1 = Group(
             uuid="5b3f47b4-2ba2-11e5-a343-5254007dccf9",
-            ref_url="http://example.com/job1",
+            ref_url="https://example.com/job1",
         )
 
         j2 = Group(
             uuid="4e575b2c-2ba2-11e5-a343-5254007dccf9",
-            ref_url="http://example.com/job2",
+            ref_url="https://example.com/job2",
         )
 
         r1 = Result(
-            groups=[j1], testcase=tc1, outcome="PASSED", ref_url="http://example.com/r1"
+            groups=[j1],
+            testcase=tc1,
+            outcome="PASSED",
+            ref_url="https://example.com/r1",
         )
         r2 = Result(
             groups=[j1, j2],
             testcase=tc1,
             outcome="FAILED",
-            ref_url="http://example.com/r2",
+            ref_url="https://example.com/r2",
         )
         r3 = Result(
-            groups=[j2], testcase=tc2, outcome="FAILED", ref_url="http://example.com/r2"
+            groups=[j2],
+            testcase=tc2,
+            outcome="FAILED",
+            ref_url="https://example.com/r2",
         )
 
         ResultData(r1, "item", "cabal-rpm-0.8.3-1.fc18")

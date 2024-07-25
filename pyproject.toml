@@ -8,7 +8,7 @@ authors = [
 license = "GPL-2.0-or-later"
 readme = "README.md"
 repository = "https://github.com/release-engineering/resultsdb"
-homepage = "http://docs.resultsdb20.apiary.io/"
+homepage = "https://docs.resultsdb20.apiary.io/"
 
 include = [
     "LICENSE",

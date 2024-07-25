@@ -1,5 +1,5 @@
 # Copyright 2018, Red Hat, Inc.
-# License: GPL-2.0+ <http://spdx.org/licenses/GPL-2.0+>
+# License: GPL-2.0+ <https://spdx.org/licenses/GPL-2.0+>
 # See the LICENSE file for more details on Licensing
 
 #######################################################################

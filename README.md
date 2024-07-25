@@ -7,7 +7,7 @@
 ResultsDB is a results store engine for (not only) Fedora QA tools.
 
 The API v2 documentation can be found at
-<http://docs.resultsdb20.apiary.io/>.
+<https://docs.resultsdb20.apiary.io/>.
 
 ## Repositories
 

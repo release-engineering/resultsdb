@@ -70,7 +70,7 @@ class TestFuncApiV20(TestCase):
         # Testcase data
         self.ref_testcase_name = "fedora-ci.koji-build./plans/basic.functional"
         self.ref_testcase_ref_url = (
-            "http://example.com/fedora-ci.koji-build./plans/basic.functional"
+            "https://example.com/fedora-ci.koji-build./plans/basic.functional"
         )
         self.ref_testcase = {
             "name": self.ref_testcase_name,
@@ -81,7 +81,7 @@ class TestFuncApiV20(TestCase):
         # Group data
         self.ref_group_uuid = "3ce5f6d7-ce34-489b-ab61-325ce634eab5"
         self.ref_group_description = "Testing Group"
-        self.ref_group_ref_url = "http://example.com/testing.group"
+        self.ref_group_ref_url = "https://example.com/testing.group"
         self.ref_group = {
             "uuid": self.ref_group_uuid,
             "description": self.ref_group_description,
@@ -104,7 +104,7 @@ class TestFuncApiV20(TestCase):
             "arch": self.ref_result_arch,
             "moo": ["boo", "woof"],
         }
-        self.ref_result_ref_url = "http://example.com/testing.result"
+        self.ref_result_ref_url = "https://example.com/testing.result"
         self.ref_result = {
             "id": self.ref_result_id,
             "groups": [self.ref_group["uuid"]],

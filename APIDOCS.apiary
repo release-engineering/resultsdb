@@ -87,7 +87,7 @@ Retrieve a single `Result` based on the `id`.
             "testcase": {
                 "name": "dist.rpmlint",
                 "ref_url": "https://fedoraproject.org/wiki/Common_Rpmlint_issues",
-                "href": "http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/testcases/dist.rpmlint"
+                "href": "https://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/testcases/dist.rpmlint"
             },
             "note": "0 errors, 30 warnings",
             "ref_url": "https://taskotron-dev.fedoraproject.org/artifacts/all/27f94e36-62ec-11e6-83fd-525400d7d6a4/task_output/koschei-1.7.2-1.fc24.log",
@@ -98,7 +98,7 @@ Retrieve a single `Result` based on the `id`.
                 "type": ["koji_build"],
                 "arch": ["x86_64","noarch"]
             },
-            "href": "http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results/7484989"
+            "href": "https://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results/7484989"
         }
 
 + Response 404 (application/json)
@@ -153,7 +153,7 @@ Examples are provided in the Parameters section of the documentation.
 + Response 200 (application/json)
 
         {
-            "next":"http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results?item:like=koschei*fc24*&outcome=PASSED,FAILED&since=2016-08-15T13:00:00,2016-08-15T13:30:00&page=1",
+            "next":"https://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results?item:like=koschei*fc24*&outcome=PASSED,FAILED&since=2016-08-15T13:00:00,2016-08-15T13:30:00&page=1",
             "prev":null,
             "data":[
                 {
@@ -162,7 +162,7 @@ Examples are provided in the Parameters section of the documentation.
                     "testcase":{
                         "name":"dist.rpmlint",
                         "ref_url":"https://fedoraproject.org/wiki/Common_Rpmlint_issues",
-                        "href":"http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/testcases/dist.rpmlint"
+                        "href":"https://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/testcases/dist.rpmlint"
                     },
                     "groups":["27f94e36-62ec-11e6-83fd-525400d7d6a4"],
                     "note":"0 errors, 30 warnings",
@@ -173,7 +173,7 @@ Examples are provided in the Parameters section of the documentation.
                         "type":["koji_build"],
                         "arch":["x86_64","noarch"]
                     },
-                    "href":"http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results/7484989"
+                    "href":"https://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results/7484989"
                 }
             ]
         }
@@ -225,7 +225,7 @@ An additional available parameter is `_distinct_on`, if specified allows the use
                     "testcase":{
                         "name":"dist.rpmlint",
                         "ref_url":"https://fedoraproject.org/wiki/Common_Rpmlint_issues",
-                        "href":"http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/testcases/dist.rpmlint"
+                        "href":"https://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/testcases/dist.rpmlint"
                     },
                     "groups":["27f94e36-62ec-11e6-83fd-525400d7d6a4"],
                     "note":"0 errors, 30 warnings",
@@ -236,7 +236,7 @@ An additional available parameter is `_distinct_on`, if specified allows the use
                         "type":["koji_build"],
                         "arch":["x86_64","noarch"]
                     },
-                    "href":"http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results/7484989"
+                    "href":"https://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results/7484989"
                 }
             ]
         }
@@ -290,7 +290,7 @@ When a new `Result` is created, it is assigned an unique `id` and `submit_time` 
             "testcase":{
                 "name":"dist.rpmlint",
                 "ref_url":"https://fedoraproject.org/wiki/Common_Rpmlint_issues",
-                "href":"http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/testcases/dist.rpmlint"
+                "href":"https://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/testcases/dist.rpmlint"
             },
             "groups":["27f94e36-62ec-11e6-83fd-525400d7d6a4"],
             "note":"0 errors, 30 warnings",
@@ -301,7 +301,7 @@ When a new `Result` is created, it is assigned an unique `id` and `submit_time` 
                 "type":["koji_build"],
                 "arch":["x86_64","noarch"]
             },
-            "href":"http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results/7484989"
+            "href":"https://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results/7484989"
         }
 
 + Response 400 (application/json)
@@ -349,9 +349,9 @@ Retrieve a single `Group` based on the `uuid`.
             "uuid": "27f94e36-62ec-11e6-83fd-525400d7d6a4",
             "description": "Taskotron job on koji_build koschei-1.7.2-1.fc24",
             "ref_url": "https://taskotron-dev.fedoraproject.org/execdb/jobs/27f94e36-62ec-11e6-83fd-525400d7d6a4",
-            "results": "http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results?group=27f94e36-62ec-11e6-83fd-525400d7d6a4",
+            "results": "https://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results?group=27f94e36-62ec-11e6-83fd-525400d7d6a4",
             "results_count": 1,
-            "href": "http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/groups/27f94e36-62ec-11e6-83fd-525400d7d6a4"
+            "href": "https://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/groups/27f94e36-62ec-11e6-83fd-525400d7d6a4"
         }
 
 
@@ -381,16 +381,16 @@ Collection of all the `Groups`.
 + Response 200 (application/json)
 
         {
-            "next":"http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/groups?page=1",
+            "next":"https://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/groups?page=1",
             "prev":null,
             "data":[
                 {
                     "uuid": "27f94e36-62ec-11e6-83fd-525400d7d6a4",
                     "description": "Taskotron job on koji_build koschei-1.7.2-1.fc24",
                     "ref_url": "https://taskotron-dev.fedoraproject.org/execdb/jobs/27f94e36-62ec-11e6-83fd-525400d7d6a4",
-                    "results": "http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results?group=27f94e36-62ec-11e6-83fd-525400d7d6a4",
+                    "results": "https://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results?group=27f94e36-62ec-11e6-83fd-525400d7d6a4",
                     "results_count": 1,
-                    "href": "http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/groups/27f94e36-62ec-11e6-83fd-525400d7d6a4"
+                    "href": "https://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/groups/27f94e36-62ec-11e6-83fd-525400d7d6a4"
                 }
             ]
         }
@@ -426,9 +426,9 @@ the new `description` or `ref_url`, if set in the JSON data.
             "uuid": "27f94e36-62ec-11e6-83fd-525400d7d6a4",
             "description": "Taskotron job on koji_build koschei-1.7.2-1.fc24",
             "ref_url": "https://taskotron-dev.fedoraproject.org/execdb/jobs/27f94e36-62ec-11e6-83fd-525400d7d6a4",
-            "results": "http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results?group=27f94e36-62ec-11e6-83fd-525400d7d6a4",
+            "results": "https://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results?group=27f94e36-62ec-11e6-83fd-525400d7d6a4",
             "results_count": 0,
-            "href": "http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/groups/27f94e36-62ec-11e6-83fd-525400d7d6a4"
+            "href": "https://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/groups/27f94e36-62ec-11e6-83fd-525400d7d6a4"
         }
 
 
@@ -467,7 +467,7 @@ Retrieve a single `Testcase` based on the `name`.
         {
             "name": "dist.rpmlint",
             "ref_url": "https://fedoraproject.org/wiki/Common_Rpmlint_issues",
-            "href": "http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/testcases/dist.rpmlint"
+            "href": "https://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/testcases/dist.rpmlint"
         }
 
 + Response 404 (application/json)
@@ -498,13 +498,13 @@ Collection of all the `Testcases`.
 + Response 200 (application/json)
 
         {
-            "next":"http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/testcases/name:like=dist.rpmlint.*&page=1",
+            "next":"https://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/testcases/name:like=dist.rpmlint.*&page=1",
             "prev":null,
             "data":[
                 {
                     "name": "dist.rpmlint",
                     "ref_url": "https://fedoraproject.org/wiki/Common_Rpmlint_issues",
-                    "href": "http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/testcases/dist.rpmlint"
+                    "href": "https://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/testcases/dist.rpmlint"
                 }
             ]
         }
@@ -531,7 +531,7 @@ get updated with the new `ref_url`, if set in the JSON data.
         {
             "name": "dist.rpmlint",
             "ref_url": "https://fedoraproject.org/wiki/Common_Rpmlint_issues",
-            "href": "http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/testcases/dist.rpmlint"
+            "href": "https://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/testcases/dist.rpmlint"
         }
 
 
@@ -554,7 +554,7 @@ get updated with the new `ref_url`, if set in the JSON data.
     - `27f94e36-62ec-11e6-83fd-525400d7d6a4` (string)
 - data (object) - Any number of key-value pairs. Used to store any additional information. In Taskotron `item` and `type` are the most common keys used to represent "what was tested".
     - *key* (array[string], optional)
-- `href`: `http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results/7484989` (string) - Reference to self.
+- `href`: `https://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results/7484989` (string) - Reference to self.
 
 ## Result POST (object)
 - outcome (OUTCOMES, required)
@@ -602,9 +602,9 @@ get updated with the new `ref_url`, if set in the JSON data.
 - _auth (nullable, optional) - Placeholder for the future implemantation of Authentication/Authorization
 
 ## Group GET (Group POST data)
-- results: `http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results?group=27f94e36-62ec-11e6-83fd-525400d7d6a4` (string) - URL to retrieve results in the `Group` via the `Result` resource
+- results: `https://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results?group=27f94e36-62ec-11e6-83fd-525400d7d6a4` (string) - URL to retrieve results in the `Group` via the `Result` resource
 - `results_count`: 1 (number) - Amount of `Results` in the `Group`
-- `href`: `http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/groups/27f94e36-62ec-11e6-83fd-525400d7d6a4` (string) - Reference to self.
+- `href`: `https://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/groups/27f94e36-62ec-11e6-83fd-525400d7d6a4` (string) - Reference to self.
 
 
 ## Testcase POST data (object)
@@ -617,4 +617,4 @@ get updated with the new `ref_url`, if set in the JSON data.
 - _auth (nullable, optional) - Placeholder for the future implemantation of Authentication/Authorization.
 
 ## Testcase GET (Testcase POST data)
-- `href`: `http://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/testcases/dist.rpmlint` (string) - Reference to self.
+- `href`: `https://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/testcases/dist.rpmlint` (string) - Reference to self.

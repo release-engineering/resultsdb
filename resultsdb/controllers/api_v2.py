@@ -652,7 +652,7 @@ def landing_page():
                 "message": "Everything is fine. But choose wisely, for while "
                 "the true Grail will bring you life, the false "
                 "Grail will take it from you.",
-                "documentation": "http://docs.resultsdb20.apiary.io/",
+                "documentation": "https://docs.resultsdb20.apiary.io/",
                 "groups": url_for(".get_groups", _external=True),
                 "results": url_for(".get_results", _external=True),
                 "testcases": url_for(".get_testcases", _external=True),

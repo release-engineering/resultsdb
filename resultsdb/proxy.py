@@ -1,11 +1,11 @@
 # Copyright 2009-2014, Red Hat, Inc.
-# License: GPL-2.0+ <http://spdx.org/licenses/GPL-2.0+>
+# License: GPL-2.0+ <https://spdx.org/licenses/GPL-2.0+>
 
 """
 Makes fedocal an application behind a reverse proxy and thus ensure the
 redirects are using ``https``.
 
-Original Source: http://flask.pocoo.org/snippets/35/ by Peter Hansen
+Original Source: https://flask.pocoo.org/snippets/35/ by Peter Hansen
 Source: https://github.com/fedora-infra/fedocal/blob/master/fedocal/proxy.py
 """
 
@@ -20,15 +20,15 @@ class ReverseProxied:
     RewriteEngine On
 
     <Location /myprefix/ >
-        ProxyPass http://192.168.0.1:5001/
-        ProxyPassReverse http://192.168.0.1:5001/
+        ProxyPass https://192.168.0.1:5001/
+        ProxyPassReverse https://192.168.0.1:5001/
         RequestHeader set X-Forwarded-Scheme $scheme
         RequestHeader add X-Script-Name /myprefix/
     </Location>
 
     In nginx:
     location /myprefix {
-        proxy_pass http://192.168.0.1:5001;
+        proxy_pass https://192.168.0.1:5001;
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Scheme $scheme;
