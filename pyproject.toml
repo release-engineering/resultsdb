@@ -38,7 +38,7 @@ iso8601 = "^2.1.0"
 pydantic = "^2.7.1"
 Flask-Pydantic = "^0.12.0"
 
-email-validator = "^2.1.1"
+email-validator = "^2.2.0"
 python-ldap = "^3.4.3"
 Flask-pyoidc = "^3.14.3"
 Flask-Session = "^0.8.0"
