@@ -43,13 +43,23 @@ ENV \
     PYTHONUNBUFFERED=1
 
 WORKDIR /build
-COPY . .
+
+# Copy only specific files to avoid accidentally including any generated files
+# or secrets.
+COPY resultsdb ./resultsdb
+COPY conf ./conf
+COPY \
+    pyproject.toml \
+    poetry.lock \
+    README.md \
+    alembic.ini \
+    entrypoint.sh \
+    ./
 
 # hadolint ignore=SC1091
 RUN set -ex \
     && export PATH=/root/.local/bin:$PATH \
     && . /venv/bin/activate \
-    && pip install --no-cache-dir -r requirements.txt \
     && poetry build --format=wheel \
     && version=$(poetry version --short) \
     && pip install --no-cache-dir dist/resultsdb-"$version"-py3*.whl \

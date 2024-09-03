@@ -19,8 +19,7 @@ The API v2 documentation can be found at
 If you encounter any installation issues, it's possible that you don't have
 `gcc` and necessary C development headers installed to compile C extensions
 from PyPI. Either install those based on the error messages, or install
-the necessary packages directly to your system. See `requirements.txt` to
-learn how.
+the necessary packages directly to your system.
 
 Install the project:
 
