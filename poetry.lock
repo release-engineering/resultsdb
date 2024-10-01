@@ -1105,12 +1105,12 @@ files = [
 
 [[package]]
 name = "mod-wsgi"
-version = "5.0.0"
+version = "5.0.1"
 description = "Installer for Apache/mod_wsgi."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "mod_wsgi-5.0.0.tar.gz", hash = "sha256:81fa192494410f2a4760818a7bfd7fa65826158d08af6726ec6a1b3d0ee18b3a"},
+    {file = "mod_wsgi-5.0.1.tar.gz", hash = "sha256:8ed00c45ff04ac0a29b8c022e12b57bc588c99bf3eaba0c43f68a9a32bb74e71"},
 ]
 
 [[package]]
@@ -2454,4 +2454,4 @@ test = ["pytest", "pytest-cov"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.13"
-content-hash = "6da8b4e4f84133770b62596b4eb2e4bc8097809f2a5868059f65d89d92d38de0"
+content-hash = "4b37950db54ae23c354334a293fb8f67d5d7d312d5fd7391dca47030cc89115d"
