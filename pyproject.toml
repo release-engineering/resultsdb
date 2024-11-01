@@ -32,7 +32,7 @@ pytest-cov = {version = "^5.0.0", optional = true}
 
 Flask-SQLAlchemy = "^3.1.1"
 SQLAlchemy = {version = "^2.0.35"}
-psycopg2-binary = {version = "^2.9.7"}
+psycopg2-binary = {version = "^2.9.10"}
 alembic = "^1.13.3"
 iso8601 = "^2.1.0"
 pydantic = "^2.7.1"
