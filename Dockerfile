@@ -22,7 +22,7 @@ RUN set -exo pipefail \
     && dnf --installroot=/mnt/rootfs clean all \
     # https://python-poetry.org/docs/master/#installing-with-the-official-installer
     && curl -sSL --proto "=https" https://install.python-poetry.org | python3 - \
-    && python3 -m venv --system-site-packages /venv
+    && python3 -m venv /venv
 
 ENV \
     PIP_DEFAULT_TIMEOUT=100 \
@@ -105,6 +105,11 @@ WORKDIR /app
 
 USER 1001
 EXPOSE 5001
+
+# Validate virtual environment
+RUN /app/entrypoint.sh python -c 'import resultsdb' \
+    && /app/entrypoint.sh resultsdb --help
+
 ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["mod_wsgi-express", "start-server", "/usr/share/resultsdb/resultsdb.wsgi", \
     "--user", "apache", "--group", "apache", \
