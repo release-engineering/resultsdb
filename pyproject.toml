@@ -50,7 +50,7 @@ opentelemetry-instrumentation-flask = "^0.46b0"
 opentelemetry-instrumentation-sqlalchemy = "^0.46b0"
 tenacity = "^9.0.0"
 
-mod-wsgi = "^5.0.1"
+mod-wsgi = "^5.0.2"
 
 [tool.poetry.extras]
 test = [
