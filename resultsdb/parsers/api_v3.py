@@ -259,8 +259,10 @@ class ResultParamsBase(BaseModel):
     @field_validator("outcome", mode="before")
     @classmethod
     def outcome_must_be_valid(cls, v):
-        if v.upper() not in result_outcomes_extended():
-            raise ValueError(f'must be one of: {", ".join(result_outcomes_extended())}')
+        if not isinstance(v, str) or v.upper() not in result_outcomes_extended():
+            raise ValueError(
+                f'must be one of: {", ".join(sorted(result_outcomes_extended()))}'
+            )
         return v
 
     @model_validator(mode="after")

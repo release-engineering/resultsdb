@@ -169,6 +169,24 @@ def test_api_v3_outcome_upper_case(client):
     assert r.json["outcome"] == "FAILED"
 
 
+def test_api_v3_outcome_bad_type(client):
+    """POST parameter "outcome" is converted to upper-case."""
+    data = brew_build_request_data(outcome=0)
+    r = client.post("/api/v3/results/brew-builds", json=data)
+    assert r.status_code == 400, r.text
+    assert r.json == {
+        "validation_error": [
+            {
+                "loc": ["outcome"],
+                "msg": "Value error, must be one of: AMAZING, ERROR, FAILED, INFO, NEEDS_INSPECTION, PASSED, QUEUED, RUNNING",
+                "type": "value_error",
+                "input": ANY,
+                "url": ANY,
+            }
+        ]
+    }
+
+
 def test_api_v3_productmd_compose_id_simple(client):
     data = {
         "id": "RHEL-8.8.0-20221129.0",
