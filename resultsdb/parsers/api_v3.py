@@ -79,7 +79,9 @@ class ResultParamsBase(BaseModel):
     - example() - returns an example (instantiation of the derived class)
     """
 
-    outcome: str = field(
+    outcome: Annotated[
+        str, StringConstraints(min_length=1, strip_whitespace=True, to_upper=True)
+    ] = field(
         """
         Result of the test run. Can also indicate the intention to run
         the test in the near future (QUEUED), an unfinished run (RUNNING)
@@ -257,7 +259,7 @@ class ResultParamsBase(BaseModel):
     @field_validator("outcome", mode="before")
     @classmethod
     def outcome_must_be_valid(cls, v):
-        if v not in result_outcomes_extended():
+        if v.upper() not in result_outcomes_extended():
             raise ValueError(f'must be one of: {", ".join(result_outcomes_extended())}')
         return v
 
