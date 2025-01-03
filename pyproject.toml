@@ -21,7 +21,7 @@ include = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.13"
+python = ">=3.13,<3.14"
 flask = "^3.0.1"
 gunicorn = "^23.0.0"
 fedora-messaging = "^3.4.1"
