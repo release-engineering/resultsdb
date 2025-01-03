@@ -1,4 +1,4 @@
-FROM quay.io/fedora/python-312:20250101@sha256:30e9dd44032e041c4967ec7d20f35929e6c5de30cd6afe0f575f9786e9c90723 AS builder
+FROM quay.io/fedora/python-313:20250101@sha256:dc3b9cf6de0ce9dca8b7eda0b353f7cfa15887e0bfe2015b2100f7d1aa368293 AS builder
 
 # builder should use root to install/create all files
 USER root
@@ -9,7 +9,7 @@ RUN set -exo pipefail \
     # install runtime dependencies
     && dnf install -y \
         --installroot=/mnt/rootfs \
-        --releasever=/ \
+        --use-host-config \
         --setopt install_weak_deps=false \
         --nodocs \
         --disablerepo=* \
@@ -19,7 +19,9 @@ RUN set -exo pipefail \
         openldap \
         python3 \
         httpd-core \
+        python3-mod_wsgi \
     && dnf --installroot=/mnt/rootfs clean all \
+    && ln -s mod_wsgi-express-3 /mnt/rootfs/usr/bin/mod_wsgi-express \
     # https://python-poetry.org/docs/master/#installing-with-the-official-installer
     && curl -sSL --proto "=https" https://install.python-poetry.org | python3 - \
     && python3 -m venv /venv
@@ -108,6 +110,7 @@ EXPOSE 5001
 
 # Validate virtual environment
 RUN /app/entrypoint.sh python -c 'import resultsdb' \
+    && mod_wsgi-express module-config \
     && /app/entrypoint.sh resultsdb --help
 
 ENTRYPOINT ["/app/entrypoint.sh"]

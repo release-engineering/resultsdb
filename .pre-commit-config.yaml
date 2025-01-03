@@ -39,7 +39,7 @@ repos:
     hooks:
       - id: pyupgrade
         args:
-          - --py311-plus
+          - --py313-plus
 
   # Linter and formatter
   - repo: https://github.com/astral-sh/ruff-pre-commit
