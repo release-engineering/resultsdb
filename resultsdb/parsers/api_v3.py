@@ -261,7 +261,7 @@ class ResultParamsBase(BaseModel):
     def outcome_must_be_valid(cls, v):
         if v.upper() not in result_outcomes_extended():
             raise ValueError(
-                f'must be one of: {", ".join(sorted(result_outcomes_extended()))}'
+                f"must be one of: {', '.join(sorted(result_outcomes_extended()))}"
             )
         return v
 

@@ -92,7 +92,7 @@ class ResultsParams(BaseListParams):
     def outcome_must_be_valid(cls, v):
         outcomes = [x.upper() for x in v]
         if any(x not in result_outcomes() for x in outcomes):
-            raise ValueError(f'must be one of: {", ".join(result_outcomes())}')
+            raise ValueError(f"must be one of: {', '.join(result_outcomes())}")
         return outcomes
 
 
@@ -151,7 +151,7 @@ class CreateResultParams(BaseModel):
     @field_validator("outcome", mode="after")
     def outcome_must_be_valid(cls, v):
         if v not in result_outcomes():
-            raise ValueError(f'must be one of: {", ".join(result_outcomes())}')
+            raise ValueError(f"must be one of: {', '.join(result_outcomes())}")
         return v
 
 

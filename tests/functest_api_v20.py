@@ -79,7 +79,7 @@ class TestFuncApiV20(TestCase):
                 "This test requires PostgreSQL to work properly. "
                 "You can disable it by setting NO_CAN_HAS_POSTGRES "
                 "env variable to any non-empty value.\n"
-                f'Current DB URI: {app.config["SQLALCHEMY_DATABASE_URI"]}'
+                f"Current DB URI: {app.config['SQLALCHEMY_DATABASE_URI']}"
             )
 
         assert db.engine.name == "postgresql"
