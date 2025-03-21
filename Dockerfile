@@ -116,7 +116,7 @@ RUN /app/entrypoint.sh python -c 'import resultsdb' \
 ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["mod_wsgi-express", "start-server", "/usr/share/resultsdb/resultsdb.wsgi", \
     "--user", "apache", "--group", "apache", \
-    "--port", "5001", "--threads", "5", \
+    "--port", "5001", \
     "--include-file", "/etc/httpd/conf.d/resultsdb.conf", \
     "--log-level", "info", \
     "--log-to-terminal", \
