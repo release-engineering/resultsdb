@@ -509,6 +509,11 @@ class TestFuncApiV20(TestCase):
         assert r.json["uuid"] == uuid2
         assert r.json["description"] is None
         assert r.json["ref_url"] is None
+        assert r.json["results_count"] == 1
+
+        self.helper_create_result(groups=[uuid2])
+        r = self.app.get(f"{GROUPS_API}/{uuid2}")
+        assert r.json["results_count"] == 2
 
     def test_create_result_testcase_did_not_exist(self):
         self.helper_create_result(testcase=self.ref_testcase)
