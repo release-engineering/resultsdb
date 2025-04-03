@@ -18,19 +18,27 @@
 #   Josef Skladanka <jskladan@redhat.com>
 
 from flask import url_for
+from sqlalchemy import func, select
 
+from resultsdb.models import db
 from resultsdb.models.results import GroupsToResults
 from resultsdb.serializers import BaseSerializer
 
 
 class Serializer(BaseSerializer):
     def _serialize_Group(self, o, **kwargs):
+        results_count_statement = (
+            select(func.count("*"))
+            .select_from(GroupsToResults)
+            .filter_by(group_uuid=o.uuid)
+        )
+        results_count = db.session.execute(results_count_statement).scalar()
         rv = dict(
             uuid=o.uuid,
             description=o.description,
             ref_url=o.ref_url,
             results=url_for("api_v2.get_results", groups=[o.uuid], _external=True),
-            results_count=GroupsToResults.query.filter_by(group_uuid=o.uuid).count(),
+            results_count=results_count,
             href=url_for("api_v2.get_group", group_id=o.uuid, _external=True),
         )
 
