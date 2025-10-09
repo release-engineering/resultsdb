@@ -1,5 +1,8 @@
 FROM quay.io/fedora/python-313:20251001@sha256:d3f9c348c0e709957c9b7617e65814c57f6162d3e930712a2ea7b5860ba40530 AS builder
 
+ARG SHORT_COMMIT
+ARG COMMIT_TIMESTAMP
+
 # builder should use root to install/create all files
 USER root
 
@@ -52,6 +55,7 @@ COPY \
 RUN set -ex \
     && export PATH=/root/.local/bin:"$PATH" \
     && . /venv/bin/activate \
+    && poetry version "2.2.0.dev$COMMIT_TIMESTAMP+git.$SHORT_COMMIT" \
     && poetry build --format=wheel \
     && version=$(poetry version --short) \
     && pip install --no-cache-dir dist/resultsdb-"$version"-py3*.whl \
@@ -78,8 +82,6 @@ USER 1001
 
 # --- Final image
 FROM scratch
-ARG GITHUB_SHA
-ARG EXPIRES_AFTER
 LABEL \
     name="ResultsDB application" \
     vendor="ResultsDB developers" \
@@ -87,10 +89,7 @@ LABEL \
     description="ResultsDB is a results store engine for, but not limited to, Fedora QA tools." \
     usage="https://pagure.io/taskotron/resultsdb/blob/develop/f/openshift/README.md" \
     url="https://github.com/release-engineering/resultsdb" \
-    vcs-type="git" \
-    vcs-ref=$GITHUB_SHA \
-    io.k8s.display-name="ResultsDB" \
-    quay.expires-after=$EXPIRES_AFTER
+    io.k8s.display-name="ResultsDB"
 
 ENV \
     PYTHONFAULTHANDLER=1 \
