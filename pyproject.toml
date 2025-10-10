@@ -39,7 +39,7 @@ pydantic = "^2.10.2"
 Flask-Pydantic = "^0.13.0"
 
 email-validator = "^2.2.0"
-python-ldap = "^3.4.3"
+python-ldap = "^3.4.5"
 Flask-pyoidc = "^3.14.3"
 Flask-Session = "^0.8.0"
 
