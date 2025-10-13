@@ -23,16 +23,16 @@ the necessary packages directly to your system.
 
 Install the project:
 
-    $ poetry run python -m ensurepip --upgrade
-    $ poetry install
+    $ uv run python -m ensurepip --upgrade
+    $ uv install
 
 Initialize your database:
 
-    $ DEV=true poetry run ./init_db.sh
+    $ DEV=true uv run ./init_db.sh
 
 Run the server:
 
-    $ DEV=true poetry run python runapp.py
+    $ DEV=true uv run python runapp.py
 
 The server is now running with a very simple frontend at <http://localhost:5001>.
 API calls can be sent to <http://localhost:5001/api/v2.0>. All data is stored

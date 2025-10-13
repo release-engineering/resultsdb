@@ -1,5 +1,5 @@
 #!/bin/bash
 set -e
-poetry run resultsdb init_alembic
-poetry run resultsdb init_db
-poetry run resultsdb mock_data
+uv run resultsdb init_alembic
+uv run resultsdb init_db
+uv run resultsdb mock_data
