@@ -1,8 +1,5 @@
 FROM quay.io/fedora/python-313:20251001@sha256:d3f9c348c0e709957c9b7617e65814c57f6162d3e930712a2ea7b5860ba40530 AS builder
 
-ARG SHORT_COMMIT
-ARG COMMIT_TIMESTAMP
-
 # builder should use root to install/create all files
 USER root
 
@@ -25,8 +22,8 @@ RUN set -exo pipefail \
         python3-mod_wsgi \
     && dnf --installroot=/mnt/rootfs clean all \
     && ln -s mod_wsgi-express-3 /mnt/rootfs/usr/bin/mod_wsgi-express \
-    # https://python-poetry.org/docs/master/#installing-with-the-official-installer
-    && curl -sSL --proto "=https" https://install.python-poetry.org | python3 - \
+    # Install uv
+    && curl -LsSf https://astral.sh/uv/install.sh | sh \
     && python3 -m venv /venv
 
 ENV \
@@ -45,19 +42,22 @@ COPY resultsdb ./resultsdb
 COPY conf ./conf
 COPY \
     pyproject.toml \
-    poetry.lock \
+    uv.lock \
     README.md \
     alembic.ini \
     entrypoint.sh \
     ./
 
+ARG SHORT_COMMIT
+ARG COMMIT_TIMESTAMP
+
 # hadolint ignore=SC1091
 RUN set -ex \
     && export PATH=/root/.local/bin:"$PATH" \
     && . /venv/bin/activate \
-    && poetry version "2.2.0.dev$COMMIT_TIMESTAMP+git.$SHORT_COMMIT" \
-    && poetry build --format=wheel \
-    && version=$(poetry version --short) \
+    && uv version "2.2.0.dev$COMMIT_TIMESTAMP+git.$SHORT_COMMIT" \
+    && uv build --wheel \
+    && version=$(uv version --short) \
     && pip install --no-cache-dir dist/resultsdb-"$version"-py3*.whl \
     && deactivate \
     && mv /venv /mnt/rootfs \
