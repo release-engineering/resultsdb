@@ -538,6 +538,7 @@ spec:
         # Renovate treats the text after the first hyphen as a type of platform/compatibility indicator.
         # See: https://docs.renovatebot.com/modules/versioning/docker/
         - "$(tasks.clone-repository.results.commit-timestamp)-stable"
+        - latest
       runAfter:
       - clair-scan
       - clamav-scan
