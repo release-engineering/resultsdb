@@ -109,7 +109,8 @@ EXPOSE 5001
 
 # Validate virtual environment
 RUN /app/entrypoint.sh python -c 'import resultsdb' \
-    && mod_wsgi-express module-config \
+    && /app/entrypoint.sh python -c 'import mod_wsgi.server' \
+    && /app/entrypoint.sh mod_wsgi-express module-config \
     && /app/entrypoint.sh resultsdb --help
 
 ENTRYPOINT ["/app/entrypoint.sh"]
