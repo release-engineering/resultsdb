@@ -672,6 +672,12 @@ wheels = [
 ]
 
 [[package]]
+name = "mod-wsgi"
+version = "5.0.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ca/4d/275853efa4d2a4efe1614aa0df06295e71f2082cebccc4d40d0f0a551c24/mod_wsgi-5.0.2.tar.gz", hash = "sha256:6fe5557c3ef25c184c2c994905fe52be1c06ae5c46235ecafe558e84789e2159", size = 498627, upload-time = "2024-11-22T08:53:22.752Z" }
+
+[[package]]
 name = "msgspec"
 version = "0.20.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1232,6 +1238,7 @@ dependencies = [
     { name = "flask-sqlalchemy" },
     { name = "gunicorn" },
     { name = "iso8601" },
+    { name = "mod-wsgi" },
     { name = "opentelemetry-exporter-otlp" },
     { name = "opentelemetry-instrumentation" },
     { name = "opentelemetry-instrumentation-flask" },
@@ -1263,6 +1270,7 @@ requires-dist = [
     { name = "flask-sqlalchemy", specifier = ">=3.1.1,<4.0.0" },
     { name = "gunicorn", specifier = ">=25.0.0,<25.1.0" },
     { name = "iso8601", specifier = ">=2.1.0,<3.0.0" },
+    { name = "mod-wsgi", specifier = ">=5.0.2" },
     { name = "opentelemetry-exporter-otlp", specifier = ">=1.25.0,<2.0.0" },
     { name = "opentelemetry-instrumentation", specifier = ">=0.46b0,<1.0.0" },
     { name = "opentelemetry-instrumentation-flask", specifier = ">=0.46b0,<1.0.0" },
