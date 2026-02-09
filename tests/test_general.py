@@ -145,20 +145,20 @@ class TestMessaging:
             if "not found" in str(err):
                 print(
                     """=============== HINT ===============
-This exception can be caused by the fact, that you did not run
-`python setup.py develop` before executing the testsuite.
+This exception can be caused by the fact, that the package is not installed
+in the current environment.
 
-The messaging plugins are defined as setuptools entry-points, and those live in the
-.egg-info directory. If you're developing locally, that directory is usually present
-in pwd due to `python setup.py develop`.
+The messaging plugins are defined as entry-points in pyproject.toml and are
+discovered via importlib.metadata. Make sure the package is installed
+(e.g. `pip install -e .` or `uv sync`).
 
-If you ran `python setup.py develop` and are still seeing this error, then:
- - you might me missing the 'fedmsg' entrypoint in setup.py
+If the package is installed and you are still seeing this error, then:
+ - you might be missing the 'fedmsg' entrypoint in pyproject.toml
  - there can be an error in the plugin loading code"""
                 )
             raise
         assert isinstance(plugin, messaging.FedmsgPlugin), (
-            "check whether `fedmsg` entrypoint in setup.py points to"
+            "check whether `fedmsg` entrypoint in pyproject.toml points to"
             " resultsdb.messaging:FedmsgPlugin"
         )
 

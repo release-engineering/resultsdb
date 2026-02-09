@@ -20,9 +20,9 @@
 import abc
 import json
 import logging
+from importlib.metadata import entry_points
 from threading import Lock
 
-import pkg_resources
 import stomp
 from fedora_messaging.api import Message, publish
 from fedora_messaging.exceptions import (
@@ -253,7 +253,7 @@ class StompPlugin(MessagingPlugin):
 
 def load_messaging_plugin(name, plugin_args):
     """Instantiate and return the appropriate messaging plugin."""
-    points = pkg_resources.iter_entry_points("resultsdb.messaging.plugins")
+    points = entry_points(group="resultsdb.messaging.plugins")
     classes = {"dummy": DummyPlugin}
     classes.update({point.name: point.load() for point in points})
 
