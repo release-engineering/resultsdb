@@ -20,11 +20,13 @@ RUN set -exo pipefail \
         python3 \
         httpd-core \
         python3-mod_wsgi \
+        python3-packaging \
+        python3-six \
     && dnf --installroot=/mnt/rootfs clean all \
     && ln -s mod_wsgi-express-3 /mnt/rootfs/usr/bin/mod_wsgi-express \
     # Install uv
     && curl -LsSf https://astral.sh/uv/install.sh | sh \
-    && python3 -m venv /venv
+    && python3 -m venv --system-site-packages /venv
 
 ENV \
     PIP_DEFAULT_TIMEOUT=100 \

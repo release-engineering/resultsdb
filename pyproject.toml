@@ -29,8 +29,6 @@ dependencies = [
     "opentelemetry-instrumentation-flask>=0.46b0,<1.0.0",
     "opentelemetry-instrumentation-sqlalchemy>=0.46b0,<1.0.0",
     "tenacity>=9.0.0,<10.0.0",
-    "setuptools>=80.9.0",
-    "mod-wsgi>=5.0.2",
 ]
 
 [project.optional-dependencies]
