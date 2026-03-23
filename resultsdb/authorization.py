@@ -40,21 +40,42 @@ def match_testcase_permissions(testcase, permissions):
                 yield permission
 
 
-def verify_authorization(user, testcase, permissions, ldap_host, ldap_searches):
+def _check_oidc_groups(user, testcase, oidc_groups, allowed_groups):
+    """Check OIDC group membership. Returns True if authorized, False to fall back."""
+    if oidc_groups is None:
+        return False
+
+    if not oidc_groups:
+        log.warning(
+            "OIDC token for user %s contains an empty groups claim; "
+            "falling back to LDAP for test case %s",
+            user,
+            testcase,
+        )
+        return False
+
+    if not set(oidc_groups).isdisjoint(allowed_groups):
+        return True
+
+    log.warning(
+        "OIDC groups %r did not match any allowed groups %r for user %s "
+        "and test case %s; falling back to LDAP",
+        oidc_groups,
+        allowed_groups,
+        user,
+        testcase,
+    )
+    return False
+
+
+def _check_ldap_groups(user, testcase, ldap_host, ldap_searches, allowed_groups):
     """
-    Raises an exception if the user is not permitted to publish a result for
-    the testcase.
+    Check LDAP group membership.
+
+    Returns True if authorized, False if LDAP is not configured.
     """
     if not (ldap_host and ldap_searches):
-        raise InternalServerError(
-            "LDAP_HOST and LDAP_SEARCHES also need to be defined if PERMISSIONS is defined"
-        )
-
-    allowed_groups = []
-    for permission in match_testcase_permissions(testcase, permissions):
-        if user in permission.get("users", []):
-            return
-        allowed_groups += permission.get("groups", [])
+        return False
 
     try:
         import ldap
@@ -73,10 +94,47 @@ def verify_authorization(user, testcase, permissions, ldap_host, ldap_searches):
     for cur_ldap_search in ldap_searches:
         groups = get_group_membership(ldap, user, con, cur_ldap_search)
         if any(g in groups for g in allowed_groups):
-            return
+            return True
         any_groups_found = any_groups_found or len(groups) > 0
 
     raise Forbidden(
         f"User {user} is not authorized to submit results for the test case {testcase}"
         + ("" if any_groups_found else "; failed to find the user in LDAP")
+    )
+
+
+def verify_authorization(
+    user, testcase, permissions, ldap_host, ldap_searches, oidc_groups=None
+):
+    """
+    Raises an exception if the user is not permitted to publish a result for
+    the testcase.
+    """
+    allowed_groups = []
+    for permission in match_testcase_permissions(testcase, permissions):
+        if user in permission.get("users", []):
+            return
+        allowed_groups += permission.get("groups", [])
+
+    if _check_oidc_groups(user, testcase, oidc_groups, allowed_groups):
+        return
+
+    if not (ldap_host and ldap_searches) and oidc_groups is None:
+        raise InternalServerError(
+            "LDAP_HOST and LDAP_SEARCHES also need to be defined if PERMISSIONS is defined"
+        )
+
+    if _check_ldap_groups(user, testcase, ldap_host, ldap_searches, allowed_groups):
+        if oidc_groups is not None:
+            log.warning(
+                "LDAP authorized user %s for test case %s. "
+                "Consider adding the appropriate groups to the user's "
+                "OIDC token to avoid LDAP dependency.",
+                user,
+                testcase,
+            )
+        return
+
+    raise Forbidden(
+        f"User {user} is not authorized to submit results for the test case {testcase}"
     )

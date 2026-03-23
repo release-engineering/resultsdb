@@ -88,6 +88,7 @@ class Config:
 
     OIDC_CLIENT_SECRETS = "/etc/resultsdb/oauth2_client_secrets.json"
     OIDC_USERNAME_FIELD = "uid"
+    OIDC_GROUPS_FIELD = "realm_access.roles"
     OIDC_SESSION_REFRESH_INTERVAL_SECONDS = 300
     OIDC_SESSION_PERMANENT = False
     PERMANENT_SESSION_LIFETIME = 300

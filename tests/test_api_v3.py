@@ -433,6 +433,105 @@ def test_api_v3_permission_no_groups_found(client, permissions, mock_ldap, caplo
     assert f"Permission denied: {expected_error}" in caplog.text
 
 
+def test_api_v3_permission_oidc_groups_match(client, permissions, mock_ldap, app):
+    """OIDC groups match — authorized without LDAP."""
+    permissions.append(
+        {
+            "groups": ["testgroup1"],
+            "testcases": ["testcase1*"],
+        }
+    )
+    with patch.object(app.oidc, "current_token_identity", {
+        "uid": "testuser1",
+        "realm_access": {"roles": ["testgroup1"]},
+    }):
+        data = brew_build_request_data()
+        r = client.post("/api/v3/results/brew-builds", json=data)
+    assert r.status_code == 201, r.text
+    mock_ldap.search_s.assert_not_called()
+
+
+def test_api_v3_permission_oidc_groups_no_match_ldap_fallback(
+    client, permissions, mock_ldap, caplog, app
+):
+    """OIDC groups don't match, LDAP authorizes with deprecation warning."""
+    permissions.append(
+        {
+            "groups": ["testgroup1"],
+            "testcases": ["testcase1*"],
+        }
+    )
+    with patch.object(app.oidc, "current_token_identity", {
+        "uid": "testuser1",
+        "realm_access": {"roles": ["other_group"]},
+    }):
+        data = brew_build_request_data()
+        r = client.post("/api/v3/results/brew-builds", json=data)
+    assert r.status_code == 201, r.text
+    mock_ldap.search_s.assert_called_once()
+    assert "falling back to LDAP" in caplog.text
+    assert "LDAP authorized" in caplog.text
+
+
+def test_api_v3_permission_oidc_groups_no_match_ldap_denies(
+    client, permissions, mock_ldap, caplog, app
+):
+    """OIDC groups don't match, LDAP doesn't authorize — Forbidden."""
+    permissions.append(
+        {
+            "groups": ["testgroup1"],
+            "testcases": ["testcase1*"],
+        }
+    )
+    with patch.object(app.oidc, "current_token_identity", {
+        "uid": "testuser1",
+        "realm_access": {"roles": ["other_group"]},
+    }):
+        mock_ldap.search_s.return_value = []
+        data = brew_build_request_data()
+        r = client.post("/api/v3/results/brew-builds", json=data)
+    assert r.status_code == 403, r.text
+    assert "falling back to LDAP" in caplog.text
+
+
+def test_api_v3_permission_oidc_groups_match_without_ldap(
+    client, permissions, mock_ldap, app
+):
+    """OIDC groups match — authorized even when LDAP is not configured."""
+    permissions.append(
+        {
+            "groups": ["testgroup1"],
+            "testcases": ["testcase1*"],
+        }
+    )
+    with patch.object(app.oidc, "current_token_identity", {
+        "uid": "testuser1",
+        "realm_access": {"roles": ["testgroup1"]},
+    }):
+        data = brew_build_request_data()
+        with patch.dict(app.config, {"LDAP_HOST": None, "LDAP_SEARCHES": None}):
+            r = client.post("/api/v3/results/brew-builds", json=data)
+    assert r.status_code == 201, r.text
+    mock_ldap.search_s.assert_not_called()
+
+
+def test_api_v3_permission_oidc_groups_none_falls_back_to_ldap(
+    client, permissions, mock_ldap, app
+):
+    """No OIDC groups claim — falls back to LDAP as before."""
+    permissions.append(
+        {
+            "groups": ["testgroup1"],
+            "testcases": ["testcase1*"],
+        }
+    )
+    # current_token_identity has no realm_access — so get_oidc_groups returns None
+    data = brew_build_request_data()
+    r = client.post("/api/v3/results/brew-builds", json=data)
+    assert r.status_code == 201, r.text
+    mock_ldap.search_s.assert_called_once()
+
+
 @pytest.mark.parametrize("params_class", RESULTS_PARAMS_CLASSES)
 def test_api_v3_consistency(params_class, client):
     """
