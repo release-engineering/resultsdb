@@ -198,7 +198,8 @@ def register_handlers(app):
     # TODO: find out why error handler works for 404 but not for 400
     @app.errorhandler(400)
     def bad_request(error):
-        return jsonify({"message": "Bad request"}), 400
+        app.logger.error("Bad request: %s", error)
+        return jsonify({"message": str(error)}), 400
 
     @app.errorhandler(401)
     def unauthorized(error):
