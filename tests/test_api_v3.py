@@ -555,7 +555,8 @@ def test_api_v3_bad_param_invalid_json(params_class, client):
         f"/api/v3/results/{artifact_type}s", content_type="application/json", data="{"
     )
     assert r.status_code == 400, r.text
-    assert r.json == {"message": "Bad request"}
+    assert r.json == {"message": ANY}
+    assert r.json["message"].startswith("400 Bad Request: Failed to decode JSON object")
 
 
 @pytest.mark.parametrize("params_class", RESULTS_PARAMS_CLASSES)
