@@ -441,10 +441,14 @@ def test_api_v3_permission_oidc_groups_match(client, permissions, mock_ldap, app
             "testcases": ["testcase1*"],
         }
     )
-    with patch.object(app.oidc, "current_token_identity", {
-        "uid": "testuser1",
-        "realm_access": {"roles": ["testgroup1"]},
-    }):
+    with patch.object(
+        app.oidc,
+        "current_token_identity",
+        {
+            "uid": "testuser1",
+            "realm_access": {"roles": ["testgroup1"]},
+        },
+    ):
         data = brew_build_request_data()
         r = client.post("/api/v3/results/brew-builds", json=data)
     assert r.status_code == 201, r.text
@@ -461,10 +465,14 @@ def test_api_v3_permission_oidc_groups_no_match_ldap_fallback(
             "testcases": ["testcase1*"],
         }
     )
-    with patch.object(app.oidc, "current_token_identity", {
-        "uid": "testuser1",
-        "realm_access": {"roles": ["other_group"]},
-    }):
+    with patch.object(
+        app.oidc,
+        "current_token_identity",
+        {
+            "uid": "testuser1",
+            "realm_access": {"roles": ["other_group"]},
+        },
+    ):
         data = brew_build_request_data()
         r = client.post("/api/v3/results/brew-builds", json=data)
     assert r.status_code == 201, r.text
@@ -483,10 +491,14 @@ def test_api_v3_permission_oidc_groups_no_match_ldap_denies(
             "testcases": ["testcase1*"],
         }
     )
-    with patch.object(app.oidc, "current_token_identity", {
-        "uid": "testuser1",
-        "realm_access": {"roles": ["other_group"]},
-    }):
+    with patch.object(
+        app.oidc,
+        "current_token_identity",
+        {
+            "uid": "testuser1",
+            "realm_access": {"roles": ["other_group"]},
+        },
+    ):
         mock_ldap.search_s.return_value = []
         data = brew_build_request_data()
         r = client.post("/api/v3/results/brew-builds", json=data)
@@ -504,10 +516,14 @@ def test_api_v3_permission_oidc_groups_match_without_ldap(
             "testcases": ["testcase1*"],
         }
     )
-    with patch.object(app.oidc, "current_token_identity", {
-        "uid": "testuser1",
-        "realm_access": {"roles": ["testgroup1"]},
-    }):
+    with patch.object(
+        app.oidc,
+        "current_token_identity",
+        {
+            "uid": "testuser1",
+            "realm_access": {"roles": ["testgroup1"]},
+        },
+    ):
         data = brew_build_request_data()
         with patch.dict(app.config, {"LDAP_HOST": None, "LDAP_SEARCHES": None}):
             r = client.post("/api/v3/results/brew-builds", json=data)
