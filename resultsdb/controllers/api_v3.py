@@ -28,15 +28,52 @@ def permissions():
     return app.config.get("PERMISSIONS", [])
 
 
+def get_oidc_groups() -> list[str] | None:
+    groups_field = app.config.get("OIDC_GROUPS_FIELD")
+    if not groups_field:
+        return None
+
+    token_identity = app.oidc.current_token_identity
+
+    value = token_identity
+    for key in groups_field.split("."):
+        if not isinstance(value, dict):
+            app.logger.warning(
+                "OIDC groups claim %r not found in token (failed at %r)",
+                groups_field,
+                key,
+            )
+            return None
+        value = value.get(key)
+        if value is None:
+            app.logger.warning(
+                "OIDC groups claim %r not found in token (missing key %r)",
+                groups_field,
+                key,
+            )
+            return None
+
+    if not isinstance(value, list):
+        app.logger.warning(
+            "OIDC groups claim %r is not a list: %r", groups_field, value
+        )
+        return None
+
+    return value
+
+
 def get_authorized_user(testcase) -> str:
     """
     Raises an exception if the current user cannot publish a result for the
     testcase, otherwise returns the name of the current user.
     """
     user = app.oidc.current_token_identity[app.config["OIDC_USERNAME_FIELD"]]
+    oidc_groups = get_oidc_groups()
     ldap_host = app.config.get("LDAP_HOST")
     ldap_searches = app.config.get("LDAP_SEARCHES")
-    verify_authorization(user, testcase, permissions(), ldap_host, ldap_searches)
+    verify_authorization(
+        user, testcase, permissions(), ldap_host, ldap_searches, oidc_groups
+    )
     return user
 
 
