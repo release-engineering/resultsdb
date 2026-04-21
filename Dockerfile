@@ -56,12 +56,8 @@ ARG COMMIT_TIMESTAMP
 # hadolint ignore=SC1091
 RUN set -ex \
     && export PATH=/root/.local/bin:"$PATH" \
-    && . /venv/bin/activate \
     && uv version "2.2.0.dev$COMMIT_TIMESTAMP+git.$SHORT_COMMIT" \
-    && uv build --wheel \
-    && version=$(uv version --short) \
-    && pip install --no-cache-dir dist/resultsdb-"$version"-py3*.whl \
-    && deactivate \
+    && UV_PROJECT_ENVIRONMENT=/venv uv sync --frozen --no-dev --no-editable \
     && mv /venv /mnt/rootfs \
     && mkdir -p /mnt/rootfs/app \
     && cp -v entrypoint.sh /mnt/rootfs/app
