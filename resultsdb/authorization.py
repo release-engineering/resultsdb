@@ -101,7 +101,9 @@ def _check_ldap_groups(user, testcase, ldap_host, ldap_searches, allowed_groups)
     con = None
     try:
         con = ldap.initialize(ldap_host)
-        return _query_ldap_groups(ldap, user, con, ldap_searches, allowed_groups, testcase)
+        return _query_ldap_groups(
+            ldap, user, con, ldap_searches, allowed_groups, testcase
+        )
     except ldap.LDAPError:
         log.exception(LDAP_ERROR)
         raise BadGateway(LDAP_ERROR)
