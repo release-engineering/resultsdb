@@ -68,6 +68,20 @@ def _check_oidc_groups(user, testcase, oidc_groups, allowed_groups):
     return False
 
 
+def _query_ldap_groups(ldap, user, con, ldap_searches, allowed_groups, testcase):
+    any_groups_found = False
+    for cur_ldap_search in ldap_searches:
+        groups = get_group_membership(ldap, user, con, cur_ldap_search)
+        if any(g in groups for g in allowed_groups):
+            return True
+        any_groups_found = any_groups_found or len(groups) > 0
+
+    raise Forbidden(
+        f"User {user} is not authorized to submit results for the test case {testcase}"
+        + ("" if any_groups_found else "; failed to find the user in LDAP")
+    )
+
+
 def _check_ldap_groups(user, testcase, ldap_host, ldap_searches, allowed_groups):
     """
     Check LDAP group membership.
@@ -84,23 +98,18 @@ def _check_ldap_groups(user, testcase, ldap_host, ldap_searches, allowed_groups)
             "If PERMISSIONS is defined, python-ldap needs to be installed"
         )
 
+    con = None
     try:
         con = ldap.initialize(ldap_host)
+        return _query_ldap_groups(
+            ldap, user, con, ldap_searches, allowed_groups, testcase
+        )
     except ldap.LDAPError:
         log.exception(LDAP_ERROR)
         raise BadGateway(LDAP_ERROR)
-
-    any_groups_found = False
-    for cur_ldap_search in ldap_searches:
-        groups = get_group_membership(ldap, user, con, cur_ldap_search)
-        if any(g in groups for g in allowed_groups):
-            return True
-        any_groups_found = any_groups_found or len(groups) > 0
-
-    raise Forbidden(
-        f"User {user} is not authorized to submit results for the test case {testcase}"
-        + ("" if any_groups_found else "; failed to find the user in LDAP")
-    )
+    finally:
+        if con:
+            con.unbind_s()
 
 
 def verify_authorization(
