@@ -1,8 +1,22 @@
 from unittest.mock import Mock
 
 from pytest import raises
+from werkzeug.test import EnvironBuilder
 
 from resultsdb import setup_messaging
+
+
+def test_proxy_fix_extracts_single_host(app):
+    """Regression test for https://github.com/release-engineering/resultsdb/issues/366"""
+    builder = EnvironBuilder(method="GET", path="/api/v2.0/")
+    env = builder.get_environ()
+    env["HTTP_X_FORWARDED_HOST"] = "resultsdb.example.com, resultsdb.example.com"
+
+    responses = []
+    app.wsgi_app(env, lambda status, headers: responses.append(status))
+
+    assert responses == ["300 MULTIPLE CHOICES"]
+    assert env["HTTP_HOST"] == "resultsdb.example.com"
 
 
 def test_app_messaging(app):

@@ -34,6 +34,7 @@ from flask_pyoidc.provider_configuration import (
 )
 from flask_pyoidc.user_session import UserSession
 from flask_session import Session
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from resultsdb.controllers.api_v2 import api as api_v2
 from resultsdb.controllers.api_v3 import api as api_v3
@@ -41,7 +42,6 @@ from resultsdb.controllers.api_v3 import create_endpoints
 from resultsdb.controllers.main import main
 from resultsdb.messaging import load_messaging_plugin
 from resultsdb.models import db
-from resultsdb.proxy import ReverseProxied
 from resultsdb.tracing import setup_tracing
 
 from . import config
@@ -56,8 +56,7 @@ def create_app(config_obj=None):
     app = Flask(__name__)
     app.secret_key = "replace-me-with-something-random"  # nosec # NOSONAR
 
-    # make sure app behaves when behind a proxy
-    app.wsgi_app = ReverseProxied(app.wsgi_app)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
     # Expose the __version__ variable in templates
     app.jinja_env.globals["app_version"] = __version__
