@@ -10,9 +10,9 @@ readme = "README.md"
 requires-python = ">=3.12,<3.14"
 dependencies = [
     "flask>=3.0.1,<4.0.0",
-    "gunicorn>=25.1.0,<25.2.0",
+    "gunicorn>=26.0.0,<26.1.0",
     "fedora-messaging>=3.4.1,<4.0.0",
-    "stomp-py>=8.2.0,<9.0.0",
+    "stomp-py>=9.0.0,<9.1.0",
     "Flask-SQLAlchemy>=3.1.1,<4.0.0",
     "SQLAlchemy>=2.0.36,<3.0.0",
     "psycopg2-binary>=2.9.10,<3.0.0",
