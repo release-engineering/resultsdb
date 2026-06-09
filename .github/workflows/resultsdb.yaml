@@ -4,6 +4,8 @@ name: ResultsDB
 "on":
   pull_request:
   push:
+    branches:
+      - develop
   workflow_dispatch:
     inputs: {}
 
@@ -11,6 +13,9 @@ jobs:
   tests:
     name: Unit tests
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     strategy:
       matrix:
         python-version: ["3.13"]
@@ -43,19 +48,13 @@ jobs:
           TOX_DOCKER_GATEWAY: "0.0.0.0"
         run: uvx --with tox-uv tox -e py3
 
-      - name: Run coveralls-python
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COVERALLS_FLAG_NAME: python-${{ matrix.python-version }}
-          COVERALLS_PARALLEL: true
-        run: |
-          uvx --with coveralls coveralls --service=github
-
-      - name: Upload coverage to Coveralls
-        run: |
-          uvx --with coveralls coveralls --finish --service=github
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7
+        with:
+          fail_ci_if_error: true
+          verbose: true
+          use_oidc: true
+          flags: unit-tests
 
   hadolint:
     name: Hadolint
