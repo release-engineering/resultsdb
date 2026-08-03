@@ -27,11 +27,11 @@ from resultsdb.models import db
 from resultsdb.serializers import DBSerialize
 
 __all__ = [
-    "Testcase",
     "Group",
+    "GroupsToResults",
     "Result",
     "ResultData",
-    "GroupsToResults",
+    "Testcase",
     "result_outcomes",
 ]
 

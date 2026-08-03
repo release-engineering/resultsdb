@@ -95,14 +95,14 @@ class TestFuncCreateFedmsg:
             data = self.ref_result_data
 
         ref_data = json.dumps(
-            dict(
-                outcome=outcome,
-                testcase=testcase,
-                groups=groups,
-                note=self.ref_result_note,
-                data=data,
-                ref_url=self.ref_result_ref_url,
-            )
+            {
+                "outcome": outcome,
+                "testcase": testcase,
+                "groups": groups,
+                "note": self.ref_result_note,
+                "data": data,
+                "ref_url": self.ref_result_ref_url,
+            }
         )
 
         r = self.app.post(

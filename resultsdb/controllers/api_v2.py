@@ -21,9 +21,8 @@
 import re
 import uuid
 
-from flask import Blueprint
+from flask import Blueprint, jsonify, request, url_for
 from flask import current_app as app
-from flask import jsonify, request, url_for
 from flask_pydantic import validate
 from sqlalchemy.orm import exc as orm_exc
 
@@ -82,8 +81,6 @@ def pagination(q, page, limit):
 
 
 def prev_next_urls(data, limit=QUERY_LIMIT):
-    global RE_PAGE
-
     try:
         match = RE_PAGE.findall(request.url)
         flag, page = match[0][0], int(match[0][1])
@@ -122,7 +119,7 @@ def prev_next_urls(data, limit=QUERY_LIMIT):
 
 def add_group(grp):
     if isinstance(grp, (str, bytes)):
-        grp = dict(uuid=grp)
+        grp = {"uuid": grp}
     elif isinstance(grp, dict):
         grp["uuid"] = grp.get("uuid", str(uuid.uuid1()))
 
@@ -165,11 +162,11 @@ def get_groups(query: GroupsParams):
     data, prev, next = prev_next_urls(q.all(), query.limit)
 
     return jsonify(
-        dict(
-            prev=prev,
-            next=next,
-            data=[SERIALIZE(o) for o in data],
-        )
+        {
+            "prev": prev,
+            "next": next,
+            "data": [SERIALIZE(o) for o in data],
+        }
     )
 
 
@@ -264,7 +261,7 @@ def select_results(
             try:
                 key, modifier = key.split(":")
             except ValueError:  # no : in key
-                key, modifier = (key, None)
+                modifier = None
 
             if modifier == "like":
                 alias = db.aliased(ResultData)
@@ -309,9 +306,7 @@ def __get_results_parse_args(query: ResultsParams):
     #  stored in one key (so one can do stuff like .../results?item=foo&item=bar in URL).
     # Here we transform the `request.args` MultiDict to `results_data` dict of lists, and
     #  while also filtering out the reserved-keyword-args
-    results_data = {
-        k: request.args.getlist(k) for k in request.args.keys() if k not in args
-    }
+    results_data = {k: request.args.getlist(k) for k in request.args if k not in args}
     for param, values in results_data.items():
         for i, value in enumerate(values):
             results_data[param][i] = value.split(",")
@@ -348,11 +343,11 @@ def __get_results(query: ResultsParams, group_ids=None, testcase_names=None):
     data, prev, next = prev_next_urls(q.all(), args["limit"])
 
     return jsonify(
-        dict(
-            prev=prev,
-            next=next,
-            data=[SERIALIZE(o) for o in data],
-        )
+        {
+            "prev": prev,
+            "next": next,
+            "data": [SERIALIZE(o) for o in data],
+        }
     )
 
 
@@ -434,9 +429,9 @@ def get_results_latest(query: ResultsParams):
         results = q.all()
 
         return jsonify(
-            dict(
-                data=[SERIALIZE(o) for o in results],
-            )
+            {
+                "data": [SERIALIZE(o) for o in results],
+            }
         )
 
     if not any(
@@ -478,9 +473,9 @@ def get_results_latest(query: ResultsParams):
     q = q.order_by(*values_distinct_on).order_by(db.desc(Result.submit_time))
 
     results = q.all()
-    results = dict(
-        data=[SERIALIZE(o) for o in results],
-    )
+    results = {
+        "data": [SERIALIZE(o) for o in results],
+    }
     results["data"] = sorted(
         results["data"], key=lambda x: x["submit_time"], reverse=True
     )
@@ -527,11 +522,11 @@ def create_result_any_data(body: CreateResultParams):
     contrast to v3 API).
     """
     if body.data:
-        invalid_keys = [key for key in body.data.keys() if ":" in key]
+        invalid_keys = [key for key in body.data if ":" in key]
         if invalid_keys:
             app.logger.warning("Colon not allowed in key name: %s", invalid_keys)
             return jsonify(
-                {"message": "Colon not allowed in key name: %r" % invalid_keys}
+                {"message": f"Colon not allowed in key name: {invalid_keys!r}"}
             ), 400
 
     tc = body.testcase
@@ -590,11 +585,11 @@ def get_testcases(query: TestcasesParams):
     data, prev, next = prev_next_urls(q.all(), query.limit)
 
     return jsonify(
-        dict(
-            prev=prev,
-            next=next,
-            data=[SERIALIZE(o) for o in data],
-        )
+        {
+            "prev": prev,
+            "next": next,
+            "data": [SERIALIZE(o) for o in data],
+        }
     )
 
 

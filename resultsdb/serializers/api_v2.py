@@ -33,23 +33,25 @@ class Serializer(BaseSerializer):
             .filter_by(group_uuid=o.uuid)
         )
         results_count = db.session.execute(results_count_statement).scalar()
-        rv = dict(
-            uuid=o.uuid,
-            description=o.description,
-            ref_url=o.ref_url,
-            results=url_for("api_v2.get_results", groups=[o.uuid], _external=True),
-            results_count=results_count,
-            href=url_for("api_v2.get_group", group_id=o.uuid, _external=True),
-        )
+        rv = {
+            "uuid": o.uuid,
+            "description": o.description,
+            "ref_url": o.ref_url,
+            "results": url_for("api_v2.get_results", groups=[o.uuid], _external=True),
+            "results_count": results_count,
+            "href": url_for("api_v2.get_group", group_id=o.uuid, _external=True),
+        }
 
         return {key: self.serialize(value) for key, value in rv.items()}
 
     def _serialize_Testcase(self, o, **kwargs):
-        rv = dict(
-            name=o.name,
-            ref_url=o.ref_url,
-            href=url_for("api_v2.get_testcase", testcase_name=o.name, _external=True),
-        )
+        rv = {
+            "name": o.name,
+            "ref_url": o.ref_url,
+            "href": url_for(
+                "api_v2.get_testcase", testcase_name=o.name, _external=True
+            ),
+        }
 
         return {key: self.serialize(value) for key, value in rv.items()}
 
@@ -61,24 +63,24 @@ class Serializer(BaseSerializer):
             except KeyError:
                 result_data[rd.key] = [rd.value]
 
-        rv = dict(
-            id=o.id,
-            groups=[group.uuid for group in o.groups],
-            testcase=o.testcase,
-            submit_time=o.submit_time.isoformat(),
-            outcome=o.outcome,
-            note=o.note,
-            ref_url=o.ref_url,
-            data=result_data,
-            href=url_for("api_v2.get_result", result_id=o.id, _external=True),
-        )
+        rv = {
+            "id": o.id,
+            "groups": [group.uuid for group in o.groups],
+            "testcase": o.testcase,
+            "submit_time": o.submit_time.isoformat(),
+            "outcome": o.outcome,
+            "note": o.note,
+            "ref_url": o.ref_url,
+            "data": result_data,
+            "href": url_for("api_v2.get_result", result_id=o.id, _external=True),
+        }
 
         return {key: self.serialize(value) for key, value in rv.items()}
 
     def _serialize_ResultData(self, o, **kwargs):
-        rv = dict(
-            key=o.key,
-            value=o.value,
-        )
+        rv = {
+            "key": o.key,
+            "value": o.value,
+        }
 
         return {key: self.serialize(value) for key, value in rv.items()}

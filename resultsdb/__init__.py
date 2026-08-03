@@ -88,9 +88,11 @@ def create_app(config_obj=None):
     if config_file and os.path.exists(config_file):
         app.config.from_pyfile(config_file)
 
-    if app.config["PRODUCTION"]:
-        if app.secret_key == "replace-me-with-something-random":  # nosec # NOSONAR
-            raise Warning("You need to change the app.secret_key value for production")
+    if (
+        app.config["PRODUCTION"]
+        and app.secret_key == "replace-me-with-something-random"  # nosec # NOSONAR
+    ):
+        raise Warning("You need to change the app.secret_key value for production")
 
     setup_logging(app)
 
