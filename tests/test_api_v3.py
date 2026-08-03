@@ -134,8 +134,10 @@ def test_api_v3_create_redhat_container_image(client):
         issuer="CPaaS",
         component="rhoam-operator-bundle-container",
         full_names=[
-            "registry.example.com/rh-osbs/operator@"
-            "sha256:27a51bc590483f0cd8c6085825a82a5697832e1d8b0e6aab0651262b84855803",
+            (
+                "registry.example.com/rh-osbs/operator@"
+                "sha256:27a51bc590483f0cd8c6085825a82a5697832e1d8b0e6aab0651262b84855803"
+            ),
             "registry.example.com/rh-osbs/operator:test",
         ],
     )

@@ -338,7 +338,7 @@ class TestFuncApiV20(TestCase):
         assert r.json["data"][0] == self.ref_group
 
         r = self.app.get(
-            "/api/v2.0/groups?description:like=*%s*" % self.ref_group_description[1:-1]
+            f"/api/v2.0/groups?description:like=*{self.ref_group_description[1:-1]}*"
         )
 
         assert r.status_code == 200
@@ -384,14 +384,14 @@ class TestFuncApiV20(TestCase):
         if data is None:
             data = self.ref_result_data
 
-        data = dict(
-            outcome=outcome,
-            testcase=testcase,
-            groups=groups,
-            note=self.ref_result_note,
-            data=data,
-            ref_url=self.ref_result_ref_url,
-        )
+        data = {
+            "outcome": outcome,
+            "testcase": testcase,
+            "groups": groups,
+            "note": self.ref_result_note,
+            "data": data,
+            "ref_url": self.ref_result_ref_url,
+        }
 
         return self.app.post(RESULTS_API, json=data)
 
@@ -477,11 +477,11 @@ class TestFuncApiV20(TestCase):
         assert data == ref_result
 
     def test_create_result_group_is_none(self):
-        ref_data = dict(
-            outcome=self.ref_result_outcome,
-            testcase=self.ref_testcase,
-            groups=None,
-        )
+        ref_data = {
+            "outcome": self.ref_result_outcome,
+            "testcase": self.ref_testcase,
+            "groups": None,
+        }
 
         r = self.app.post(RESULTS_API, json=ref_data)
 
@@ -566,11 +566,11 @@ class TestFuncApiV20(TestCase):
         assert r.json["message"].startswith("Colon not allowed in key name:")
 
     def test_create_result_submit_time_as_number(self):
-        ref_data = dict(
-            outcome=self.ref_result_outcome,
-            testcase=self.ref_testcase,
-            submit_time=1661324097123,
-        )
+        ref_data = {
+            "outcome": self.ref_result_outcome,
+            "testcase": self.ref_testcase,
+            "submit_time": 1661324097123,
+        }
 
         r = self.app.post(RESULTS_API, json=ref_data)
 
@@ -579,11 +579,11 @@ class TestFuncApiV20(TestCase):
         assert r.json["submit_time"] == "2022-08-24T06:54:57.123000"
 
     def test_create_result_submit_time_as_number_string(self):
-        ref_data = dict(
-            outcome=self.ref_result_outcome,
-            testcase=self.ref_testcase,
-            submit_time="1661324097123",
-        )
+        ref_data = {
+            "outcome": self.ref_result_outcome,
+            "testcase": self.ref_testcase,
+            "submit_time": "1661324097123",
+        }
 
         r = self.app.post(RESULTS_API, json=ref_data)
 
@@ -593,11 +593,11 @@ class TestFuncApiV20(TestCase):
 
     def test_create_result_submit_time_as_datetime(self):
         for suffix in ("", "Z", "+00:00", "+0000", "+00"):
-            ref_data = dict(
-                outcome=self.ref_result_outcome,
-                testcase=self.ref_testcase,
-                submit_time=f"2022-08-24T06:54:57.123456{suffix}",
-            )
+            ref_data = {
+                "outcome": self.ref_result_outcome,
+                "testcase": self.ref_testcase,
+                "submit_time": f"2022-08-24T06:54:57.123456{suffix}",
+            }
 
             r = self.app.post(RESULTS_API, json=ref_data)
 
@@ -606,11 +606,11 @@ class TestFuncApiV20(TestCase):
             assert r.json["submit_time"] == "2022-08-24T06:54:57.123456"
 
     def test_create_result_submit_time_as_invalid(self):
-        ref_data = dict(
-            outcome=self.ref_result_outcome,
-            testcase=self.ref_testcase,
-            submit_time="now",
-        )
+        ref_data = {
+            "outcome": self.ref_result_outcome,
+            "testcase": self.ref_testcase,
+            "submit_time": "now",
+        }
 
         r = self.app.post(RESULTS_API, json=ref_data)
 
@@ -634,13 +634,13 @@ class TestFuncApiV20(TestCase):
     def test_get_result(self):
         self.test_create_result()
 
-        r = self.app.get("/api/v2.0/results/%d" % self.ref_result_id)
+        r = self.app.get(f"/api/v2.0/results/{self.ref_result_id}")
 
         assert r.status_code == 200
         assert r.json == self.ref_result
 
     def test_get_missing_result(self):
-        r = self.app.get("/api/v2.0/results/%d" % self.ref_result_id)
+        r = self.app.get(f"/api/v2.0/results/{self.ref_result_id}")
 
         assert r.status_code == 404
         assert r.json is not None

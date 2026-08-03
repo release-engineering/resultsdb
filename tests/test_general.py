@@ -6,7 +6,7 @@ import stomp
 from pytest import fixture, raises
 
 import resultsdb.controllers.api_v2 as apiv2
-import resultsdb.messaging as messaging
+from resultsdb import messaging
 from resultsdb.parsers.api_v2 import parse_since
 
 MESSAGE_BUS_KWARGS = {
@@ -24,10 +24,12 @@ MESSAGE_BUS_KWARGS = {
 
 @fixture
 def mock_stomp():
-    with patch("resultsdb.messaging.StompPlugin._publish_with_retry.retry.sleep"):
-        with patch("resultsdb.messaging.stomp.connect.StompConnection11") as mock:
-            mock().is_connected.return_value = False
-            yield mock
+    with (
+        patch("resultsdb.messaging.StompPlugin._publish_with_retry.retry.sleep"),
+        patch("resultsdb.messaging.stomp.connect.StompConnection11") as mock,
+    ):
+        mock().is_connected.return_value = False
+        yield mock
 
 
 class MyRequest:
@@ -111,7 +113,7 @@ class TestPrevNextURL:
 class TestParseSince:
     def setup_method(self, method):
         self.date_str = "2016-01-01T01:02:03.04"
-        self.date_obj = datetime.datetime.strptime(
+        self.date_obj = datetime.datetime.strptime(  # noqa: DTZ007
             self.date_str, "%Y-%m-%dT%H:%M:%S.%f"
         )
 

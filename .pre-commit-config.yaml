@@ -14,16 +14,6 @@ repos:
       - id: end-of-file-fixer
       - id: trailing-whitespace
 
-  # Sort imports
-  - repo: https://github.com/pycqa/isort
-    rev: 9.0.0a3
-    hooks:
-      - id: isort
-        name: isort
-        args:
-          - --line-length=79
-          - --profile=black
-
   # Remove unused imports, variables, statements
   - repo: https://github.com/PyCQA/autoflake
     rev: v2.3.3
@@ -40,10 +30,11 @@ repos:
 
   # Linter and formatter
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.20
+    rev: v0.16.0
     hooks:
       - id: ruff
         args:
+          - --fix
           # ignore: E501 Line too long
           - --ignore=E501
       - id: ruff-format
@@ -56,7 +47,7 @@ repos:
 
   # Type linter
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v2.1.0
+    rev: v2.3.0
     hooks:
       - id: mypy
         args:

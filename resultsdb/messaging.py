@@ -22,6 +22,7 @@ import json
 import logging
 from importlib.metadata import entry_points
 from threading import Lock
+from typing import ClassVar
 
 import stomp
 from fedora_messaging.api import Message, publish
@@ -160,7 +161,7 @@ class DummyPlugin(MessagingPlugin):
 
     # A class attribute where we store all messages published.
     # Used by the test suite.  This would cause a memory leak if used in prod.
-    history: list[dict[str, object]] = []
+    history: ClassVar[list[dict[str, object]]] = []
 
     def publish(self, message):
         # Add telemetry information. This includes an extra key
@@ -257,7 +258,7 @@ def load_messaging_plugin(name, plugin_args):
     classes = {"dummy": DummyPlugin}
     classes.update({point.name: point.load() for point in points})
 
-    log.debug("Found the following installed messaging plugin %r" % classes)
+    log.debug("Found the following installed messaging plugin %r", classes)
     if name not in classes:
         raise KeyError(f"{name!r} not found in {classes.keys()!r}")
 

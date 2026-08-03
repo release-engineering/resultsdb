@@ -69,9 +69,8 @@ def upgrade():
         .yield_per(100)
     )
 
-    j = r = 0
-    for job in job_query:
-        j += 1
+    r = 0
+    for j, job in enumerate(job_query, 1):
         primary = merge_targets.setdefault(job.uuid, job)
         if primary.id != job.id:
             for result in job.results:

@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0+
-from flask import Blueprint
+from flask import Blueprint, jsonify, render_template
 from flask import current_app as app
-from flask import jsonify, render_template
 from flask_pydantic import validate
 from pydantic import RootModel
 

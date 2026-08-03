@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: LGPL-2.0-or-later
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from numbers import Number
-from typing import Annotated, Any, Union
+from typing import Annotated, Any
 
 import iso8601
 from pydantic import (
@@ -37,7 +37,7 @@ def parse_since(since):
 
 def time_from_milliseconds(value):
     seconds, milliseconds = divmod(value, 1000)
-    time = datetime.fromtimestamp(seconds, tz=timezone.utc)
+    time = datetime.fromtimestamp(seconds, tz=UTC)
     return time.replace(microsecond=milliseconds * 1000)
 
 
@@ -66,7 +66,7 @@ def validate_query_list(v: str | list[str], info: ValidationInfo):
     return v
 
 
-QueryList = Annotated[Union[str, list[str]], AfterValidator(validate_query_list)]
+QueryList = Annotated[str | list[str], AfterValidator(validate_query_list)]
 
 
 class ResultsParams(BaseListParams):
@@ -128,7 +128,7 @@ class CreateResultParams(BaseModel):
         if isinstance(v, str):
             for suffix in ("Z", "", "%z", "+00"):
                 try:
-                    return datetime.strptime(v, f"%Y-%m-%dT%H:%M:%S.%f{suffix}")
+                    return datetime.strptime(v, f"%Y-%m-%dT%H:%M:%S.%f{suffix}")  # noqa: DTZ007
                 except ValueError:
                     pass
 
@@ -139,7 +139,7 @@ class CreateResultParams(BaseModel):
         raise ValueError(
             "Expected timestamp in milliseconds or datetime"
             " (in format YYYY-MM-DDTHH:MM:SS.ffffff),"
-            " got %r" % v
+            f" got {v!r}"
         )
 
     @field_validator("testcase", mode="after")
