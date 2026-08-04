@@ -6,13 +6,13 @@ HOST: https://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/
 
 # ResultsDB 2.0
 
-ResultsDB is an independent system for storing results, originaly written as a part of [Taskotron](https://taskotron.fedoraproject.org/) automation tool.
+ResultsDB is an independent system for storing results, originally written as a part of [Taskotron](https://taskotron.fedoraproject.org/) automation tool.
 
 Source code: https://bitbucket.org/account/user/fedoraqa/projects/RES
 
 ## Changes since 1.0
 
-* Removed `Jobs` and replaced with `Groups` to remove the "execution status" (originaly represented by `Job`) from ResultsDB,
+* Removed `Jobs` and replaced with `Groups` to remove the "execution status" (originally represented by `Job`) from ResultsDB,
   but keeping the ability to group `Results`, as it might make semantical sense
     * `Result` can be a part of 0-n `Groups`
     * UUID as a default `Group` identifier instead of `id`
@@ -48,7 +48,7 @@ Source code: https://bitbucket.org/account/user/fedoraqa/projects/RES
             * multiple values can be provided, separate by commas to get `or` filter based on all the values provided: `...&testcases=name1,name2`
     * Group
         * `like` filter for `description`
-* `_auth` placeholder for the Authorization/Authenticaion data in the Request queries; Ignored at the moment
+* `_auth` placeholder for the Authorization/Authentication data in the Request queries; Ignored at the moment
 
 
 # Results [/results]
@@ -111,7 +111,7 @@ Retrieve a single `Result` based on the `id`.
 ## Browse the Results collection [GET /results{?page,limit,outcome,testcases,groups,since,keyval}]
 
 Collection of all the Results. Results are returned in paginated format, and references to the next and previous page (if applicable) are
-given as a part of the reponse.
+given as a part of the response.
 
 The search can be filtered by time, or the `outcome`, or any of the key-values in the `data` store.
 By default, the `data` values are matched for equality, but `like` filter is available to allow for wildcard searches.
@@ -365,7 +365,7 @@ Retrieve a single `Group` based on the `uuid`.
 ## Browse the Group collection [GET /groups{?page,limit,description,uuid}]
 
 Collection of all the `Groups`.
-`Groups` are returned in paginated format, and references to the next and previous page (if applicable) are given as a part of the reponse.
+`Groups` are returned in paginated format, and references to the next and previous page (if applicable) are given as a part of the response.
 
 + Parameters
     + page: 8 (number, optional)
@@ -439,7 +439,7 @@ Each `Result` has to have one `Testcase` assigned.
 In ResultsDB, `Testcases` can be organized into namespaces using a separator in the `Testcase.name` attribute. Although you can use anything
 as a sepparator, we suggest `.` (dot) as it does not have to be URL-encoded, and is a fairly common separator for the usecase.
 
-ResultsDB is not (supposed to be) smart enough to assing any actual meaning to the `Testcase.name`, and thus can not decide on its own,
+ResultsDB is not (supposed to be) smart enough to assign any actual meaning to the `Testcase.name`, and thus can not decide on its own,
 what is a namespace, and what is a subcheck e.g. `dist.` is a namespace in Taskotron, but `dist.rpmgrill` is a checkname, which can then
 contain subchecks, that get represented as `dist.rpmgrill.subcheck_foobar`. It is always the consumer's responsibility to make use of
 the (possible) namespacing in the way correct for the specific problem.
@@ -480,7 +480,7 @@ Retrieve a single `Testcase` based on the `name`.
 ## Browse the Testcase collection [GET /testcases{?page,limit,name}]
 
 Collection of all the `Testcases`.
-`Testcases` are returned in paginated format, and references to the next and previous page (if applicable) are given as a part of the reponse.
+`Testcases` are returned in paginated format, and references to the next and previous page (if applicable) are given as a part of the response.
 
 + Parameters
     + page: 8 (number, optional)
@@ -587,7 +587,7 @@ get updated with the new `ref_url`, if set in the JSON data.
         - `foo` (string) - Single value
         - `foo`, `bar` (array[string]) - List of values
 - `submit_time` (string/number, optional, nullable): UTC time of the result creation in ISO8601 format (YYYY-MM-DDTHH:MM:SS.ffffff) or a number of milliseconds since the Epoch. Defaults to the time of the `Result` submission.
-- _auth (object, nullable, optional) - Placeholder for the future implemantation of Authentication/Authorization
+- _auth (object, nullable, optional) - Placeholder for the future implementation of Authentication/Authorization
 
 
 ## Group POST data (object)
@@ -599,7 +599,7 @@ get updated with the new `ref_url`, if set in the JSON data.
 
 ## Group POST (Group POST data)
 - uuid: `27f94e36-62ec-11e6-83fd-525400d7d6a4` (string, optional) - If not provided, ResultsDB will assign an UUID1 value to it
-- _auth (nullable, optional) - Placeholder for the future implemantation of Authentication/Authorization
+- _auth (nullable, optional) - Placeholder for the future implementation of Authentication/Authorization
 
 ## Group GET (Group POST data)
 - results: `https://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/results?group=27f94e36-62ec-11e6-83fd-525400d7d6a4` (string) - URL to retrieve results in the `Group` via the `Result` resource
@@ -614,7 +614,7 @@ get updated with the new `ref_url`, if set in the JSON data.
 - `ref_url`: `https://fedoraproject.org/wiki/Common_Rpmlint_issues` (string, optional, nullable) - URL pointing to the documentation or other reference material.
 
 ## Testcase POST (Testcase POST data)
-- _auth (nullable, optional) - Placeholder for the future implemantation of Authentication/Authorization.
+- _auth (nullable, optional) - Placeholder for the future implementation of Authentication/Authorization.
 
 ## Testcase GET (Testcase POST data)
 - `href`: `https://taskotron-dev.fedoraproject.org/resultsdb_api/api/v2.0/testcases/dist.rpmlint` (string) - Reference to self.

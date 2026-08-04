@@ -133,7 +133,7 @@ def publish_taskotron_message(result):
 
 
 def create_message(result):
-    # Re-use the same structure as in the HTTP API v2.
+    # Reuse the same structure as in the HTTP API v2.
     return SERIALIZE(result)
 
 

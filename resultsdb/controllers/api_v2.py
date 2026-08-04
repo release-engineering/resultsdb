@@ -301,7 +301,7 @@ def __get_results_parse_args(query: ResultsParams):
     }
 
     # find results_data with the query parameters
-    #  these are the paramters other than those defined in RequestParser
+    #  these are the parameters other than those defined in RequestParser
     # request.args is a ImmutableMultiDict, which allows for more values to be
     #  stored in one key (so one can do stuff like .../results?item=foo&item=bar in URL).
     # Here we transform the `request.args` MultiDict to `results_data` dict of lists, and

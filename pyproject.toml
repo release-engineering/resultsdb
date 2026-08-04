@@ -53,6 +53,13 @@ Repository = "https://github.com/release-engineering/resultsdb"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP"]
+ignore = ["E501"]
+
 [tool.ruff.lint.per-file-ignores]
 "resultsdb/config.py" = ["RUF012"]
 
