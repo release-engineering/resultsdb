@@ -14,20 +14,6 @@ repos:
       - id: end-of-file-fixer
       - id: trailing-whitespace
 
-  # Remove unused imports, variables, statements
-  - repo: https://github.com/PyCQA/autoflake
-    rev: v2.3.3
-    hooks:
-      - id: autoflake
-
-  # Auto-update syntax
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v3.21.2
-    hooks:
-      - id: pyupgrade
-        args:
-          - --py313-plus
-
   # Linter and formatter
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.16.1
@@ -35,15 +21,7 @@ repos:
       - id: ruff
         args:
           - --fix
-          # ignore: E501 Line too long
-          - --ignore=E501
       - id: ruff-format
-
-  # Linter and formatter
-  - repo: https://github.com/Instagram/Fixit
-    rev: v2.2.1
-    hooks:
-      - id: fixit-fix
 
   # Type linter
   - repo: https://github.com/pre-commit/mirrors-mypy
@@ -67,3 +45,28 @@ repos:
     rev: v2.15.1
     hooks:
       - id: hadolint-docker
+
+  # YAML linter
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+
+  # Spell checker
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.1
+    hooks:
+      - id: codespell
+
+  # GitHub Actions linters
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: v1.29.0
+    hooks:
+      - id: zizmor
+        args:
+          - --min-severity=low
+
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint

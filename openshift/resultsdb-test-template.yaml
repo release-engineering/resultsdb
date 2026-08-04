@@ -1,4 +1,3 @@
-
 # Template to produce a new test environment in OpenShift. Uses OpenID Connect
 # against iddev.fedorainfracloud.org for authentication, and ephemeral storage
 # for Postgres data.
@@ -20,7 +19,7 @@ parameters:
   required: true
 - name: RESULTSDB_IMAGE
   displayName: ResultsDB container image
-  description: Image to be used for ResultsDB deployement
+  description: Image to be used for ResultsDB deployment
   value: 172.30.1.1:5000/myproject/resultsdb:latest
   required: true
 - name: DATABASE_PASSWORD
@@ -150,7 +149,7 @@ objects:
             timeoutSeconds: 1
             initialDelaySeconds: 5
             exec:
-              command: [ /bin/sh, -i, -c, "psql -h 127.0.0.1 -U $POSTGRESQL_USER -q -d $POSTGRESQL_DATABASE -c 'SELECT 1'" ]
+              command: [/bin/sh, -i, -c, "psql -h 127.0.0.1 -U $POSTGRESQL_USER -q -d $POSTGRESQL_DATABASE -c 'SELECT 1'"]
           livenessProbe:
             timeoutSeconds: 1
             initialDelaySeconds: 30
