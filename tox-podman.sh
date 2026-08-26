@@ -18,4 +18,4 @@ podman system service --time=0 "$DOCKER_HOST" &
 podman_service_pid=$!
 sleep 1
 
-uvx --python=3.13 --with tox-uv tox "$@"
+uvx --python=3.14 --with tox-uv tox "$@"
