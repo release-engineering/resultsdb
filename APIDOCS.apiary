@@ -181,7 +181,7 @@ Examples are provided in the Parameters section of the documentation.
 
 ## Get a list of latest Results for a specified filter [GET /results/latest{?keyval,testcases,groups,since,_distinct_on}]
 
-Especially with automation in mind, a simpe query to get the latest `Results` of all the `Testcases` based on a filter
+Especially with automation in mind, a simple query to get the latest `Results` of all the `Testcases` based on a filter
 makes a lot of sense. For example Koji could be interested in data like "All current results for the `koji_build` `koschei-1.7.2-1.fc24`", without
 the need to browse the whole Results collection.
 
