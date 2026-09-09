@@ -71,11 +71,11 @@ OIDC_USERNAME_FIELD = 'uid'
 MESSAGE_BUS_PUBLISH = False
 # Name of the message bus plugin to use goes here.  'fedmsg' is installed by
 # default, but you could create your own.
-# Supported values: 'dummy', 'stomp', 'fedmsg'
+# Supported values: 'dummy', 'stomp', 'fedmsg', 'kafka'
 MESSAGE_BUS_PLUGIN = 'fedmsg'
 MESSAGE_BUS_KWARGS = {'modname': 'resultsdb'}
 
-## Alternatively, you could use the 'stomp' messaging plugin.
+## Alternatively, you could use the 'stomp' messaging plugin (UMB).
 #MESSAGE_BUS_PLUGIN = 'stomp'
 #MESSAGE_BUS_KWARGS = {
 #    'destination': '/topic/VirtualTopic.eng.resultsdb.result.new',
@@ -89,6 +89,23 @@ MESSAGE_BUS_KWARGS = {'modname': 'resultsdb'}
 #        'ssl_cert_file': '/path/to/cert/file',
 #        'ssl_ca_certs': '/path/to/ca/certs',
 #    },
+#}
+
+## Alternatively, you could use the 'kafka' messaging plugin.
+## SASL credentials come from RESULTSDB_KAFKA_SASL_USERNAME and
+## RESULTSDB_KAFKA_SASL_PASSWORD environment variables.
+#MESSAGE_BUS_PLUGIN = 'kafka'
+#KAFKA = {
+#    'topic': 'eng.resultsdb.result.new',
+#    'producer': {
+#        'security.protocol': 'SASL_SSL',
+#        'sasl.mechanisms': 'SCRAM-SHA-512',
+#        'bootstrap.servers': 'broker01:9096,broker02:9096',
+#        'client.id': 'resultsdb',
+#        'retries': 10,
+#        'retry.backoff.ms': 100,
+#    },
+#    'flush_timeout_seconds': 20.0,
 #}
 
 # Publish Taskotron-compatible fedmsgs on the 'taskotron' topic

@@ -175,6 +175,20 @@ If the package is installed and you are still seeing this error, then:
         assert isinstance(plugin, messaging.StompPlugin)
         assert plugin.destination == "results.new"
 
+    def test_kafka_load(self, monkeypatch):
+        monkeypatch.setenv("RESULTSDB_KAFKA_SASL_USERNAME", "alice")
+        monkeypatch.setenv("RESULTSDB_KAFKA_SASL_PASSWORD", "secret")
+        kafka_kwargs = {
+            "topic": "eng.resultsdb.result.new",
+            "producer": {
+                "bootstrap.servers": "localhost:9092",
+            },
+        }
+        with patch("resultsdb.messaging.Producer"):
+            plugin = messaging.load_messaging_plugin("kafka", kafka_kwargs)
+        assert isinstance(plugin, messaging.KafkaPlugin)
+        assert plugin._config.topic == "eng.resultsdb.result.new"
+
     def test_stomp_missing_destination(self):
         message_bus_kwargs = {
             "connection": {
