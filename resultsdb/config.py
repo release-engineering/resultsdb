@@ -108,7 +108,7 @@ class Config:
     MESSAGE_BUS_PUBLISH = True
     # Name of the message bus plugin to use goes here.  'fedmsg' is installed by
     # default, but you could create your own.
-    # Supported values: 'dummy', 'stomp', 'fedmsg'
+    # Supported values: 'dummy', 'stomp', 'fedmsg', 'kafka'
     MESSAGE_BUS_PLUGIN = "dummy"
     # You can pass extra arguments to your message bus plugin here.  For instance,
     # the fedmsg plugin expects an extra `modname` argument that can be used to
@@ -116,6 +116,21 @@ class Config:
     #   <topic_prefix>.<environment>.<modname>.<topic>
     # e.g. org.fedoraproject.prod.resultsdb.result.new
     MESSAGE_BUS_KWARGS: dict[str, object] = {}
+    # Used when MESSAGE_BUS_PLUGIN is 'kafka'.
+    # 'producer' keys are passed directly to confluent-kafka (librdkafka).
+    # Full reference: https://github.com/confluentinc/librdkafka/blob/master/CONFIGURATION.md
+    # SASL credentials are read from RESULTSDB_KAFKA_SASL_USERNAME and
+    # RESULTSDB_KAFKA_SASL_PASSWORD environment variables.
+    KAFKA: dict[str, object] = {
+        "topic": "eng.resultsdb.result.new",
+        "producer": {
+            "bootstrap.servers": "localhost:9092",
+            "client.id": "resultsdb",
+            "retries": 3,
+            "retry.backoff.ms": 100,
+        },
+        "flush_timeout_seconds": 20.0,
+    }
 
     # Publish Taskotron-compatible fedmsgs on the 'taskotron' topic
     MESSAGE_BUS_PUBLISH_TASKOTRON = False

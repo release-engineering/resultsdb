@@ -1,4 +1,4 @@
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from pytest import raises
 from werkzeug.test import EnvironBuilder
@@ -60,4 +60,42 @@ def test_app_messaging_stomp_bad():
     }
     expected_error = "Missing 'destination' option for STOMP messaging plugin"
     with raises(ValueError, match=expected_error):
+        setup_messaging(app)
+
+
+def test_app_messaging_kafka(monkeypatch):
+    monkeypatch.setenv("RESULTSDB_KAFKA_SASL_USERNAME", "alice")
+    monkeypatch.setenv("RESULTSDB_KAFKA_SASL_PASSWORD", "secret")
+    app = Mock()
+    app.config = {
+        "MESSAGE_BUS_PUBLISH": True,
+        "MESSAGE_BUS_PLUGIN": "kafka",
+        "KAFKA": {
+            "topic": "eng.resultsdb.result.new",
+            "producer": {
+                "bootstrap.servers": "localhost:9092",
+            },
+        },
+        "MESSAGE_BUS_KWARGS": {},
+    }
+    with patch("resultsdb.messaging.Producer"):
+        setup_messaging(app)
+    app.logger.info.assert_called_once_with("Using messaging plugin %s", "kafka")
+    assert type(app.messaging_plugin).__name__ == "KafkaPlugin"
+
+
+def test_app_messaging_kafka_bad(monkeypatch):
+    monkeypatch.setenv("RESULTSDB_KAFKA_SASL_USERNAME", "alice")
+    monkeypatch.setenv("RESULTSDB_KAFKA_SASL_PASSWORD", "secret")
+    app = Mock()
+    app.config = {
+        "MESSAGE_BUS_PUBLISH": True,
+        "MESSAGE_BUS_PLUGIN": "kafka",
+        "KAFKA": {
+            "producer": {
+                "bootstrap.servers": "localhost:9092",
+            },
+        },
+    }
+    with raises(RuntimeError, match="Invalid KAFKA configuration"):
         setup_messaging(app)

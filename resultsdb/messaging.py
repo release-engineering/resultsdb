@@ -20,11 +20,14 @@
 import abc
 import json
 import logging
+import os
 from importlib.metadata import entry_points
 from threading import Lock
-from typing import ClassVar
+from typing import Any, ClassVar
 
 import stomp
+from confluent_kafka import KafkaError, KafkaException, Producer
+from confluent_kafka import Message as KafkaMessage
 from fedora_messaging.api import Message, publish
 from fedora_messaging.exceptions import (
     ConnectionException,
@@ -36,6 +39,7 @@ from opentelemetry import trace
 from opentelemetry.trace.propagation.tracecontext import (
     TraceContextTextMapPropagator,
 )
+from pydantic import BaseModel
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from resultsdb.models import db
@@ -252,10 +256,82 @@ class StompPlugin(MessagingPlugin):
             log.debug("Published message through stomp: %s", kwargs["body"])
 
 
+class KafkaConfig(BaseModel):
+    topic: str
+    producer: dict[str, Any]
+    flush_timeout_seconds: float = 20.0
+
+
+def _parse_kafka_config(config: dict[str, Any]) -> tuple[KafkaConfig, dict[str, Any]]:
+    try:
+        kafka_config = KafkaConfig(**config)
+    except (ValueError, TypeError) as e:
+        raise RuntimeError(f"Invalid KAFKA configuration: {e}") from e
+
+    username = os.environ.get("RESULTSDB_KAFKA_SASL_USERNAME")
+    password = os.environ.get("RESULTSDB_KAFKA_SASL_PASSWORD")
+    if not username or not password:
+        raise RuntimeError(
+            "RESULTSDB_KAFKA_SASL_USERNAME and RESULTSDB_KAFKA_SASL_PASSWORD "
+            "environment variables are required"
+        )
+    producer_config = {
+        **kafka_config.producer,
+        "sasl.username": username,
+        "sasl.password": password,
+    }
+
+    return kafka_config, producer_config
+
+
+class KafkaPlugin(MessagingPlugin):
+    """A Kafka plugin used to publish to a Kafka (MSK) cluster."""
+
+    def __init__(self, **kwargs):
+        kafka_config, producer_config = _parse_kafka_config(kwargs)
+        self._config = kafka_config
+        self._producer = Producer(producer_config)
+
+    @tracer.start_as_current_span("KafkaPlugin.publish")
+    def publish(self, message):
+        # Add telemetry information. This includes an extra key
+        # traceparent.
+        TraceContextTextMapPropagator().inject(message)
+
+        delivery_error = None
+
+        def _delivery_callback(err: KafkaError | None, _msg: KafkaMessage) -> None:
+            nonlocal delivery_error
+            if err is not None:
+                log.error("Failed to deliver Kafka message: %s", err)
+                delivery_error = delivery_error or KafkaException(err)
+            else:
+                log.debug("Published message through kafka: %s", message)
+
+        self._producer.produce(
+            self._config.topic,
+            value=json.dumps(message).encode("utf-8"),
+            on_delivery=_delivery_callback,
+        )
+
+        remaining = self._producer.flush(timeout=self._config.flush_timeout_seconds)
+        if remaining > 0:
+            log.error("%d Kafka message(s) failed to be delivered (timeout)", remaining)
+            raise KafkaException(
+                KafkaError(
+                    KafkaError._MSG_TIMED_OUT,
+                    f"{remaining} message(s) were not delivered within timeout",
+                )
+            )
+
+        if delivery_error is not None:
+            raise delivery_error
+
+
 def load_messaging_plugin(name, plugin_args):
     """Instantiate and return the appropriate messaging plugin."""
     points = entry_points(group="resultsdb.messaging.plugins")
-    classes = {"dummy": DummyPlugin}
+    classes = {"dummy": DummyPlugin, "kafka": KafkaPlugin}
     classes.update({point.name: point.load() for point in points})
 
     log.debug("Found the following installed messaging plugin %r", classes)
