@@ -189,7 +189,7 @@ def setup_messaging(app):
     plugin_name = app.config["MESSAGE_BUS_PLUGIN"]
     app.logger.info("Using messaging plugin %s", plugin_name)
     if plugin_name == "kafka":
-        plugin_args = app.config.get("KAFKA") or {}
+        plugin_args = app.config["KAFKA"]
     else:
         plugin_args = app.config["MESSAGE_BUS_KWARGS"]
     app.messaging_plugin = load_messaging_plugin(
