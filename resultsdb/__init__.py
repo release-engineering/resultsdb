@@ -24,6 +24,7 @@ import logging.config as logging_config
 import logging.handlers
 import os
 
+import requests
 from flask import Flask, current_app, jsonify, send_from_directory, session
 from flask_pydantic.exceptions import ValidationError
 from flask_pyoidc import OIDCAuthentication
@@ -34,6 +35,8 @@ from flask_pyoidc.provider_configuration import (
 )
 from flask_pyoidc.user_session import UserSession
 from flask_session import Session
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from resultsdb.controllers.api_v2 import api as api_v2
@@ -260,6 +263,22 @@ def init_session(app):
                 db.create_all()
 
 
+def oidc_requests_session():
+    # The OIDC provider (RH-SSO) occasionally resets the connection used for
+    # calls like token introspection (RHELWF-14685). Without retries, that
+    # turns into an unhandled 500 for whatever client happened to be making
+    # a resultsdb request at the time.
+    session = requests.Session()
+    retry = Retry(
+        total=3,
+        backoff_factor=0.5,
+        status_forcelist=(502, 503, 504),
+        allowed_methods=False,  # retry POST too; introspection is read-only
+    )
+    session.mount("https://", HTTPAdapter(max_retries=retry))
+    return session
+
+
 def enable_oidc(app):
     with open(app.config["OIDC_CLIENT_SECRETS"]) as client_secrets_file:
         client_secrets = json.load(client_secrets_file)
@@ -290,6 +309,7 @@ def enable_oidc(app):
         session_refresh_interval_seconds=app.config[
             "OIDC_SESSION_REFRESH_INTERVAL_SECONDS"
         ],
+        requests_session=oidc_requests_session(),
     )
     oidc = OIDCAuthentication({provider: config}, app)
 
